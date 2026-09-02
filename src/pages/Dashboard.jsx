@@ -56,8 +56,14 @@ export default function Dashboard() {
             <p className="dash-greeting">Halo, {user.nama.split(' ')[0]} 👋</p>
             <p className="dash-date">{formatTanggal()}</p>
           </div>
-          <div className="dash-avatar" onClick={() => navigate('/profil')}>
-            {user.nama.charAt(0).toUpperCase()}
+          <div onClick={() => navigate('/profil')} style={{ cursor: 'pointer' }}>
+            {user.foto ? (
+              <img src={user.foto} alt={user.nama} className="dash-avatar" style={{objectFit: 'cover', objectPosition: 'top'}}
+                onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}/>
+            ) : null}
+            <div className="dash-avatar" style={{display: user.foto ? 'none' : 'flex'}}>
+              {user.nama.charAt(0).toUpperCase()}
+            </div>
           </div>
         </div>
 

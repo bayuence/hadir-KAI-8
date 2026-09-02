@@ -22,9 +22,14 @@ export default function Profil() {
   // Fetch fresh profile data (dengan foto URL thumbnail) langsung dari server
   useEffect(() => {
     if (!user || !token) return
+    console.log('[Profil] user dari localStorage:', user)
+    console.log('[Profil] user.foto:', user.foto)
     api.getProfile(user.id, token)
-      .then(res => { if (res.success) setProfileData(res.data) })
-      .catch(() => {}) // Fallback ke user dari cache jika gagal
+      .then(res => {
+        console.log('[Profil] response getProfile:', res)
+        if (res.success) setProfileData(res.data)
+      })
+      .catch(err => console.error('[Profil] getProfile error:', err))
   }, [user, token])
 
   // Merge data: prioritaskan data segar dari server, fallback ke cache
@@ -44,7 +49,7 @@ export default function Profil() {
             </button>
             <div className="sidebar-profile">
               {profile.foto ? (
-                <img src={profile.foto} alt={profile.nama} className="sidebar-avatar" style={{objectFit: 'cover', borderRadius:'50%'}} onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}/>
+                <img src={profile.foto} alt={profile.nama} className="sidebar-avatar" style={{objectFit: 'cover', objectPosition: 'top', borderRadius:'50%'}} onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}/>
               ) : null}
               <div className="sidebar-avatar" style={{display: profile.foto ? 'none' : 'flex'}}>{profile.nama?.charAt(0).toUpperCase()}</div>
               <p className="sidebar-name">{profile.nama}</p>
@@ -99,7 +104,7 @@ export default function Profil() {
         {profile && (
           <div className="profil-card">
             {profile.foto ? (
-              <img src={profile.foto} alt={profile.nama} className="profil-avatar-lg" style={{objectFit: 'cover', borderRadius:'50%'}}
+              <img src={profile.foto} alt={profile.nama} className="profil-avatar-lg" style={{objectFit: 'cover', objectPosition: 'top', borderRadius:'50%'}}
                 onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}/>
             ) : null}
             <div className="profil-avatar-lg" style={{display: profile.foto ? 'none' : 'flex'}}>{profile.nama?.charAt(0).toUpperCase()}</div>

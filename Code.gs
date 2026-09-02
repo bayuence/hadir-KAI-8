@@ -552,6 +552,13 @@ function handleLogin(data) {
           }
         }
   
+        // Konversi URL foto ke format thumbnail yang bisa diembed di browser
+        var fotoLogin = rows[i][10] || '';
+        if (fotoLogin) {
+          var idFotoLogin = extractDriveId(fotoLogin);
+          if (idFotoLogin) fotoLogin = 'https://drive.google.com/thumbnail?id=' + idFotoLogin + '&sz=w400';
+        }
+
         var token = createSession(rows[i][14]);
         return {
           success: true, token: token,
@@ -562,7 +569,7 @@ function handleLogin(data) {
             lokasi: lokasiNama || 'Belum ditetapkan', 
             lat: lat, 
             long: lng,
-            foto: rows[i][10] || ''
+            foto: fotoLogin
           }
         };
       }
