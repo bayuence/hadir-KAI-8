@@ -4,6 +4,8 @@ import { api } from '../../services/api'
 import BottomNav from '../../components/BottomNav'
 import './Admin.css'
 
+import AdminHeader from '../../components/AdminHeader'
+
 export default function AdminPeserta() {
   const navigate = useNavigate()
   const [pendingList, setPendingList] = useState([])
@@ -56,14 +58,7 @@ export default function AdminPeserta() {
   return (
     <div className="app-shell">
       <div className="admin-wrap">
-        <div className="admin-page-header">
-          <button className="admin-back-btn" onClick={() => navigate('/profil')}>
-            <svg viewBox="0 0 20 20" fill="none" width="20" height="20">
-              <path d="M12 4l-7 6 7 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <h1 className="admin-page-title">Kelola Peserta</h1>
-        </div>
+        <AdminHeader title="Kelola Peserta" />
 
         {loading ? (
           <div className="admin-loading">

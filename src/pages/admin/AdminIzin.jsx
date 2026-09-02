@@ -4,6 +4,8 @@ import { api } from '../../services/api'
 import BottomNav from '../../components/BottomNav'
 import './Admin.css'
 
+import AdminHeader from '../../components/AdminHeader'
+
 export default function AdminIzin() {
   const navigate = useNavigate()
   const [izinList, setIzinList] = useState([])
@@ -53,14 +55,7 @@ export default function AdminIzin() {
   return (
     <div className="app-shell">
       <div className="admin-wrap">
-        <div className="admin-page-header">
-          <button className="admin-back-btn" onClick={() => navigate('/profil')}>
-            <svg viewBox="0 0 20 20" fill="none" width="20" height="20">
-              <path d="M12 4l-7 6 7 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <h1 className="admin-page-title">Kelola Izin</h1>
-        </div>
+        <AdminHeader title="Kelola Izin" />
 
         {loading ? (
           <div className="admin-loading"><div className="spinner"/><p>Memuat...</p></div>
