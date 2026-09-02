@@ -5,7 +5,7 @@ import './Onboarding.css'
 /* ─── Ilustrasi SVG inline ─── */
 const IllustrationLogo = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 220 }}>
-    <img src="/logo kai.PNG" alt="Logo KAI" style={{ width: 180, height: 180, objectFit: 'contain' }} />
+    <img src="/logo-kai.png" alt="Logo KAI" style={{ width: 180, height: 180, objectFit: 'contain' }} />
   </div>
 )
 
