@@ -116,7 +116,7 @@ export default function Daftar() {
     >
       <div className="login-wrap" style={{ paddingBottom: '40px' }}>
         <div className="login-header animate-fade-in" style={{ marginBottom: '24px' }}>
-          <img src="/logo kai.PNG" alt="KAI" className="login-logo" />
+          <img src="/logo-kai.png" alt="KAI" className="login-logo" />
           <div>
             <h1 className="login-title">Daftar</h1>
             <p className="login-subtitle">Buat akun presensi magang baru</p>

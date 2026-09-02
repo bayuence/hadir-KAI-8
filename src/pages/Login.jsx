@@ -107,7 +107,7 @@ export default function Login() {
     >
       <div className="login-wrap">
         <div className="login-header animate-fade-in">
-          <img src="/logo kai.PNG" alt="KAI" className="login-logo" />
+          <img src="/logo-kai.png" alt="KAI" className="login-logo" />
           <div>
             <h1 className="login-title">Masuk</h1>
             <p className="login-subtitle">Sistem Presensi Magang KAI Daop 8</p>
