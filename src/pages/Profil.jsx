@@ -182,19 +182,63 @@ export default function Profil() {
           </div>
         )}
 
-        {/* Tiles Ringkasan */}
-        <div className="profil-tiles">
-          <div className="profil-tile">
-            <span className="profil-tile-label">ID Peserta</span>
-            <span className="profil-tile-value">{profile?.id || '—'}</span>
-          </div>
-          <div className="profil-tile">
-            <span className="profil-tile-label">Lokasi Magang</span>
-            <span className="profil-tile-value">{profile?.lokasi || '—'}</span>
+        {/* Section 1: Informasi Magang & Penugasan */}
+        <div className="profil-section-card">
+          <h3 className="profil-section-title">Informasi Magang & Penugasan</h3>
+          <div className="profil-info-list">
+            <div className="profil-info-item">
+              <span className="profil-info-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              </span>
+              <div>
+                <p className="profil-info-label">ID Peserta / Magang</p>
+                <p className="profil-info-val">{profile?.id || '—'}</p>
+              </div>
+            </div>
+
+            <div className="profil-info-item">
+              <span className="profil-info-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+              </span>
+              <div>
+                <p className="profil-info-label">Unit Kerja</p>
+                <p className="profil-info-val">{profile?.unitKerja || '—'}</p>
+              </div>
+            </div>
+
+            <div className="profil-info-item">
+              <span className="profil-info-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+              </span>
+              <div>
+                <p className="profil-info-label">Lokasi Magang</p>
+                <p className="profil-info-val">{profile?.lokasi || 'Belum ditetapkan'}</p>
+              </div>
+            </div>
+
+            <div className="profil-info-item">
+              <span className="profil-info-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </span>
+              <div>
+                <p className="profil-info-label">Periode Magang</p>
+                <p className="profil-info-val">
+                  {profile?.mulaiMagang || '—'} {profile?.selesaiMagang ? `s.d. ${profile.selesaiMagang}` : ''}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Section: Data Pribadi & Kontak */}
+        {/* Section 2: Data Pribadi & Kontak */}
         <div className="profil-section-card">
           <h3 className="profil-section-title">Informasi Pribadi & Kontak</h3>
           <div className="profil-info-list">
@@ -245,9 +289,9 @@ export default function Profil() {
           </div>
         </div>
 
-        {/* Section: Pendidikan & Penugasan */}
+        {/* Section 3: Pendidikan */}
         <div className="profil-section-card">
-          <h3 className="profil-section-title">Pendidikan & Penugasan</h3>
+          <h3 className="profil-section-title">Pendidikan & Asal Instansi</h3>
           <div className="profil-info-list">
             <div className="profil-info-item">
               <span className="profil-info-icon">
@@ -269,19 +313,6 @@ export default function Profil() {
               <div>
                 <p className="profil-info-label">Jurusan</p>
                 <p className="profil-info-val">{profile?.jurusan || '—'}</p>
-              </div>
-            </div>
-            <div className="profil-info-item">
-              <span className="profil-info-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-              </span>
-              <div>
-                <p className="profil-info-label">Periode Magang</p>
-                <p className="profil-info-val">
-                  {profile?.mulaiMagang || '—'} {profile?.selesaiMagang ? `s.d. ${profile.selesaiMagang}` : ''}
-                </p>
               </div>
             </div>
           </div>

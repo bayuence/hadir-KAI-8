@@ -12,8 +12,8 @@ export default defineConfig({
         cleanupOutdatedCaches: true
       },
       manifest: {
-        name: 'Hadir KAI 8',
-        short_name: 'Hadir KAI 8',
+        name: 'HADIRKAI8',
+        short_name: 'HADIRKAI8',
         description: 'Sistem Presensi Digital Magang PT KAI Daop 8',
         theme_color: '#ffffff',
         background_color: '#ffffff',
@@ -22,13 +22,20 @@ export default defineConfig({
           {
             src: '/logo-kai.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: '/logo-kai.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: '/logo-kai.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       }

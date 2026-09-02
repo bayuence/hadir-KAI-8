@@ -541,18 +541,28 @@ function handleLogin(data) {
         if (rows[i][11] === 'rejected') return { success: false, message: 'Akun Anda ditolak.' };
         if (rows[i][11] !== 'active')   return { success: false, message: 'Status akun tidak valid.' };
   
-        var lat = null, lng = null, radius = 100, lokasiNama = rows[i][13];
+        var lat = null, lng = null, radius = 100, lokasiNama = rows[i][13], unitKerjaNama = '—';
         if (rows[i][13]) {
           var penSheet2 = getSheet('WEB Penugasan');
           if (penSheet2) {
-            var penRows2 = penSheet2.getDataRange().getDisplayValues();
+            var penRows2 = penSheet2.getDataRange().getValues();
+            var idInduk2 = '';
             for (var j = 1; j < penRows2.length; j++) {
               if (penRows2[j][0] === rows[i][13] && penRows2[j][1] === 'lokasi') {
                 lokasiNama = penRows2[j][3];
+                idInduk2 = penRows2[j][2];
                 lat = parseFloat(penRows2[j][5]) || null;
                 lng = parseFloat(penRows2[j][6]) || null;
                 radius = parseInt(penRows2[j][7]) || 100;
                 break;
+              }
+            }
+            if (idInduk2) {
+              for (var k = 1; k < penRows2.length; k++) {
+                if (penRows2[k][0] === idInduk2 && penRows2[k][1] === 'unit_kerja') {
+                  unitKerjaNama = penRows2[k][3];
+                  break;
+                }
               }
             }
           }
@@ -581,8 +591,10 @@ function handleLogin(data) {
             selesaiMagang: rows[i][9],
             role: rows[i][12] || 'intern', 
             lokasi: lokasiNama || 'Belum ditetapkan', 
+            unitKerja: unitKerjaNama,
             lat: lat, 
             long: lng,
+            radius: radius,
             foto: fotoLogin
           }
         };
@@ -622,18 +634,28 @@ function handleGetProfile(data) {
         if (idFoto) fotoUrl = 'https://drive.google.com/thumbnail?id=' + idFoto + '&sz=w400';
       }
       
-      var lat = null, lng = null, radius = 100, lokasiNama = rows[i][13];
+      var lat = null, lng = null, radius = 100, lokasiNama = rows[i][13], unitKerjaNama = '—';
       if (rows[i][13]) {
         var penSheet = getSheet('WEB Penugasan');
         if (penSheet) {
           var penRows = penSheet.getDataRange().getValues(); // Gunakan getValues() agar desimal koordinat tidak terpotong (rounded)
+          var idInduk = '';
           for (var j = 1; j < penRows.length; j++) {
             if (penRows[j][0] === rows[i][13] && penRows[j][1] === 'lokasi') {
               lokasiNama = penRows[j][3];
+              idInduk = penRows[j][2];
               lat = parseFloat(penRows[j][5]) || null;
               lng = parseFloat(penRows[j][6]) || null;
               radius = parseInt(penRows[j][7]) || 100;
               break;
+            }
+          }
+          if (idInduk) {
+            for (var k = 1; k < penRows.length; k++) {
+              if (penRows[k][0] === idInduk && penRows[k][1] === 'unit_kerja') {
+                unitKerjaNama = penRows[k][3];
+                break;
+              }
             }
           }
         }
@@ -655,6 +677,7 @@ function handleGetProfile(data) {
           foto: fotoUrl,
           role: rows[i][12] || 'intern',
           lokasi: lokasiNama || 'Belum ditetapkan',
+          unitKerja: unitKerjaNama,
           idLokasi: rows[i][13] || '',
           lat: lat,
           long: lng,
