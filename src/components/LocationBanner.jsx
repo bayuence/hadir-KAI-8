@@ -105,6 +105,11 @@ export default function LocationBanner() {
           <span style={{ fontSize: '0.68rem', color: '#64748b', display: 'block', lineHeight: 1 }}>
             dari pusat
           </span>
+          {geo.accuracy && (
+            <span style={{ fontSize: '0.6rem', color: '#94a3b8', display: 'block', marginTop: '3px' }}>
+              Akurasi GPS ±{Math.round(geo.accuracy)}m
+            </span>
+          )}
         </div>
       )}
     </div>

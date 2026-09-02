@@ -50,7 +50,10 @@ export function useGeo(targetLat, targetLong, maxRadius = 100) {
     }
   }, [targetLat, targetLong])
 
-  const isDiLuarArea = loc.distance !== null && loc.distance > maxRadius
+  // Faktorkan akurasi GPS: jika GPS melaporkan akurasi 50m, tambahkan toleransi
+  // Toleransi max dibatasi 30m agar tidak terlalu longgar
+  const gpsToleranse = Math.min((loc.accuracy || 0) * 0.5, 30)
+  const isDiLuarArea = loc.distance !== null && loc.distance > (maxRadius + gpsToleranse)
 
   return { ...loc, isDiLuarArea, maxRadius }
 }
