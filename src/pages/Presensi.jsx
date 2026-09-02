@@ -78,11 +78,12 @@ export default function Presensi({ type = 'masuk' }) {
         {!foto ? (
           <div className="cam-container">
              <Webcam
+                key={facingMode}
                 audio={false}
                 ref={webcamRef}
                 screenshotFormat="image/jpeg"
                 videoConstraints={{ facingMode }}
-                mirrored={false}
+                mirrored={facingMode === 'user'}
                 className="cam-video"
              />
              <div className="cam-overlay"><div className="cam-frame"></div></div>
