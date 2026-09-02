@@ -1,0 +1,199 @@
+/* ─── Login Page Styles ─── */
+
+.login-wrap {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 0 24px;
+  padding-top: calc(40px + env(safe-area-inset-top));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  background: var(--white);
+  gap: 0;
+}
+
+/* Header */
+.login-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 36px;
+}
+
+.login-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: var(--grey-100);
+  padding: 4px;
+}
+
+.login-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--black);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.login-subtitle {
+  font-size: 12px;
+  color: var(--grey-600);
+  margin-top: 2px;
+}
+
+/* Form */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation-delay: 0.1s;
+  animation-fill-mode: both;
+}
+
+/* Dropdown */
+.dropdown-wrap {
+  position: relative;
+}
+
+.input-icon-wrap {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--grey-400);
+  pointer-events: none;
+}
+
+.input.input-with-icon {
+  padding-left: 38px;
+}
+
+.dropdown-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border: 1.5px solid var(--grey-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 200;
+  max-height: 200px;
+  overflow-y: auto;
+  list-style: none;
+  padding: 6px;
+  animation: fadeIn 0.15s ease;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--black);
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 500;
+}
+.dropdown-item:hover { background: var(--grey-100); }
+
+.dropdown-empty {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--grey-400);
+  text-align: center;
+}
+
+/* Date of Birth */
+.dob-row {
+  display: flex;
+  gap: 8px;
+}
+
+.dob-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dob-input {
+  text-align: center;
+  padding: 12px 6px;
+  font-weight: 600;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Hide number arrows */
+.dob-input::-webkit-outer-spin-button,
+.dob-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.dob-label {
+  font-size: 10px;
+  color: var(--grey-400);
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+
+/* Error */
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--red-light);
+  color: var(--red);
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Loading spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Register link */
+.login-register {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+  font-size: 13px;
+  color: var(--grey-600);
+  animation-delay: 0.2s;
+  animation-fill-mode: both;
+}
+
+.login-register-link {
+  color: var(--black);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1.5px solid var(--black);
+  padding-bottom: 1px;
+  transition: var(--transition);
+}
+.login-register-link:hover { opacity: 0.6; }

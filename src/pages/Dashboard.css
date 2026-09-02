@@ -1,0 +1,170 @@
+/* ─── Dashboard Styles ─── */
+
+.dashboard-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0 20px 20px;
+  padding-top: calc(20px + env(safe-area-inset-top));
+  background: var(--white);
+  gap: 0;
+  overflow-y: auto;
+}
+
+/* Header */
+.dash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.dash-greeting {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--black);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.dash-date {
+  font-size: 12px;
+  color: var(--grey-600);
+  margin-top: 2px;
+}
+
+.dash-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--black);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+.dash-avatar:hover { opacity: 0.8; }
+
+/* Location badge */
+.dash-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--grey-100);
+  color: var(--grey-600);
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  align-self: flex-start;
+}
+
+/* Realtime clock */
+.dash-clock {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--black);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 16px;
+  line-height: 1;
+}
+
+/* Status card */
+.dash-status-card {
+  margin-bottom: 16px;
+}
+
+.dash-status-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--grey-600);
+}
+
+/* Time row */
+.dash-time-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.dash-time-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-time-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--grey-200);
+  margin: 0 10px;
+}
+
+.dash-time-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-green { background: var(--green); }
+.dot-red   { background: var(--red); }
+.dot-grey  { background: var(--grey-400); }
+
+.dash-time-label {
+  font-size: 10px;
+  color: var(--grey-400);
+  font-weight: 500;
+}
+
+.dash-time-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--black);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Action buttons */
+.dash-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Skeleton loading */
+.dashboard-skeleton {
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.skeleton-line {
+  height: 16px;
+  background: var(--grey-100);
+  border-radius: 8px;
+  animation: pulse 1.5s ease infinite;
+}
+.skeleton-card {
+  height: 100px;
+  background: var(--grey-100);
+  border-radius: var(--radius-lg);
+  animation: pulse 1.5s ease infinite;
+}
+.skeleton-btn {
+  height: 52px;
+  background: var(--grey-100);
+  border-radius: var(--radius-full);
+  animation: pulse 1.5s ease infinite;
+}
+.w60 { width: 60%; }
+.w40 { width: 40%; }
+
+.mb-4 { margin-bottom: 16px; }

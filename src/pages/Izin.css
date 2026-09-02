@@ -1,0 +1,95 @@
+/* ─── Izin Styles ─── */
+
+.izin-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px 40px;
+  overflow-y: auto;
+}
+
+.izin-warning {
+  background: var(--orange-light);
+  color: var(--orange);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.izin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.izin-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.izin-pill {
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--grey-200);
+  background: var(--white);
+  color: var(--grey-600);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.izin-pill.active {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+
+.izin-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.izin-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  border: 1.5px dashed var(--grey-200);
+  border-radius: var(--radius-md);
+  background: var(--grey-100);
+  color: var(--grey-400);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.izin-upload:hover {
+  border-color: var(--black);
+  color: var(--black);
+}
+
+.izin-upload span {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.izin-history {
+  margin-top: 32px;
+  border-top: 1px solid var(--grey-200);
+  padding-top: 24px;
+}
+
+.ih-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--grey-100);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}

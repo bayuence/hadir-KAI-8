@@ -1,0 +1,315 @@
+/* ============================================================
+   Profil Page — CSS
+   ============================================================ */
+
+.profil-wrap {
+  padding: 24px 20px 100px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.profil-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.profil-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-primary, #1e293b);
+  letter-spacing: -0.02em;
+}
+
+/* Hamburger */
+.hamburger-btn {
+  position: relative;
+  background: #f1f5f9;
+  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1e293b;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.hamburger-btn:hover { background: #e2e8f0; }
+.hamburger-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+/* Profile card */
+.profil-card {
+  background: white;
+  border-radius: 20px;
+  padding: 28px 20px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  margin-bottom: 14px;
+}
+.profil-avatar-lg {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1e3a5f, #2563eb);
+  color: white;
+  font-weight: 800;
+  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.35);
+}
+.profil-nama {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+.profil-lokasi {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin-bottom: 12px;
+}
+.profil-role-badge {
+  display: inline-block;
+  padding: 5px 16px;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.badge-admin { background: #ede9fe; color: #7c3aed; }
+.badge-intern { background: #dcfce7; color: #16a34a; }
+
+/* Info tiles */
+.profil-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.profil-tile {
+  background: white;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.profil-tile-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.profil-tile-value {
+  font-size: 0.88rem;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* Admin hint */
+.profil-admin-hint {
+  background: linear-gradient(135deg, #ede9fe, #dbeafe);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.84rem;
+  color: #4c1d95;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+.profil-admin-hint:hover { transform: scale(1.01); }
+.profil-admin-hint > span:first-child { font-size: 1.2rem; }
+
+/* ── Sidebar ───────────────────────────────────────────────── */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(2px);
+}
+.sidebar-backdrop.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.admin-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 300px;
+  max-width: 85vw;
+  background: white;
+  z-index: 300;
+  box-shadow: 4px 0 40px rgba(0,0,0,0.15);
+  border-radius: 0 24px 24px 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 24px;
+  overflow-y: auto;
+  transform: translateX(-110%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.admin-sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-close {
+  align-self: flex-end;
+  margin: 16px 16px 0;
+  background: #f1f5f9;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.sidebar-close:hover { background: #e2e8f0; }
+
+.sidebar-profile {
+  padding: 8px 24px 24px;
+  text-align: center;
+}
+.sidebar-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  color: white;
+  font-weight: 800;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  box-shadow: 0 4px 16px rgba(124,58,237,0.35);
+}
+.sidebar-name {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 1rem;
+  margin-bottom: 3px;
+}
+.sidebar-lokasi {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-bottom: 10px;
+}
+.sidebar-role-badge {
+  background: #ede9fe;
+  color: #7c3aed;
+  padding: 4px 14px;
+  border-radius: 100px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 4px 0;
+}
+
+.sidebar-section-title {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 12px 24px 6px;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px;
+  gap: 2px;
+}
+.sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: none;
+  border: none;
+  padding: 13px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s;
+}
+.sidebar-menu-item:hover { background: #f8fafc; }
+.sidebar-menu-icon {
+  font-size: 1.3rem;
+  width: 36px;
+  height: 36px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sidebar-menu-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sidebar-menu-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+.sidebar-menu-desc {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+.sidebar-menu-arrow { color: #cbd5e1; flex-shrink: 0; }
+
+.sidebar-logout {
+  margin: 12px 24px 0;
+  background: #fee2e2;
+  border: none;
+  color: #dc2626;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: calc(100% - 48px);
+  transition: background 0.2s;
+}
+.sidebar-logout:hover { background: #fecaca; }
