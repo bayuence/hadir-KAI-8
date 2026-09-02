@@ -52,6 +52,11 @@ export default function Dashboard() {
   return (
     <div className="app-shell">
       <div className="dashboard-wrap">
+        {/* Banner Section */}
+        <div className="dash-banner animate-fade-in">
+          <img src="/banner.jpg" alt="KAI Banner" className="banner-img" />
+        </div>
+
         <div className="dash-header animate-fade-in">
           <div>
             <p className="dash-greeting">Halo, {user.nama.split(' ')[0]}</p>

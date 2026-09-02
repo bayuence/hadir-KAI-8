@@ -1,5 +1,20 @@
 /* ─── Dashboard Styles ─── */
 
+.dash-banner {
+  margin: -20px -20px 20px -20px; /* Tarik ke ujung layar (karena padding .dashboard-wrap) */
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.banner-img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  max-height: 160px; /* Batasi tinggi banner agar tidak menutupi layar */
+}
+
 .dashboard-wrap {
   display: flex;
   flex-direction: column;

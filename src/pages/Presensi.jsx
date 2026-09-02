@@ -86,7 +86,10 @@ export default function Presensi({ type = 'masuk' }) {
                 mirrored={facingMode === 'user'}
                 className="cam-video"
              />
-             <div className="cam-overlay"><div className="cam-frame"></div></div>
+             <div className="cam-overlay">
+               <div className="cam-frame"></div>
+               <img src="/logo-kai.png" alt="KAI Logo" className="cam-logo" />
+             </div>
              <button 
                 type="button"
                 className="cam-switch-btn" 
