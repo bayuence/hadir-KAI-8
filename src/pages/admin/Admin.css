@@ -440,33 +440,4 @@
 .admin-toast-error { background: #fee2e2; color: #dc2626; }
 @keyframes toastIn { from { opacity: 0; bottom: 70px; } to { opacity: 1; bottom: 90px; } }
 
-/* Bottom Nav Admin */
-.bottom-nav-admin {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  background: white;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 10px 0 16px;
-  z-index: 100;
-}
-.bnav-admin-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  cursor: pointer;
-  padding: 4px 12px;
-  border-radius: 10px;
-  border: none;
-  background: none;
-  color: #94a3b8;
-  font-size: 0.65rem;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-.bnav-admin-item.active { color: #2563eb; }
-.bnav-admin-item svg { transition: transform 0.2s; }
-.bnav-admin-item.active svg { transform: scale(1.15); }
+/* BottomNavAdmin dihapus — navigasi admin menggunakan sidebar di AdminHeader */

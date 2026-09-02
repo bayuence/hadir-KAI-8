@@ -13,6 +13,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminPeserta from './pages/admin/AdminPeserta'
 import AdminPresensi from './pages/admin/AdminPresensi'
 import AdminIzin from './pages/admin/AdminIzin'
+import AdminLokasi from './pages/admin/AdminLokasi'
 
 // Guard: hanya bisa diakses jika belum login
 function PublicRoute({ children }) {
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/admin/peserta" element={<AdminRoute><AdminPeserta /></AdminRoute>} />
           <Route path="/admin/presensi" element={<AdminRoute><AdminPresensi /></AdminRoute>} />
           <Route path="/admin/izin" element={<AdminRoute><AdminIzin /></AdminRoute>} />
+          <Route path="/admin/lokasi" element={<AdminRoute><AdminLokasi /></AdminRoute>} />
 
           {/* 404 fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

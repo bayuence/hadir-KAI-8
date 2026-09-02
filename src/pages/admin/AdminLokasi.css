@@ -1,0 +1,447 @@
+/* =========================================================
+   AdminLokasi.css — Unit Kerja & Penempatan
+   ========================================================= */
+
+/* ── Tab ──────────────────────────────────────────────── */
+.lok-tabs {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+.lok-tab {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 9px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.lok-tab.active {
+  background: white;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+/* ── Toolbar ──────────────────────────────────────────── */
+.lok-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.lok-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+}
+.lok-btn-add {
+  padding: 9px 14px;
+  background: #0f172a;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.lok-btn-add:hover { background: #1e293b; }
+
+/* ── Unit Card ────────────────────────────────────────── */
+.lok-list { display: flex; flex-direction: column; gap: 14px; }
+
+.lok-unit-card {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: white;
+}
+
+.lok-unit-header {
+  background: #0f172a;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.lok-unit-meta {
+  flex: 1;
+  min-width: 0; /* allow text truncation */
+}
+
+.lok-unit-id {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.lok-unit-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.lok-unit-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.lok-btn-child {
+  padding: 5px 10px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  border-radius: 7px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lok-btn-child:hover { background: #334155; color: white; }
+
+.lok-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1e293b;
+  color: #94a3b8;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.lok-icon-btn:hover { background: #334155; color: white; }
+.lok-icon-btn.danger { background: #450a0a; color: #f87171; }
+.lok-icon-btn.danger:hover { background: #7f1d1d; }
+.lok-icon-btn.sm { width: 26px; height: 26px; background: #f1f5f9; color: #64748b; }
+.lok-icon-btn.sm:hover { background: #e2e8f0; }
+.lok-icon-btn.sm.danger { background: #fee2e2; color: #ef4444; }
+.lok-icon-btn.sm.danger:hover { background: #fecaca; }
+
+/* ── Child Lokasi ─────────────────────────────────────── */
+.lok-empty-child {
+  padding: 14px 16px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.lok-child-row {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid #f1f5f9;
+  align-items: flex-start;
+}
+.lok-child-row:hover { background: #fafafa; }
+
+.lok-child-pin {
+  padding-top: 3px;
+  flex-shrink: 0;
+}
+
+.lok-child-info { flex: 1; min-width: 0; }
+
+.lok-child-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.lok-child-id {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #6366f1;
+  display: block;
+}
+
+.lok-child-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 2px 0 1px;
+}
+
+.lok-child-addr {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.lok-child-btns {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.lok-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.lok-chip {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+.lok-chip.blue { background: #eff6ff; color: #2563eb; }
+.lok-chip.green { background: #dcfce7; color: #16a34a; }
+
+/* ── Penempatan ───────────────────────────────────────── */
+.lok-info-box {
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  color: #1d4ed8;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.lok-assign-list { display: flex; flex-direction: column; gap: 10px; }
+
+.lok-assign-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  overflow: hidden;
+}
+
+.lok-assign-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0f172a, #334155);
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lok-assign-info { flex: 1; min-width: 0; overflow: hidden; }
+
+.lok-assign-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lok-assign-id {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.lok-assign-select {
+  flex-shrink: 0;
+  width: 130px;
+}
+
+.lok-assign-select select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  cursor: pointer;
+  max-width: 100%;
+}
+.lok-assign-select select:focus { border-color: #6366f1; }
+
+/* ── Modal ────────────────────────────────────────────── */
+.lok-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 20px;
+}
+
+.lok-modal {
+  background: white;
+  border-radius: 20px 20px 16px 16px;
+  width: 100%;
+  max-width: 440px;
+  padding: 24px;
+  box-shadow: 0 -4px 40px rgba(0,0,0,0.15);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.lok-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.lok-modal-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.lok-modal-sub {
+  font-size: 0.75rem;
+  color: #6366f1;
+  font-weight: 600;
+  display: block;
+  margin-top: 3px;
+}
+
+.lok-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lok-close:hover { background: #e2e8f0; }
+
+.lok-form-group {
+  margin-bottom: 14px;
+}
+
+.lok-form-group label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lok-form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: #0f172a;
+  background: #fafafa;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.lok-form-group input:focus { border-color: #6366f1; background: white; }
+
+.lok-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.lok-hint {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 5px;
+}
+
+.lok-gps-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: white;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: all 0.15s;
+}
+.lok-gps-btn:hover { border-color: #6366f1; color: #6366f1; }
+.lok-gps-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.lok-modal-footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.lok-btn-cancel {
+  flex: 1;
+  padding: 11px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: white;
+  color: #374151;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lok-btn-cancel:hover { background: #f8fafc; }
+
+.lok-btn-save {
+  flex: 1;
+  padding: 11px;
+  border: none;
+  border-radius: 10px;
+  background: #0f172a;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lok-btn-save:hover { background: #1e293b; }
+.lok-btn-save:disabled { opacity: 0.6; cursor: not-allowed; }

@@ -47,8 +47,10 @@ function doPost(e) {
       case 'getPendingIzin':    result = handleGetPendingIzin(data);    break;
       case 'approveIzin':       result = handleApproveIzin(data);       break;
       case 'rejectIzin':        result = handleRejectIzin(data);        break;
-      case 'getLokasi':         result = handleGetLokasi(data);         break;
-      case 'addLokasi':         result = handleAddLokasi(data);         break;
+      case 'getPenugasan':      result = handleGetPenugasan(data);      break;
+      case 'savePenugasan':     result = handleSavePenugasan(data);     break;
+      case 'deletePenugasan':   result = handleDeletePenugasan(data);   break;
+      case 'assignLokasi':      result = handleAssignLokasi(data);      break;
       default: result = { success: false, message: 'Action tidak dikenal' };
     }
     return respond(result);
@@ -515,7 +517,7 @@ function handleGetPesertaList() {
   var list = [];
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][1] && rows[i][11] === 'active') {
-      list.push({ id: rows[i][14], nama: rows[i][1] });
+      list.push({ id: rows[i][14], nama: rows[i][1], idLokasi: rows[i][13] || '' });
     }
   }
   return { success: true, data: list };
@@ -539,14 +541,18 @@ function handleLogin(data) {
         if (rows[i][11] === 'rejected') return { success: false, message: 'Akun Anda ditolak.' };
         if (rows[i][11] !== 'active')   return { success: false, message: 'Status akun tidak valid.' };
   
-        var lat = null, lng = null, lokasiNama = rows[i][13];
+        var lat = null, lng = null, radius = 100, lokasiNama = rows[i][13];
         if (rows[i][13]) {
-          var lokSheet = getSheet('WEB Lokasi');
-          if (lokSheet) {
-            var lokRows = lokSheet.getDataRange().getDisplayValues();
-            for (var j = 1; j < lokRows.length; j++) {
-              if (lokRows[j][0] === rows[i][13]) {
-                lokasiNama = lokRows[j][1]; lat = lokRows[j][3]; lng = lokRows[j][4]; break;
+          var penSheet2 = getSheet('WEB Penugasan');
+          if (penSheet2) {
+            var penRows2 = penSheet2.getDataRange().getDisplayValues();
+            for (var j = 1; j < penRows2.length; j++) {
+              if (penRows2[j][0] === rows[i][13] && penRows2[j][1] === 'lokasi') {
+                lokasiNama = penRows2[j][3];
+                lat = parseFloat(penRows2[j][5]) || null;
+                lng = parseFloat(penRows2[j][6]) || null;
+                radius = parseInt(penRows2[j][7]) || 100;
+                break;
               }
             }
           }
@@ -565,6 +571,14 @@ function handleLogin(data) {
           user: { 
             id: rows[i][14], 
             nama: rows[i][1], 
+            tanggalLahir: rows[i][2],
+            alamat: rows[i][3],
+            noHp: rows[i][4],
+            email: rows[i][5],
+            kampus: rows[i][6],
+            jurusan: rows[i][7],
+            mulaiMagang: rows[i][8],
+            selesaiMagang: rows[i][9],
             role: rows[i][12] || 'intern', 
             lokasi: lokasiNama || 'Belum ditetapkan', 
             lat: lat, 
@@ -608,14 +622,18 @@ function handleGetProfile(data) {
         if (idFoto) fotoUrl = 'https://drive.google.com/thumbnail?id=' + idFoto + '&sz=w400';
       }
       
-      var lat = null, lng = null, lokasiNama = rows[i][13];
+      var lat = null, lng = null, radius = 100, lokasiNama = rows[i][13];
       if (rows[i][13]) {
-        var lokSheet = getSheet('WEB Lokasi');
-        if (lokSheet) {
-          var lokRows = lokSheet.getDataRange().getDisplayValues();
-          for (var j = 1; j < lokRows.length; j++) {
-            if (lokRows[j][0] === rows[i][13]) {
-              lokasiNama = lokRows[j][1]; lat = lokRows[j][3]; lng = lokRows[j][4]; break;
+        var penSheet = getSheet('WEB Penugasan');
+        if (penSheet) {
+          var penRows = penSheet.getDataRange().getDisplayValues();
+          for (var j = 1; j < penRows.length; j++) {
+            if (penRows[j][0] === rows[i][13] && penRows[j][1] === 'lokasi') {
+              lokasiNama = penRows[j][3];
+              lat = parseFloat(penRows[j][5]) || null;
+              lng = parseFloat(penRows[j][6]) || null;
+              radius = parseInt(penRows[j][7]) || 100;
+              break;
             }
           }
         }
@@ -626,6 +644,7 @@ function handleGetProfile(data) {
         data: {
           id: rows[i][14],
           nama: rows[i][1],
+          tanggalLahir: rows[i][2],
           alamat: rows[i][3],
           noHp: rows[i][4],
           email: rows[i][5],
@@ -636,8 +655,10 @@ function handleGetProfile(data) {
           foto: fotoUrl,
           role: rows[i][12] || 'intern',
           lokasi: lokasiNama || 'Belum ditetapkan',
+          idLokasi: rows[i][13] || '',
           lat: lat,
-          long: lng
+          long: lng,
+          radius: radius
         }
       };
     }
@@ -853,4 +874,118 @@ function hitungTotalJam(jamMasuk, jamPulang) {
   } catch(e) {
     return ''; // Jika format gagal, kembalikan kosong agar tidak error merah
   }
+}
+
+// ─── MANAJEMEN UNIT KERJA & LOKASI (HIERARKI 1 SHEET) ────────
+// Sheet: WEB Penugasan
+// Kolom: A=ID, B=Tipe(unit_kerja/lokasi), C=ID Induk, D=Nama, E=Alamat, F=Latitude, G=Longitude, H=Radius
+
+function getOrCreatePenugasanSheet() {
+  var sheet = getOrCreateSheet('WEB Penugasan');
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['ID', 'Tipe', 'ID Induk', 'Nama', 'Alamat', 'Latitude', 'Longitude', 'Radius (Meter)']);
+    // Seed data contoh KAI Daop 8
+    sheet.appendRow(['UK-001', 'unit_kerja', '', 'Unit Operasi', '', '', '', '']);
+    sheet.appendRow(['UK-002', 'unit_kerja', '', 'Unit Sinyal & Telekomunikasi', '', '', '', '']);
+    sheet.appendRow(['UK-003', 'unit_kerja', '', 'Unit Traksi', '', '', '', '']);
+    sheet.appendRow(['LOK-001', 'lokasi', 'UK-001', 'Kantor Daop 8 Surabaya', 'Jl. Pasarturi No.1, Surabaya', '-7.2484', '112.7360', 100]);
+    sheet.appendRow(['LOK-002', 'lokasi', 'UK-001', 'Stasiun Surabaya Gubeng', 'Jl. Stasiun Gubeng, Surabaya', '-7.2654', '112.7523', 250]);
+    sheet.appendRow(['LOK-003', 'lokasi', 'UK-001', 'Dipo Lokomotif Sidotopo', 'Sidotopo, Surabaya', '-7.2351', '112.7612', 500]);
+  }
+  return sheet;
+}
+
+function handleGetPenugasan(data) {
+  var sheet = getOrCreatePenugasanSheet();
+  var rows = sheet.getDataRange().getDisplayValues();
+  var unitList = [], lokasiList = [];
+  for (var i = 1; i < rows.length; i++) {
+    if (!rows[i][0]) continue;
+    if (rows[i][1] === 'unit_kerja') {
+      unitList.push({ id: rows[i][0], tipe: 'unit_kerja', nama: rows[i][3] });
+    } else if (rows[i][1] === 'lokasi') {
+      lokasiList.push({
+        id: rows[i][0], tipe: 'lokasi', idInduk: rows[i][2], nama: rows[i][3],
+        alamat: rows[i][4],
+        lat: parseFloat(rows[i][5]) || null,
+        lng: parseFloat(rows[i][6]) || null,
+        radius: parseInt(rows[i][7]) || 100
+      });
+    }
+  }
+  return { success: true, data: { unitList: unitList, lokasiList: lokasiList } };
+}
+
+function handleSavePenugasan(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  if (!data.nama) return { success: false, message: 'Nama harus diisi.' };
+  if (!data.tipe) return { success: false, message: 'Tipe harus diisi (unit_kerja / lokasi).' };
+
+  var sheet = getOrCreatePenugasanSheet();
+  var rows = sheet.getDataRange().getDisplayValues();
+
+  // UPDATE jika ID sudah ada
+  if (data.id) {
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][0] === data.id) {
+        sheet.getRange(i + 1, 4).setValue(data.nama);
+        sheet.getRange(i + 1, 5).setValue(data.alamat || '');
+        sheet.getRange(i + 1, 6).setValue(data.lat || '');
+        sheet.getRange(i + 1, 7).setValue(data.lng || '');
+        sheet.getRange(i + 1, 8).setValue(data.radius || '');
+        return { success: true, message: 'Data berhasil diperbarui.' };
+      }
+    }
+  }
+
+  // INSERT baru
+  var prefix = data.tipe === 'unit_kerja' ? 'UK' : 'LOK';
+  var newId = prefix + '-' + String(sheet.getLastRow()).padStart(3, '0');
+  sheet.appendRow([
+    newId, data.tipe, data.idInduk || '', data.nama,
+    data.alamat || '', data.lat || '', data.lng || '', data.radius || ''
+  ]);
+  return { success: true, message: 'Data berhasil ditambahkan.', id: newId };
+}
+
+function handleDeletePenugasan(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  if (!data.id) return { success: false, message: 'ID tidak valid.' };
+
+  var sheet = getOrCreatePenugasanSheet();
+  var rows = sheet.getDataRange().getDisplayValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][0] === data.id) {
+      // Jika menghapus unit_kerja, hapus juga semua lokasi anaknya
+      if (rows[i][1] === 'unit_kerja') {
+        for (var j = rows.length - 1; j >= 1; j--) {
+          if (rows[j][2] === data.id) sheet.deleteRow(j + 1);
+        }
+      }
+      // Cari ulang baris yang dihapus setelah loop di atas mungkin mengubah index
+      var freshRows = sheet.getDataRange().getDisplayValues();
+      for (var k = 1; k < freshRows.length; k++) {
+        if (freshRows[k][0] === data.id) { sheet.deleteRow(k + 1); break; }
+      }
+      return { success: true, message: 'Data berhasil dihapus.' };
+    }
+  }
+  return { success: false, message: 'Data tidak ditemukan.' };
+}
+
+function handleAssignLokasi(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  if (!data.idPeserta || !data.idLokasi) return { success: false, message: 'Peserta dan Lokasi harus dipilih.' };
+
+  var sheet = getSheet('WEB Register');
+  if (!sheet) return { success: false, message: 'Sheet WEB Register tidak ditemukan.' };
+
+  var rows = sheet.getDataRange().getDisplayValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][14] === data.idPeserta) {
+      sheet.getRange(i + 1, 14).setValue(data.idLokasi);
+      return { success: true, message: 'Penempatan lokasi peserta berhasil diperbarui.' };
+    }
+  }
+  return { success: false, message: 'Peserta tidak ditemukan.' };
 }

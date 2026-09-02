@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import { formatTanggal, formatTime, hitungDurasi } from '../utils/date'
 import BottomNav from '../components/BottomNav'
+import LocationBanner from '../components/LocationBanner'
 import './Dashboard.css'
 
 export default function Dashboard() {
@@ -53,7 +54,7 @@ export default function Dashboard() {
       <div className="dashboard-wrap">
         <div className="dash-header animate-fade-in">
           <div>
-            <p className="dash-greeting">Halo, {user.nama.split(' ')[0]} 👋</p>
+            <p className="dash-greeting">Halo, {user.nama.split(' ')[0]}</p>
             <p className="dash-date">{formatTanggal()}</p>
           </div>
           <div onClick={() => navigate('/profil')} style={{ cursor: 'pointer' }}>
@@ -74,6 +75,8 @@ export default function Dashboard() {
           </svg>
           {user.lokasi || 'Lokasi tidak ditetapkan'}
         </div>
+
+        <LocationBanner />
 
         <div className="dash-clock animate-fade-up">{jam}</div>
 

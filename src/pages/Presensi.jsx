@@ -11,7 +11,7 @@ export default function Presensi({ type = 'masuk' }) {
   const webcamRef = useRef(null)
   
   const { user } = useAuth()
-  const geo = useGeo(user?.lat, user?.long) // uses custom hook
+  const geo = useGeo(user?.lat, user?.long, user?.radius || 100) // radius per lokasi dari admin
   
   const [foto, setFoto] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -62,12 +62,12 @@ export default function Presensi({ type = 'masuk' }) {
     <div className="app-shell bg-white">
       <div className="cam-header animate-fade-in">
         {geo.err ? (
-           <div className="gps-badge badge-red">⚠️ {geo.err}</div>
+           <div className="gps-badge badge-red">{geo.err}</div>
         ) : geo.distance === null ? (
-           <div className="gps-badge badge-grey">⏳ Mencari lokasi...</div>
+           <div className="gps-badge badge-grey">Mencari lokasi...</div>
         ) : (
            <div className={`gps-badge ${geo.isDiLuarArea ? 'badge-amber' : 'badge-green'}`}>
-             {geo.isDiLuarArea ? '⚠️ Di Luar Area' : '✅ Dalam Area'} · {user?.lokasi} · {geo.distance}m
+             {geo.isDiLuarArea ? 'Di Luar Area' : 'Dalam Area'} · {user?.lokasi} · {geo.distance}m
            </div>
         )}
         <div className="cam-clock">{jam}</div>
@@ -93,19 +93,19 @@ export default function Presensi({ type = 'masuk' }) {
       </div>
       
       <p className="cam-hint text-grey text-sm animate-fade-in">
-        {!foto ? 'Posisikan wajah di tengah' : 'Preview foto presensi'}
+        {!foto ? 'Posisikan wajah di dalam bingkai' : 'Preview foto presensi'}
       </p>
 
       {errorMsg && (
         <div className="login-error animate-fade-in" style={{margin:'0 24px 16px'}}>
-           ⚠️ {errorMsg}
+           {errorMsg}
         </div>
       )}
 
       <div className="cam-actions animate-fade-up">
          {!foto ? (
            <>
-            <button className="btn btn-primary" onClick={ambilFoto}>📸 Ambil Foto</button>
+            <button className="btn btn-primary" onClick={ambilFoto}>Ambil Foto</button>
             <button className="btn-ghost cam-cancel" onClick={() => navigate('/dashboard')}>Batal</button>
            </>
          ) : (

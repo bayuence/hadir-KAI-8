@@ -61,7 +61,11 @@ export default function AdminIzin() {
           <div className="admin-loading"><div className="spinner"/><p>Memuat...</p></div>
         ) : izinList.length === 0 ? (
           <div className="admin-empty">
-            <div className="admin-empty-icon">📋</div>
+            <div className="admin-empty-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+              </svg>
+            </div>
             <p>Tidak ada pengajuan izin yang menunggu.</p>
           </div>
         ) : (
@@ -89,14 +93,14 @@ export default function AdminIzin() {
                     disabled={!!actionLoading}
                     onClick={() => handleApprove(iz.id)}
                   >
-                    {actionLoading === iz.id + '_approve' ? '...' : '✓ Setuju'}
+                    {actionLoading === iz.id + '_approve' ? '...' : 'Setuju'}
                   </button>
                   <button
                     className="btn-icon btn-icon-red"
                     disabled={!!actionLoading}
                     onClick={() => handleReject(iz.id)}
                   >
-                    {actionLoading === iz.id + '_reject' ? '...' : '✕ Tolak'}
+                    {actionLoading === iz.id + '_reject' ? '...' : 'Tolak'}
                   </button>
                 </div>
               </div>

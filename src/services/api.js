@@ -70,10 +70,16 @@ export const api = {
     rejectIzin: (idIzin) =>
       fetchGAS({ action: 'rejectIzin', idIzin, adminToken: ADMIN_TOKEN }),
 
-    getLokasi: () =>
-      fetchGAS({ action: 'getLokasi', adminToken: ADMIN_TOKEN }),
+    getPenugasan: () =>
+      fetchGAS({ action: 'getPenugasan', adminToken: ADMIN_TOKEN }),
 
-    addLokasi: (payload) =>
-      fetchGAS({ action: 'addLokasi', ...payload, adminToken: ADMIN_TOKEN }),
+    savePenugasan: (payload) =>
+      fetchGAS({ action: 'savePenugasan', ...payload, adminToken: ADMIN_TOKEN }),
+
+    deletePenugasan: (id) =>
+      fetchGAS({ action: 'deletePenugasan', id, adminToken: ADMIN_TOKEN }),
+
+    assignLokasi: (idPeserta, idLokasi) =>
+      fetchGAS({ action: 'assignLokasi', idPeserta, idLokasi, adminToken: ADMIN_TOKEN }),
   }
 }

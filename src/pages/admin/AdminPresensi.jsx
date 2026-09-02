@@ -76,8 +76,8 @@ export default function AdminPresensi() {
         {/* Summary */}
         {!loading && presensiList.length > 0 && (
           <div className="admin-presensi-summary">
-            <span>✅ Hadir: {presensiList.filter(p => p.jamMasuk).length}</span>
-            <span>⏳ Belum Pulang: {presensiList.filter(p => p.jamMasuk && !p.jamPulang).length}</span>
+            <span>Hadir: {presensiList.filter(p => p.jamMasuk).length}</span>
+            <span>Belum Pulang: {presensiList.filter(p => p.jamMasuk && !p.jamPulang).length}</span>
           </div>
         )}
 
@@ -86,7 +86,11 @@ export default function AdminPresensi() {
           <div className="admin-loading"><div className="spinner"/><p>Memuat...</p></div>
         ) : filtered.length === 0 ? (
           <div className="admin-empty">
-            <div className="admin-empty-icon">📊</div>
+            <div className="admin-empty-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+            </div>
             <p>Tidak ada data presensi untuk tanggal ini.</p>
           </div>
         ) : (

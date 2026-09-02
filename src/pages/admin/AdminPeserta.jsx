@@ -66,7 +66,11 @@ export default function AdminPeserta() {
           </div>
         ) : pendingList.length === 0 ? (
           <div className="admin-empty">
-            <div className="admin-empty-icon">✅</div>
+            <div className="admin-empty-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
             <p>Tidak ada pendaftaran yang menunggu persetujuan.</p>
           </div>
         ) : (
@@ -89,7 +93,11 @@ export default function AdminPeserta() {
                       onClick={() => handleApprove(p.id)}
                       title="Setujui"
                     >
-                      {actionLoading === p.id + '_approve' ? '...' : '✓'}
+                      {actionLoading === p.id + '_approve' ? '...' : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
                     </button>
                     <button
                       className="btn-icon btn-icon-red"
@@ -97,7 +105,11 @@ export default function AdminPeserta() {
                       onClick={() => handleReject(p.id)}
                       title="Tolak"
                     >
-                      {actionLoading === p.id + '_reject' ? '...' : '✕'}
+                      {actionLoading === p.id + '_reject' ? '...' : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </div>
