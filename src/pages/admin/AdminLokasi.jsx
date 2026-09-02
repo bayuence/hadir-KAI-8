@@ -210,7 +210,7 @@ export default function AdminLokasi() {
                               </div>
                               <div className="lok-chips">
                                 {lok.lat && (
-                                  <span className="lok-chip blue">{Number(lok.lat).toFixed(4)}, {Number(lok.lng).toFixed(4)}</span>
+                                  <span className="lok-chip blue">{Number(lok.lat).toFixed(6)}, {Number(lok.lng).toFixed(6)}</span>
                                 )}
                                 <span className="lok-chip green">Radius {lok.radius}m</span>
                               </div>

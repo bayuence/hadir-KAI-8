@@ -626,7 +626,7 @@ function handleGetProfile(data) {
       if (rows[i][13]) {
         var penSheet = getSheet('WEB Penugasan');
         if (penSheet) {
-          var penRows = penSheet.getDataRange().getDisplayValues();
+          var penRows = penSheet.getDataRange().getValues(); // Gunakan getValues() agar desimal koordinat tidak terpotong (rounded)
           for (var j = 1; j < penRows.length; j++) {
             if (penRows[j][0] === rows[i][13] && penRows[j][1] === 'lokasi') {
               lokasiNama = penRows[j][3];
@@ -897,7 +897,7 @@ function getOrCreatePenugasanSheet() {
 
 function handleGetPenugasan(data) {
   var sheet = getOrCreatePenugasanSheet();
-  var rows = sheet.getDataRange().getDisplayValues();
+  var rows = sheet.getDataRange().getValues(); // Gunakan getValues() agar angka koordinat tidak dibulatkan jadi 4 desimal
   var unitList = [], lokasiList = [];
   for (var i = 1; i < rows.length; i++) {
     if (!rows[i][0]) continue;
@@ -930,8 +930,10 @@ function handleSavePenugasan(data) {
       if (rows[i][0] === data.id) {
         sheet.getRange(i + 1, 4).setValue(data.nama);
         sheet.getRange(i + 1, 5).setValue(data.alamat || '');
-        sheet.getRange(i + 1, 6).setValue(data.lat || '');
-        sheet.getRange(i + 1, 7).setValue(data.lng || '');
+        // Tambahkan petik (') agar Sheets menyimpannya sebagai teks murni (Plain Text)
+        // Ini mencegah bug locale Indonesia yang mengubah titik menjadi pemisah ribuan
+        sheet.getRange(i + 1, 6).setValue(data.lat ? "'" + data.lat : '');
+        sheet.getRange(i + 1, 7).setValue(data.lng ? "'" + data.lng : '');
         sheet.getRange(i + 1, 8).setValue(data.radius || '');
         return { success: true, message: 'Data berhasil diperbarui.' };
       }
@@ -943,7 +945,10 @@ function handleSavePenugasan(data) {
   var newId = prefix + '-' + String(sheet.getLastRow()).padStart(3, '0');
   sheet.appendRow([
     newId, data.tipe, data.idInduk || '', data.nama,
-    data.alamat || '', data.lat || '', data.lng || '', data.radius || ''
+    data.alamat || '', 
+    data.lat ? "'" + data.lat : '', 
+    data.lng ? "'" + data.lng : '', 
+    data.radius || ''
   ]);
   return { success: true, message: 'Data berhasil ditambahkan.', id: newId };
 }

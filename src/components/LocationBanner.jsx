@@ -64,8 +64,11 @@ export default function LocationBanner() {
     )
   }
 
-  const jarakStr = formatJarak(geo.distance)
   const diDalam = !geo.isDiLuarArea
+
+  // Tampilkan jarak aslinya agar benar-benar terasa realtime saat pengguna berjalan
+  let jarakTampil = formatJarak(geo.distance)
+  let subTeks = 'dari pusat'
 
   return (
     <div style={{
@@ -94,16 +97,16 @@ export default function LocationBanner() {
         </span>
       </div>
 
-      {jarakStr !== null && (
+      {jarakTampil !== null && (
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <span style={{
             fontSize: '0.8rem', fontWeight: 700,
             color: diDalam ? '#16a34a' : '#dc2626'
           }}>
-            {jarakStr}
+            {jarakTampil}
           </span>
           <span style={{ fontSize: '0.68rem', color: '#64748b', display: 'block', lineHeight: 1 }}>
-            dari pusat
+            {subTeks}
           </span>
           {geo.accuracy && (
             <span style={{ fontSize: '0.6rem', color: '#94a3b8', display: 'block', marginTop: '3px' }}>

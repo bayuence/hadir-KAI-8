@@ -32,15 +32,15 @@ export function useGeo(targetLat, targetLong, maxRadius = 100) {
       setLoc(l => ({ ...l, err: errMsg }))
     }
 
-    const opts = { enableHighAccuracy: true, timeout: 15000, maximumAge: 2000 }
+    const opts = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 
     // Pertama langsung ambil posisi sekali
     navigator.geolocation.getCurrentPosition(onSuccess, (err) => {
-      // Kalau highAccuracy gagal (PC/laptop), coba tanpa
-      navigator.geolocation.getCurrentPosition(onSuccess, onError, { enableHighAccuracy: false, timeout: 15000, maximumAge: 5000 })
+      // Kalau highAccuracy gagal, coba tanpa highAccuracy
+      navigator.geolocation.getCurrentPosition(onSuccess, onError, { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 })
     }, opts)
 
-    // Lalu pantau terus secara realtime
+    // Lalu pantau terus secara realtime (bergerak sedikit akan langsung update)
     watchId.current = navigator.geolocation.watchPosition(onSuccess, onError, opts)
 
     return () => {
@@ -50,9 +50,9 @@ export function useGeo(targetLat, targetLong, maxRadius = 100) {
     }
   }, [targetLat, targetLong])
 
-  // Faktorkan akurasi GPS: jika GPS melaporkan akurasi 50m, tambahkan toleransi
-  // Toleransi max dibatasi 30m agar tidak terlalu longgar
-  const gpsToleranse = Math.min((loc.accuracy || 0) * 0.5, 30)
+  // Toleransi GPS diperketat (maks 15 meter) agar terasa REAL dan akurat dengan wilayah.
+  // Jika lebih dari itu, berarti memang di luar radius.
+  const gpsToleranse = Math.min((loc.accuracy || 0), 15)
   const isDiLuarArea = loc.distance !== null && loc.distance > (maxRadius + gpsToleranse)
 
   return { ...loc, isDiLuarArea, maxRadius }
