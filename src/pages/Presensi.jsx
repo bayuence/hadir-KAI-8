@@ -17,6 +17,7 @@ export default function Presensi({ type = 'masuk' }) {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [jam, setJam] = useState(new Date().toLocaleTimeString('id-ID', { hour12: false }))
+  const [facingMode, setFacingMode] = useState("user")
 
   useEffect(() => {
     const t = setInterval(() => setJam(new Date().toLocaleTimeString('id-ID', { hour12: false })), 1000)
@@ -80,10 +81,24 @@ export default function Presensi({ type = 'masuk' }) {
                 audio={false}
                 ref={webcamRef}
                 screenshotFormat="image/jpeg"
-                videoConstraints={{ facingMode: "user" }}
+                videoConstraints={{ facingMode }}
+                mirrored={false}
                 className="cam-video"
              />
              <div className="cam-overlay"><div className="cam-frame"></div></div>
+             <button 
+                type="button"
+                className="cam-switch-btn" 
+                onClick={() => setFacingMode(prev => prev === "user" ? "environment" : "user")}
+                title="Ganti Kamera"
+             >
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                 <polyline points="17 1 21 5 17 9"></polyline>
+                 <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                 <polyline points="7 23 3 19 7 15"></polyline>
+                 <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+               </svg>
+             </button>
           </div>
         ) : (
           <div className="cam-container">
