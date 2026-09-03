@@ -17,6 +17,7 @@ export default function AdminLokasi() {
   const [submitting, setSubmitting] = useState(false)
   const [gpsLoading, setGpsLoading] = useState(false)
   const [assignLoading, setAssignLoading] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type })
@@ -229,6 +230,27 @@ export default function AdminLokasi() {
         {/* ── TAB 2 ─────────────────────────────────────────────── */}
         {activeTab === 'penempatan' && (
           <>
+            {/* Search Bar */}
+            <div className="lok-search-wrap">
+              <svg className="lok-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                className="lok-search-input"
+                type="text"
+                placeholder="Cari nama peserta..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="lok-search-clear" onClick={() => setSearchQuery('')}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+
             <div className="lok-info-box">
               Lokasi peserta dapat diubah kapan saja sesuai jadwal penugasan harian.
             </div>
@@ -236,39 +258,55 @@ export default function AdminLokasi() {
               <div className="admin-loading"><div className="spinner" /><p>Memuat...</p></div>
             ) : pesertaList.length === 0 ? (
               <div className="admin-empty"><p>Belum ada peserta aktif.</p></div>
-            ) : (
-              <div className="lok-assign-list">
-                {pesertaList.map(p => (
-                  <div className="lok-assign-row" key={p.id}>
-                    <div className="lok-assign-avatar">{p.nama?.charAt(0)?.toUpperCase()}</div>
-                    <div className="lok-assign-info">
-                      <p className="lok-assign-name">{p.nama}</p>
-                      <p className="lok-assign-id">{p.id}</p>
-                    </div>
-                    <div className="lok-assign-select">
-                      <select
-                        disabled={assignLoading === p.id}
-                        value={p.idLokasi || ''}
-                        onChange={e => {
-                          const val = e.target.value
-                          setPesertaList(prev => prev.map(x => x.id === p.id ? { ...x, idLokasi: val } : x))
-                          handleAssign(p.id, val)
-                        }}
-                      >
-                        <option value="">Pilih Lokasi</option>
-                        {unitList.map(unit => (
-                          <optgroup key={unit.id} label={unit.nama}>
-                            {lokasiList.filter(l => l.idInduk === unit.id).map(lok => (
-                              <option key={lok.id} value={lok.id}>{lok.nama}</option>
+            ) : (() => {
+                const filtered = pesertaList.filter(p =>
+                  p.nama?.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                return filtered.length === 0 ? (
+                  <div className="admin-empty"><p>Tidak ada peserta dengan nama "{searchQuery}"</p></div>
+                ) : (
+                  <div className="lok-assign-list">
+                    {filtered.map(p => (
+                      <div className="lok-assign-row" key={p.id}>
+                        <div className="lok-assign-avatar">
+                          {p.foto ? (
+                            <img src={p.foto} alt={p.nama} className="lok-assign-avatar-img"
+                              onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}
+                            />
+                          ) : null}
+                          <span className="lok-assign-avatar-initial" style={p.foto ? {display:'none'} : {}}>
+                            {p.nama?.charAt(0)?.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="lok-assign-info">
+                          <p className="lok-assign-name">{p.nama}</p>
+                          <p className="lok-assign-id">{p.id}</p>
+                        </div>
+                        <div className="lok-assign-select">
+                          <select
+                            disabled={assignLoading === p.id}
+                            value={p.idLokasi || ''}
+                            onChange={e => {
+                              const val = e.target.value
+                              setPesertaList(prev => prev.map(x => x.id === p.id ? { ...x, idLokasi: val } : x))
+                              handleAssign(p.id, val)
+                            }}
+                          >
+                            <option value="">Pilih Lokasi</option>
+                            {unitList.map(unit => (
+                              <optgroup key={unit.id} label={unit.nama}>
+                                {lokasiList.filter(l => l.idInduk === unit.id).map(lok => (
+                                  <option key={lok.id} value={lok.id}>{lok.nama}</option>
+                                ))}
+                              </optgroup>
                             ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                    </div>
+                          </select>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                )
+              })()}
           </>
         )}
       </div>

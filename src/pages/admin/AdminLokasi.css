@@ -214,6 +214,60 @@
 .lok-chip.blue { background: #eff6ff; color: #2563eb; }
 .lok-chip.green { background: #dcfce7; color: #16a34a; }
 
+/* ── Search Bar ───────────────────────────────────────── */
+.lok-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.lok-search-icon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.lok-search-input {
+  width: 100%;
+  padding: 10px 36px 10px 36px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: #0f172a;
+  background: white;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.lok-search-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+
+.lok-search-input::placeholder { color: #94a3b8; }
+
+.lok-search-clear {
+  position: absolute;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.lok-search-clear:hover { background: #cbd5e1; }
+
 /* ── Penempatan ───────────────────────────────────────── */
 .lok-info-box {
   background: #eff6ff;
@@ -240,8 +294,8 @@
 }
 
 .lok-assign-avatar {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: linear-gradient(135deg, #0f172a, #334155);
   color: white;
@@ -251,6 +305,25 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.lok-assign-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 50%;
+  display: block;
+}
+
+.lok-assign-avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
 }
 
 .lok-assign-info { flex: 1; min-width: 0; overflow: hidden; }

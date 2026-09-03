@@ -517,7 +517,18 @@ function handleGetPesertaList() {
   var list = [];
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][1] && rows[i][11] === 'active') {
-      list.push({ id: rows[i][14], nama: rows[i][1], idLokasi: rows[i][13] || '' });
+      // Convert URL foto ke format thumbnail agar bisa diembed di browser
+      var fotoUrl = rows[i][10] || '';
+      if (fotoUrl) {
+        var idFoto = extractDriveId(fotoUrl);
+        if (idFoto) fotoUrl = 'https://drive.google.com/thumbnail?id=' + idFoto + '&sz=w200';
+      }
+      list.push({
+        id:       rows[i][14],
+        nama:     rows[i][1],
+        idLokasi: rows[i][13] || '',
+        foto:     fotoUrl
+      });
     }
   }
   return { success: true, data: list };
