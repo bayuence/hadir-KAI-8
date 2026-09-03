@@ -10,7 +10,7 @@ export default function Presensi({ type = 'masuk' }) {
   const navigate = useNavigate()
   const webcamRef = useRef(null)
   
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const geo = useGeo(user?.lat, user?.long, user?.radius || 100) // radius per lokasi dari admin
   
   const [foto, setFoto] = useState(null)
@@ -38,8 +38,9 @@ export default function Presensi({ type = 'masuk' }) {
     setErrorMsg('')
     try {
       const payload = {
+        token,                          // ← wajib untuk validasi sesi di backend
         idPeserta: user.id,
-        foto: foto.split(',')[1],
+        foto64: foto.split(',')[1],     // ← backend mengharapkan key "foto64"
         latitude: geo.lat,
         longitude: geo.lng,
         timestamp: new Date().toISOString()
@@ -58,6 +59,7 @@ export default function Presensi({ type = 'masuk' }) {
       setLoading(false)
     }
   }
+
 
   return (
     <div className="app-shell bg-white">

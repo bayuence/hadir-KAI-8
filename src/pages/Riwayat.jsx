@@ -17,16 +17,50 @@ function driveThumb(url) {
   return url
 }
 
-// Format tanggal dari "DD/MM/YYYY" ke "Selasa, 1 September 2026"
-function formatTglIndo(tglStr) {
-  if (!tglStr) return ''
+// Format tanggal dari berbagai format ke "Selasa, 1 September 2026"
+// Handle: "DD/MM/YYYY" (web app, zero-padded) dan "M/D/YYYY" (Google Sheets US locale)
+function normalizeTglParts(tglStr) {
+  if (!tglStr) return null
   const parts = tglStr.split('/')
-  if (parts.length !== 3) return tglStr
-  const d = new Date(parts[2], parts[1] - 1, parts[0])
+  if (parts.length !== 3) return null
+  const p0 = parts[0], p1 = parts[1], p2 = parts[2]
+  const n0 = parseInt(p0), n1 = parseInt(p1), n2 = parseInt(p2)
+  let day, month, year
+  if (n0 > 12) {
+    // Pasti DD/MM/YYYY
+    day = n0; month = n1; year = n2
+  } else if (n1 > 12) {
+    // Pasti M/D/YYYY format AS
+    month = n0; day = n1; year = n2
+  } else if (p0.length === 2 && p0[0] === '0') {
+    // Zero-padded "01/..." → pasti web app → DD/MM/YYYY
+    day = n0; month = n1; year = n2
+  } else if (p1.length === 2 && p1[0] === '0') {
+    day = n0; month = n1; year = n2
+  } else {
+    // Ambiguous → asumsi M/D/YYYY (data Google Form lama tidak zero-padded)
+    month = n0; day = n1; year = n2
+  }
+  if (day < 1 || day > 31 || month < 1 || month > 12) return null
+  return { day, month, year }
+}
+
+function formatTglIndo(tglStr) {
+  const p = normalizeTglParts(tglStr)
+  if (!p) return tglStr || ''
+  const d = new Date(p.year, p.month - 1, p.day)
   if (isNaN(d.getTime())) return tglStr
   const hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu']
   const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
   return `${hari[d.getDay()]}, ${d.getDate()} ${bulan[d.getMonth()]}`
+}
+
+// Parsing tanggal dari string ke Date object
+function parseTanggal(tglStr) {
+  const p = normalizeTglParts(tglStr)
+  if (!p) return null
+  const d = new Date(p.year, p.month - 1, p.day)
+  return isNaN(d.getTime()) ? null : d
 }
 
 export default function Riwayat() {
@@ -45,14 +79,18 @@ export default function Riwayat() {
       .finally(() => setLoading(false))
   }, [user, token])
 
-  // Filter data
+  // Filter data — gunakan parseTanggal agar cocok dengan semua format
   const filtered = riwayat.filter(item => {
     const matchStatus = statusFilter === 'Semua Status' || item.status === statusFilter
-    const matchBulan = bulanFilter === 'Semua' || (item.tanggal || '').includes(
-      bulanFilter === 'September' ? '/09/' : bulanFilter === 'Agustus' ? '/08/' : bulanFilter === 'Juli' ? '/07/' : ''
-    )
+    if (bulanFilter === 'Semua') return matchStatus
+    const d = parseTanggal(item.tanggal)
+    if (!d) return false
+    const bulanMap = { 'September': 8, 'Agustus': 7, 'Juli': 6 }
+    const targetBulan = bulanMap[bulanFilter]
+    const matchBulan = targetBulan !== undefined && d.getMonth() === targetBulan
     return matchStatus && matchBulan
   })
+
 
   // Summary
   const totalHari = riwayat.filter(i => i.status === 'Hadir').length

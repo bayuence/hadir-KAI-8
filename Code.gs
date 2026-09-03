@@ -708,7 +708,7 @@ function handleGetStatusHariIni(data) {
 
   var rows = sheet.getDataRange().getDisplayValues();
   for (var i = rows.length - 1; i >= 1; i--) {
-    if (rows[i][0] === today && rows[i][1] === data.idPeserta) {
+    if (normalizeTanggal(rows[i][0]) === today && rows[i][1] === data.idPeserta) {
       return { success: true, data: { sudahMasuk: !!rows[i][4], sudahPulang: !!rows[i][6], jamMasuk: rows[i][4] || null, jamPulang: rows[i][6] || null }};
     }
   }
@@ -796,7 +796,9 @@ function handleGetRiwayat(data) {
   var no = 1;
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][1] === data.idPeserta) {
-      result.push({ no: no++, tanggal: rows[i][0], lokasi: rows[i][3], jamMasuk: rows[i][4], fotoMasuk: rows[i][5], jamPulang: rows[i][6], fotoPulang: rows[i][7], totalJam: rows[i][8], gpsMasuk: rows[i][9], gpsPulang: rows[i][10], status: rows[i][11] });
+      // Normalisasi format tanggal agar konsisten (handle M/D/YYYY dari form lama)
+      var tglNormal = normalizeTanggal(rows[i][0]);
+      result.push({ no: no++, tanggal: tglNormal, lokasi: rows[i][3], jamMasuk: rows[i][4], fotoMasuk: rows[i][5], jamPulang: rows[i][6], fotoPulang: rows[i][7], totalJam: rows[i][8], gpsMasuk: rows[i][9], gpsPulang: rows[i][10], status: rows[i][11] });
     }
   }
   return { success: true, data: result.reverse() };
@@ -881,6 +883,46 @@ function formatTanggal(dateStr) {
   }
   return [String(d.getDate()).padStart(2, '0'), String(d.getMonth() + 1).padStart(2, '0'), d.getFullYear()].join('/');
 }
+
+// Normalisasi berbagai format tanggal ke DD/MM/YYYY
+// Handle: "DD/MM/YYYY" (lokal web app, selalu zero-padded), "M/D/YYYY" (Google Sheets US locale)
+function normalizeTanggal(tglStr) {
+  if (!tglStr) return '';
+  var s = String(tglStr).trim();
+  var parts = s.split('/');
+  if (parts.length !== 3) return s;
+
+  var p0 = parts[0], p1 = parts[1], p2 = parts[2];
+  var n0 = parseInt(p0), n1 = parseInt(p1), n2 = parseInt(p2);
+
+  var day, month, year;
+
+  if (n0 > 12) {
+    // Pasti DD/MM/YYYY (hari tidak mungkin bulan)
+    day = n0; month = n1; year = n2;
+  } else if (n1 > 12) {
+    // Pasti M/D/YYYY format AS (hari di tengah, bulan di depan)
+    month = n0; day = n1; year = n2;
+  } else if (p0.length === 2 && p0.charAt(0) === '0') {
+    // Zero-padded "01" → pasti dari web app → DD/MM/YYYY
+    day = n0; month = n1; year = n2;
+  } else if (p1.length === 2 && p1.charAt(0) === '0') {
+    // "9/01/..." → hari-nya zero-padded → M/DD? Tetap default DD/MM
+    day = n0; month = n1; year = n2;
+  } else {
+    // Ambiguous (e.g. "9/1/2026"): 
+    // Data dari Google Form lama biasanya tidak zero-padded → asumsi M/D/YYYY
+    // Data dari web app baru selalu zero-padded sehingga sudah tertangani di atas
+    month = n0; day = n1; year = n2;
+  }
+
+  // Validasi hasil: jika hari atau bulan tidak masuk akal, kembalikan aslinya
+  if (day < 1 || day > 31 || month < 1 || month > 12) return s;
+
+  return String(day).padStart(2, '0') + '/' + String(month).padStart(2, '0') + '/' + year;
+}
+
+
 
 function formatJam(dateObj) {
   if (!dateObj) return '';

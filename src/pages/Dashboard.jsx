@@ -13,11 +13,51 @@ export default function Dashboard() {
   const [status, setStatus] = useState({ sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null })
   const [loading, setLoading] = useState(true)
   const [jam, setJam] = useState(new Date().toLocaleTimeString('id-ID', { hour12: false }))
+  const [runtime, setRuntime] = useState('00:00:00')
 
   useEffect(() => {
     const t = setInterval(() => setJam(new Date().toLocaleTimeString('id-ID', { hour12: false })), 1000)
     return () => clearInterval(t)
   }, [])
+
+  // Live runtime: hitung dari jamMasuk sampai sekarang (atau jamPulang jika sudah checkout)
+  useEffect(() => {
+    if (!status.sudahMasuk || !status.jamMasuk) return
+
+    const hitungRuntime = () => {
+      const parseJam = (str) => {
+        if (!str) return null
+        // Format HH:MM:SS dari backend
+        if (typeof str === 'string' && str.includes(':') && str.length <= 8) {
+          const now = new Date()
+          const [h, m, s] = str.split(':').map(Number)
+          return new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s || 0)
+        }
+        return new Date(str)
+      }
+
+      const masuk = parseJam(status.jamMasuk)
+      if (!masuk) return
+      const selesai = status.sudahPulang ? parseJam(status.jamPulang) : new Date()
+      if (!selesai) return
+
+      const diffMs = Math.max(0, selesai - masuk)
+      const totalDetik = Math.floor(diffMs / 1000)
+      const jam = Math.floor(totalDetik / 3600)
+      const menit = Math.floor((totalDetik % 3600) / 60)
+      const detik = totalDetik % 60
+      setRuntime(
+        `${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}:${String(detik).padStart(2, '0')}`
+      )
+    }
+
+    hitungRuntime()
+    // Jika belum pulang, update setiap detik; jika sudah pulang, hitung sekali saja
+    if (!status.sudahPulang) {
+      const interval = setInterval(hitungRuntime, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [status])
 
   useEffect(() => {
     if (user) {
@@ -115,6 +155,18 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          {/* Runtime counter */}
+          {status.sudahMasuk && (
+            <div className="dash-runtime-row">
+              <span className="dash-runtime-icon">{status.sudahPulang ? '✅' : '⏱'}</span>
+              <span className="dash-runtime-label">
+                {status.sudahPulang ? 'Durasi hari ini' : 'Berjalan'}
+              </span>
+              <span className={`dash-runtime-value${!status.sudahPulang ? ' dash-runtime-live' : ''}`}>
+                {runtime}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="dash-actions animate-fade-up">
