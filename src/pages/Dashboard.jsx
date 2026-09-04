@@ -155,18 +155,17 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          {/* Runtime counter */}
-          {status.sudahMasuk && (
+          {/* Runtime counter — hanya tampil saat sudah masuk tapi belum pulang */}
+          {status.sudahMasuk && !status.sudahPulang && (
             <div className="dash-runtime-row">
-              <span className="dash-runtime-icon">{status.sudahPulang ? '✅' : '⏱'}</span>
-              <span className="dash-runtime-label">
-                {status.sudahPulang ? 'Durasi hari ini' : 'Berjalan'}
-              </span>
-              <span className={`dash-runtime-value${!status.sudahPulang ? ' dash-runtime-live' : ''}`}>
+              <span className="dash-runtime-icon">⏱</span>
+              <span className="dash-runtime-label">Berjalan</span>
+              <span className="dash-runtime-value dash-runtime-live">
                 {runtime}
               </span>
             </div>
           )}
+
         </div>
 
         <div className="dash-actions animate-fade-up">

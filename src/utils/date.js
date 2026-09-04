@@ -19,8 +19,29 @@ export function formatTime(isoStr) {
 
 export function hitungDurasi(masuk, pulang) {
   if (!masuk || !pulang) return null
-  const diff = Math.floor((new Date(pulang) - new Date(masuk)) / 1000 / 60)
+
+  // Helper: parse HH:MM:SS string atau Date object ke menit sejak tengah malam
+  const toMenit = (val) => {
+    if (!val) return null
+    // Format HH:MM:SS dari backend (string pendek)
+    if (typeof val === 'string' && val.includes(':') && val.length <= 8) {
+      const [h, m] = val.split(':').map(Number)
+      return h * 60 + m
+    }
+    // Fallback: coba parse sebagai Date
+    const d = new Date(val)
+    if (!isNaN(d.getTime())) return d.getHours() * 60 + d.getMinutes()
+    return null
+  }
+
+  const menitMasuk = toMenit(masuk)
+  const menitPulang = toMenit(pulang)
+  if (menitMasuk === null || menitPulang === null) return null
+
+  const diff = menitPulang - menitMasuk
+  if (diff <= 0) return null
   const jam = Math.floor(diff / 60)
   const menit = diff % 60
   return `${jam}j ${menit}m`
 }
+

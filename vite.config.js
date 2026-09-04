@@ -9,7 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate', // Langsung update otomatis tanpa perlu copot aplikasi
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg}'],
-        cleanupOutdatedCaches: true
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,      // SW baru langsung ambil alih tanpa nunggu tab ditutup
+        clientsClaim: true      // SW baru langsung kontrol semua tab yang terbuka
       },
       manifest: {
         name: 'HADIRKAI8',

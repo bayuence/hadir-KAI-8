@@ -71,11 +71,24 @@ export default function Riwayat() {
   const [bulanFilter, setBulanFilter] = useState('Semua')
   const [statusFilter, setStatusFilter] = useState('Semua Status')
 
+  const [error, setError] = useState(null)
+
   useEffect(() => {
-    if (!user || !token) return
+    if (!user || !token) { navigate('/login'); return }
     api.getRiwayat(user.id, token)
-      .then(res => { if (res.success) setRiwayat(res.data) })
-      .catch(err => console.error('Error fetching riwayat:', err))
+      .then(res => {
+        if (res.success) {
+          setRiwayat(res.data || [])
+        } else {
+          // Sesi expired atau error lain
+          if (res.message && res.message.includes('Sesi')) {
+            navigate('/login')
+          } else {
+            setError(res.message || 'Gagal memuat riwayat')
+          }
+        }
+      })
+      .catch(err => { console.error('Error fetching riwayat:', err); setError('Tidak dapat terhubung ke server') })
       .finally(() => setLoading(false))
   }, [user, token])
 
@@ -85,7 +98,8 @@ export default function Riwayat() {
     if (bulanFilter === 'Semua') return matchStatus
     const d = parseTanggal(item.tanggal)
     if (!d) return false
-    const bulanMap = { 'September': 8, 'Agustus': 7, 'Juli': 6 }
+    // Peta nama bulan Indonesia ke index getMonth() (0-based)
+    const bulanMap = { 'Agustus': 7, 'September': 8, 'Oktober': 9, 'November': 10, 'Desember': 11, 'Juli': 6 }
     const targetBulan = bulanMap[bulanFilter]
     const matchBulan = targetBulan !== undefined && d.getMonth() === targetBulan
     return matchStatus && matchBulan
@@ -113,9 +127,11 @@ export default function Riwayat() {
         <div className="filter-row animate-fade-in">
           <select className="filter-select" value={bulanFilter} onChange={e => setBulanFilter(e.target.value)}>
             <option value="Semua">Semua Bulan</option>
-            <option value="September">September 2026</option>
             <option value="Agustus">Agustus 2026</option>
-            <option value="Juli">Juli 2026</option>
+            <option value="September">September 2026</option>
+            <option value="Oktober">Oktober 2026</option>
+            <option value="November">November 2026</option>
+            <option value="Desember">Desember 2026</option>
           </select>
           <select className="filter-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option value="Semua Status">Semua Status</option>
@@ -129,8 +145,12 @@ export default function Riwayat() {
         <div className="riwayat-list animate-fade-up">
           {loading ? (
              <div className="text-center text-grey text-sm mt-8">Memuat riwayat...</div>
+          ) : error ? (
+             <div className="text-center text-grey text-sm mt-8">⚠️ {error}</div>
           ) : filtered.length === 0 ? (
-             <div className="text-center text-grey text-sm mt-8">Belum ada riwayat</div>
+             <div className="text-center text-grey text-sm mt-8">
+               {riwayat.length === 0 ? 'Belum ada riwayat presensi' : 'Tidak ada data untuk filter ini'}
+             </div>
           ) : (
             filtered.map((item, idx) => (
               <div key={idx} className="riwayat-card">

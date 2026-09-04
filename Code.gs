@@ -18,7 +18,7 @@ var CONFIG = {
   ADMIN_TOKEN:     'KAI_DAOP8_ADMIN_2026',
   FOLDER_FOTO_ID:  'ISI_ID_FOLDER_DRIVE_FOTO', // GANTI INI NANTI JIKA MAU FOTO
   GEOFENCE_RADIUS: 100,
-  SESSION_EXPIRE:  8 * 60 * 60 * 1000
+  SESSION_EXPIRE:  24 * 60 * 60 * 1000
 };
 
 // ─── ENTRY POINT (WEB APP API) ───────────────────────────────
@@ -708,7 +708,8 @@ function handleGetStatusHariIni(data) {
 
   var rows = sheet.getDataRange().getDisplayValues();
   for (var i = rows.length - 1; i >= 1; i--) {
-    if (normalizeTanggal(rows[i][0]) === today && rows[i][1] === data.idPeserta) {
+    // Normalize kedua sisi agar format apapun bisa cocok
+    if (normalizeTanggal(rows[i][0]) === normalizeTanggal(today) && rows[i][1] === data.idPeserta) {
       return { success: true, data: { sudahMasuk: !!rows[i][4], sudahPulang: !!rows[i][6], jamMasuk: rows[i][4] || null, jamPulang: rows[i][6] || null }};
     }
   }
@@ -745,8 +746,10 @@ function handleCheckIn(data) {
   }
   
   var dsRows = dataSheet.getDataRange().getDisplayValues();
+  var todayNorm = normalizeTanggal(today);
   for (var k = dsRows.length - 1; k >= 1; k--) {
-    if (dsRows[k][0] === today && dsRows[k][1] === data.idPeserta && dsRows[k][4]) return { success: false, message: 'Sudah presensi masuk.' };
+    // Normalize tanggal di sheet agar cocok dengan format apapun
+    if (normalizeTanggal(dsRows[k][0]) === todayNorm && dsRows[k][1] === data.idPeserta && dsRows[k][4]) return { success: false, message: 'Sudah presensi masuk.' };
   }
 
   var jamMasuk = formatJam(data.timestamp ? new Date(data.timestamp) : new Date());
@@ -771,8 +774,10 @@ function handleCheckOut(data) {
 
   var rows = dataSheet.getDataRange().getDisplayValues();
   var targetRow = -1;
+  var todayNormCO = normalizeTanggal(today);
   for (var i = rows.length - 1; i >= 1; i--) {
-    if (rows[i][0] === today && rows[i][1] === data.idPeserta && rows[i][4] && !rows[i][6]) { targetRow = i + 1; break; }
+    // Normalize tanggal di kedua sisi agar berbagai format bisa cocok (DD/MM/YYYY vs M/D/YYYY)
+    if (normalizeTanggal(rows[i][0]) === todayNormCO && rows[i][1] === data.idPeserta && rows[i][4] && !rows[i][6]) { targetRow = i + 1; break; }
   }
   if (targetRow === -1) return { success: false, message: 'Belum presensi masuk atau sudah pulang.' };
 
