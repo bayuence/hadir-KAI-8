@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { api } from '../../services/api'
 import AdminHeader from '../../components/AdminHeader'
 import BottomNav from '../../components/BottomNav'
+import { driveAvatarUrl } from '../../utils/driveImage'
 import './Admin.css'
 import './AdminLokasi.css'
 
@@ -270,7 +271,7 @@ export default function AdminLokasi() {
                       <div className="lok-assign-row" key={p.id}>
                         <div className="lok-assign-avatar">
                           {p.foto ? (
-                            <img src={p.foto} alt={p.nama} className="lok-assign-avatar-img"
+                            <img src={driveAvatarUrl(p.foto)} alt={p.nama} className="lok-assign-avatar-img"
                               onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}
                             />
                           ) : null}

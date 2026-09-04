@@ -3,19 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import BottomNav from '../components/BottomNav'
+import { driveThumbUrl } from '../utils/driveImage'
 import './Riwayat.css'
 
-// Convert Google Drive URL to a renderable thumbnail
-function driveThumb(url) {
-  if (!url) return null
-  // Sudah format uc?id=
-  const m1 = url.match(/[?&]id=([^&]+)/)
-  if (m1) return `https://drive.google.com/thumbnail?id=${m1[1]}&sz=w120`
-  // Format /file/d/ID/
-  const m2 = url.match(/\/file\/d\/([^/]+)/)
-  if (m2) return `https://drive.google.com/thumbnail?id=${m2[1]}&sz=w120`
-  return url
-}
 
 // Format tanggal dari berbagai format ke "Selasa, 1 September 2026"
 // Handle: "DD/MM/YYYY" (web app, zero-padded) dan "M/D/YYYY" (Google Sheets US locale)
@@ -172,7 +162,7 @@ export default function Riwayat() {
                         {item.jamMasuk ? <strong>{item.jamMasuk}</strong> : <span style={{color:'#9ca3af'}}>--:--</span>} Masuk
                       </span>
                       {item.fotoMasuk && (
-                        <img src={driveThumb(item.fotoMasuk)} className="rc-thumb" alt="foto masuk"
+                        <img src={driveThumbUrl(item.fotoMasuk)} className="rc-thumb" alt="foto masuk"
                           onError={e => { e.target.style.display='none' }}/>
                       )}
                     </div>
@@ -182,7 +172,7 @@ export default function Riwayat() {
                         {item.jamPulang ? <strong>{item.jamPulang}</strong> : <span style={{color:'#9ca3af'}}>--:--</span>} Pulang
                       </span>
                       {item.fotoPulang && (
-                        <img src={driveThumb(item.fotoPulang)} className="rc-thumb" alt="foto pulang"
+                        <img src={driveThumbUrl(item.fotoPulang)} className="rc-thumb" alt="foto pulang"
                           onError={e => { e.target.style.display='none' }}/>
                       )}
                     </div>

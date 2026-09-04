@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import BottomNav from '../components/BottomNav'
+import { driveAvatarUrl } from '../utils/driveImage'
 import './Profil.css'
 
 const ADMIN_MENUS = [
@@ -70,6 +71,8 @@ export default function Profil() {
     api.getProfile(user.id, token)
       .then(res => {
         if (res.success && res.data) {
+          // Konversi foto ke format lh3 Safari-safe
+          if (res.data.foto) res.data.foto = driveAvatarUrl(res.data.foto) || res.data.foto
           setProfileData(res.data)
           loginContext({ ...user, ...res.data }, token)
         }

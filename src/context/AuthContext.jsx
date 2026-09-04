@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { driveAvatarUrl } from '../utils/driveImage'
 
 const AuthContext = createContext()
 
@@ -13,12 +14,9 @@ export function AuthProvider({ children }) {
     const storedToken = localStorage.getItem('kai_token')
     if (storedUser && storedToken) {
       const parsedUser = JSON.parse(storedUser)
-      // Fix: konversi URL foto Drive lama ke format thumbnail yang bisa dirender
+      // Fix: konversi URL foto Drive ke format lh3 (Safari-compatible, tidak butuh cookie)
       if (parsedUser.foto) {
-        const match = parsedUser.foto.match(/[?&]id=([^&]+)/) || parsedUser.foto.match(/\/file\/d\/([^/]+)/) || parsedUser.foto.match(/\/uc\?id=([^&]+)/) || parsedUser.foto.match(/\/d\/([^/]+)\//)
-        if (match && !parsedUser.foto.includes('thumbnail')) {
-          parsedUser.foto = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`
-        }
+        parsedUser.foto = driveAvatarUrl(parsedUser.foto) || parsedUser.foto
       }
       setUser(parsedUser)
       setToken(storedToken)
@@ -27,9 +25,14 @@ export function AuthProvider({ children }) {
   }, [])
 
   const loginContext = (userData, userToken) => {
-    setUser(userData)
+    // Konversi foto ke format lh3 Safari-safe saat login
+    const userToSave = { ...userData }
+    if (userToSave.foto) {
+      userToSave.foto = driveAvatarUrl(userToSave.foto) || userToSave.foto
+    }
+    setUser(userToSave)
     setToken(userToken)
-    localStorage.setItem('kai_user', JSON.stringify(userData))
+    localStorage.setItem('kai_user', JSON.stringify(userToSave))
     localStorage.setItem('kai_token', userToken)
   }
 
