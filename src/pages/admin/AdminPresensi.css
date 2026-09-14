@@ -1,0 +1,94 @@
+/* ============================================================
+   ADMIN PRESENSI (REKAP PRESENSI) — CSS
+   ============================================================ */
+
+.admin-date-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+.admin-date-input {
+  flex: 1;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  outline: none;
+  background: white;
+  color: #1e293b;
+}
+.admin-date-input:focus { border-color: #2563eb; }
+
+.admin-search-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+.admin-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+.admin-search-input {
+  width: 100%;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px 10px 36px;
+  font-size: 0.88rem;
+  outline: none;
+  background: white;
+  box-sizing: border-box;
+}
+.admin-search-input:focus { border-color: #2563eb; }
+
+.admin-presensi-summary {
+  display: flex;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.admin-presensi-list { display: flex; flex-direction: column; gap: 10px; }
+.admin-presensi-row {
+  background: white;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.admin-presensi-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  color: white;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.admin-presensi-info { flex: 1; }
+.admin-presensi-nama { font-weight: 600; color: #1e293b; font-size: 0.88rem; }
+.admin-presensi-meta { font-size: 0.75rem; color: #94a3b8; }
+.admin-presensi-times { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+.admin-time-chip { display: flex; align-items: center; gap: 5px; font-size: 0.78rem; color: #475569; }
+.dot-green-sm { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+.dot-red-sm { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0; }
+.admin-total-chip {
+  font-size: 0.72rem;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-weight: 600;
+}

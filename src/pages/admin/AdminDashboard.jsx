@@ -4,6 +4,7 @@ import { api } from '../../services/api'
 import AdminHeader from '../../components/AdminHeader'
 import BottomNav from '../../components/BottomNav'
 import './Admin.css'
+import './AdminDashboard.css'
 
 export default function AdminDashboard() {
   const { user } = useAuth()

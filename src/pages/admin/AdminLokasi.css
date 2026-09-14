@@ -285,32 +285,49 @@
   margin-bottom: 16px;
 }
 
-.lok-assign-list { display: flex; flex-direction: column; gap: 10px; }
-
-.lok-assign-row {
+.lok-assign-list {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lok-assign-card {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 10px 12px;
-  flex-wrap: wrap;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  transition: all 0.2s;
+}
+
+.lok-assign-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.lok-assign-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .lok-assign-avatar {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: linear-gradient(135deg, #0f172a, #334155);
   color: white;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   position: relative;
 }
 
@@ -318,8 +335,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center top;
-  border-radius: 50%;
   display: block;
 }
 
@@ -331,43 +346,131 @@
   height: 100%;
 }
 
-.lok-assign-info { flex: 1; min-width: 0; overflow: hidden; }
+.lok-assign-info {
+  flex: 1;
+  min-width: 0;
+}
 
 .lok-assign-name {
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #0f172a;
-  white-space: nowrap;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: normal;
 }
 
-.lok-assign-id {
-  font-size: 0.7rem;
-  color: #64748b;
+.lok-assign-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.lok-assign-select {
-  flex-shrink: 0;
-  width: auto;
-  min-width: 130px;
-  flex-grow: 1;
+.lok-badge-id {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 5px;
+  letter-spacing: 0.05em;
 }
 
-.lok-assign-select select {
+.lok-badge-status {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.lok-badge-status.assigned {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.lok-badge-status.unassigned {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.lok-assign-card-action {
+  padding: 12px 16px;
+  background: #fafafa;
+}
+
+.lok-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
-  padding: 6px 8px;
-  border: 1px solid #e2e8f0;
-  border-radius: 9px;
-  font-size: 0.74rem;
-  font-weight: 500;
-  color: #0f172a;
-  background: #f8fafc;
-  outline: none;
-  cursor: pointer;
-  max-width: 100%;
+  border-radius: 10px;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  transition: all 0.2s ease;
 }
-.lok-assign-select select:focus { border-color: #6366f1; }
+
+.lok-select-wrapper:focus-within {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+
+.lok-select-icon {
+  position: absolute;
+  left: 12px;
+  color: #6366f1;
+  pointer-events: none;
+}
+
+.lok-select-wrapper select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  padding: 10px 36px 10px 36px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+  outline: none;
+}
+
+.lok-select-wrapper select.empty {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.lok-select-wrapper select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.lok-select-arrow {
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-small {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
 
 /* ── Modal ────────────────────────────────────────────── */
 .lok-overlay {

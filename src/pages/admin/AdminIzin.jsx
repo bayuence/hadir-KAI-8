@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../../services/api'
 import BottomNav from '../../components/BottomNav'
 import './Admin.css'
+import './AdminIzin.css'
 
 import AdminHeader from '../../components/AdminHeader'
 

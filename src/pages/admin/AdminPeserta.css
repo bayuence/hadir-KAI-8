@@ -1,0 +1,531 @@
+/* ============================================================
+   ADMIN PESERTA (KELOLA PESERTA) — CORPORATE ENTERPRISE CSS
+   ============================================================ */
+
+/* ── Stats Grid ────────────────────────────────────────────── */
+.peserta-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.peserta-stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  border: 1px solid #e2e8f0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.peserta-stat-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15,23,42,0.05);
+}
+
+.peserta-stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.peserta-stat-lbl {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+.peserta-stat-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.peserta-stat-icon-wrap.icon-blue { background: #eff6ff; color: #2563eb; }
+.peserta-stat-icon-wrap.icon-purple { background: #f3e8ff; color: #7c3aed; }
+.peserta-stat-icon-wrap.icon-green { background: #ecfdf5; color: #059669; }
+.peserta-stat-icon-wrap.icon-amber { background: #fffbeb; color: #d97706; }
+
+.peserta-stat-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.peserta-stat-val {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+  font-family: system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.peserta-stat-hint {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* ── Controls & Filter Toolbar ──────────────────────────────── */
+.peserta-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.peserta-search-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.peserta-search-icon {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.peserta-search-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 36px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  font-size: 0.85rem;
+  color: #1e293b;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.peserta-search-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+.peserta-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.peserta-search-clear {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #cbd5e1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.peserta-search-clear:hover {
+  color: #64748b;
+}
+
+.peserta-select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.peserta-role-select {
+  height: 42px;
+  padding: 0 32px 0 14px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.peserta-role-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+.peserta-select-chevron {
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+  color: #64748b;
+}
+
+/* ── Cards List ────────────────────────────────────────────── */
+.peserta-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.peserta-card {
+  background: white;
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.peserta-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15,23,42,0.06);
+}
+
+.peserta-card.is-admin {
+  border-left: 4px solid #7c3aed;
+}
+
+.peserta-card-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.peserta-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.peserta-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.peserta-avatar-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f8fafc;
+}
+
+.peserta-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.peserta-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.peserta-nama {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.peserta-role-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.peserta-role-badge.purple {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+}
+
+.peserta-role-badge.blue {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.peserta-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.peserta-chip-id {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: #f8fafc;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.peserta-chip-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #475569;
+  background: #f8fafc;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.peserta-chip-meta svg {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.peserta-lokasi-info {
+  margin-top: 4px;
+}
+
+.peserta-lok-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.peserta-lok-badge.assigned {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.peserta-lok-badge.unassigned {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+/* ── Action Buttons ────────────────────────────────────────── */
+.peserta-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.peserta-act-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.peserta-act-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.peserta-act-btn.edit {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+.peserta-act-btn.edit:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.peserta-act-btn.role.promote {
+  background: #f3e8ff;
+  border-color: #d8b4fe;
+  color: #6b21a8;
+}
+.peserta-act-btn.role.promote:hover:not(:disabled) {
+  background: #e9d5ff;
+}
+
+.peserta-act-btn.role.demote {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+.peserta-act-btn.role.demote:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.peserta-act-btn.delete {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+  flex: 0 0 auto;
+  padding: 8px 14px;
+}
+.peserta-act-btn.delete:hover:not(:disabled) {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+/* ── Custom Confirm Modal ────────────────────────────────────── */
+.confirm-modal {
+  max-width: 380px !important;
+  text-align: center;
+  padding: 24px 20px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.confirm-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.confirm-icon.danger {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.confirm-icon.warning {
+  background: #fffbeb;
+  color: #f59e0b;
+}
+
+.confirm-icon.info {
+  background: #f0fdf4;
+  color: #10b981;
+}
+
+.confirm-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.confirm-msg {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 0 0 20px 0;
+  line-height: 1.45;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.confirm-btn-cancel {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.confirm-btn-cancel:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.confirm-btn-ok {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.confirm-btn-ok.danger {
+  background: #dc2626;
+}
+.confirm-btn-ok.danger:hover {
+  background: #b91c1c;
+}
+
+.confirm-btn-ok.warning {
+  background: #7c3aed;
+}
+.confirm-btn-ok.warning:hover {
+  background: #6d28d9;
+}
+
+.confirm-btn-ok.info {
+  background: #0284c7;
+}
+.confirm-btn-ok.info:hover {
+  background: #0369a1;
+}
+

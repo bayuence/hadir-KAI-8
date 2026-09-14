@@ -269,40 +269,66 @@ export default function AdminLokasi() {
                 ) : (
                   <div className="lok-assign-list">
                     {filtered.map(p => (
-                      <div className="lok-assign-row" key={p.id}>
-                        <div className="lok-assign-avatar">
-                          {p.foto ? (
-                            <img src={driveAvatarUrl(p.foto)} alt={p.nama} className="lok-assign-avatar-img"
-                              onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}
-                            />
-                          ) : null}
-                          <span className="lok-assign-avatar-initial" style={p.foto ? {display:'none'} : {}}>
-                            {p.nama?.charAt(0)?.toUpperCase()}
-                          </span>
+                      <div className="lok-assign-card" key={p.id}>
+                        <div className="lok-assign-card-header">
+                          <div className="lok-assign-avatar">
+                            {p.foto ? (
+                              <img src={driveAvatarUrl(p.foto)} alt={p.nama} className="lok-assign-avatar-img"
+                                onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}
+                              />
+                            ) : null}
+                            <span className="lok-assign-avatar-initial" style={p.foto ? {display:'none'} : {}}>
+                              {p.nama?.charAt(0)?.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="lok-assign-info">
+                            <p className="lok-assign-name" title={p.nama}>{p.nama}</p>
+                            <div className="lok-assign-meta">
+                              <span className="lok-badge-id">{p.id}</span>
+                              {p.idLokasi ? (
+                                <span className="lok-badge-status assigned">Ditugaskan</span>
+                              ) : (
+                                <span className="lok-badge-status unassigned">Belum Ada Lokasi</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="lok-assign-info">
-                          <p className="lok-assign-name">{p.nama}</p>
-                          <p className="lok-assign-id">{p.id}</p>
-                        </div>
-                        <div className="lok-assign-select">
-                          <select
-                            disabled={assignLoading === p.id}
-                            value={p.idLokasi || ''}
-                            onChange={e => {
-                              const val = e.target.value
-                              setPesertaList(prev => prev.map(x => x.id === p.id ? { ...x, idLokasi: val } : x))
-                              handleAssign(p.id, val)
-                            }}
-                          >
-                            <option value="">Pilih Lokasi</option>
-                            {unitList.map(unit => (
-                              <optgroup key={unit.id} label={unit.nama}>
-                                {lokasiList.filter(l => l.idInduk === unit.id).map(lok => (
-                                  <option key={lok.id} value={lok.id}>{lok.nama}</option>
-                                ))}
-                              </optgroup>
-                            ))}
-                          </select>
+
+                        <div className="lok-assign-card-action">
+                          <div className="lok-select-wrapper">
+                            <svg className="lok-select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            <select
+                              className={!p.idLokasi ? 'empty' : ''}
+                              disabled={assignLoading === p.id}
+                              value={p.idLokasi || ''}
+                              onChange={e => {
+                                const val = e.target.value
+                                setPesertaList(prev => prev.map(x => x.id === p.id ? { ...x, idLokasi: val } : x))
+                                handleAssign(p.id, val)
+                              }}
+                            >
+                              <option value="" disabled hidden>Pilih Penempatan Lokasi...</option>
+                              <option value="">-- Kosongkan / Hapus Lokasi --</option>
+                              {unitList.map(unit => (
+                                <optgroup key={unit.id} label={unit.nama}>
+                                  {lokasiList.filter(l => l.idInduk === unit.id).map(lok => (
+                                    <option key={lok.id} value={lok.id}>{lok.nama}</option>
+                                  ))}
+                                </optgroup>
+                              ))}
+                            </select>
+                            <div className="lok-select-arrow">
+                              {assignLoading === p.id ? (
+                                <div className="spinner-small" />
+                              ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}

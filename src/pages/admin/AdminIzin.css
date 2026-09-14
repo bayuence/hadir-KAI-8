@@ -1,0 +1,36 @@
+/* ============================================================
+   ADMIN IZIN (PERSETUJUAN IZIN) — CSS
+   ============================================================ */
+
+.admin-izin-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.admin-izin-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.admin-jenis-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 100px;
+  text-transform: capitalize;
+}
+.admin-izin-alasan {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-style: italic;
+  margin-bottom: 12px;
+  background: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+.admin-izin-card .admin-peserta-actions {
+  flex-direction: row;
+  justify-content: flex-end;
+}

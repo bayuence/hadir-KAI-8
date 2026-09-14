@@ -51,6 +51,10 @@ function doPost(e) {
       case 'savePenugasan':     result = handleSavePenugasan(data);     break;
       case 'deletePenugasan':   result = handleDeletePenugasan(data);   break;
       case 'assignLokasi':      result = handleAssignLokasi(data);      break;
+      case 'getAllUsersAdmin':  result = handleGetAllUsersAdmin(data);  break;
+      case 'saveUserAdmin':     result = handleSaveUserAdmin(data);     break;
+      case 'deleteUserAdmin':   result = handleDeleteUserAdmin(data);   break;
+      case 'toggleAdminRole':   result = handleToggleAdminRole(data);   break;
       default: result = { success: false, message: 'Action tidak dikenal' };
     }
     return respond(result);
@@ -624,8 +628,8 @@ function handleDaftar(data) {
   if (sheet.getLastRow() === 0) setupDropdownRole();
 
   var fotoUrl = data.foto64 ? uploadFoto(data.foto64, 'profil_' + data.nama.replace(/\s/g,'_') + '_' + Date.now() + '.jpg') : '';
-  sheet.appendRow([new Date().toISOString(), data.nama.trim(), data.tanggalLahir.trim(), data.alamat, data.noHp, data.email, data.kampus, data.jurusan, data.mulaiMagang || '', data.selesaiMagang || '', fotoUrl, 'pending', 'intern', '', generatePesertaId()]);
-  return { success: true, message: 'Pendaftaran berhasil! Tunggu persetujuan admin.' };
+  sheet.appendRow([new Date().toISOString(), data.nama.trim(), data.tanggalLahir.trim(), data.alamat, data.noHp, data.email, data.kampus, data.jurusan, data.mulaiMagang || '', data.selesaiMagang || '', fotoUrl, 'active', 'intern', '', generatePesertaId()]);
+  return { success: true, message: 'Pendaftaran berhasil! Silakan login.' };
 }
 
 function handleGetProfile(data) {
@@ -864,6 +868,119 @@ function handleApproveUser(data) {
   return { success: false };
 }
 
+function handleRejectUser(data) {
+  return handleDeleteUserAdmin(data);
+}
+
+function handleGetAllUsersAdmin(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  var sheet = getSheet('WEB Register');
+  if (!sheet) return { success: true, data: [] };
+  var rows = sheet.getDataRange().getDisplayValues(), result = [];
+  for (var i = 1; i < rows.length; i++) {
+    if (!rows[i][1]) continue; // skip empty rows
+    var fotoUrl = rows[i][10] || '';
+    if (fotoUrl) {
+      var idFoto = extractDriveId(fotoUrl);
+      if (idFoto) fotoUrl = 'https://drive.google.com/thumbnail?id=' + idFoto + '&sz=w200';
+    }
+    result.push({
+      id: rows[i][14],
+      nama: rows[i][1],
+      tanggalLahir: rows[i][2],
+      alamat: rows[i][3],
+      noHp: rows[i][4],
+      email: rows[i][5],
+      kampus: rows[i][6],
+      jurusan: rows[i][7],
+      mulaiMagang: rows[i][8],
+      selesaiMagang: rows[i][9],
+      foto: fotoUrl,
+      status: rows[i][11] || 'active',
+      role: rows[i][12] || 'intern',
+      idLokasi: rows[i][13] || ''
+    });
+  }
+  return { success: true, data: result };
+}
+
+function handleSaveUserAdmin(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  var sheet = getSheet('WEB Register');
+  if (!sheet) return { success: false, message: 'Sheet tidak ditemukan.' };
+  var rows = sheet.getDataRange().getDisplayValues();
+  
+  if (data.id) {
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][14] === data.id) {
+        if (data.nama !== undefined) sheet.getRange(i + 1, 2).setValue(data.nama.trim());
+        if (data.tanggalLahir !== undefined) sheet.getRange(i + 1, 3).setValue(data.tanggalLahir.trim());
+        if (data.alamat !== undefined) sheet.getRange(i + 1, 4).setValue(data.alamat);
+        if (data.noHp !== undefined) sheet.getRange(i + 1, 5).setValue(data.noHp);
+        if (data.email !== undefined) sheet.getRange(i + 1, 6).setValue(data.email);
+        if (data.kampus !== undefined) sheet.getRange(i + 1, 7).setValue(data.kampus);
+        if (data.jurusan !== undefined) sheet.getRange(i + 1, 8).setValue(data.jurusan);
+        if (data.mulaiMagang !== undefined) sheet.getRange(i + 1, 9).setValue(data.mulaiMagang);
+        if (data.selesaiMagang !== undefined) sheet.getRange(i + 1, 10).setValue(data.selesaiMagang);
+        if (data.status !== undefined) sheet.getRange(i + 1, 12).setValue(data.status);
+        if (data.role !== undefined) sheet.getRange(i + 1, 13).setValue(data.role);
+        if (data.idLokasi !== undefined) sheet.getRange(i + 1, 14).setValue(data.idLokasi);
+        return { success: true, message: 'Data peserta berhasil diperbarui.' };
+      }
+    }
+    return { success: false, message: 'Peserta tidak ditemukan.' };
+  } else {
+    var newId = generatePesertaId();
+    sheet.appendRow([
+      new Date().toISOString(),
+      data.nama.trim(),
+      data.tanggalLahir.trim(),
+      data.alamat || '',
+      data.noHp || '',
+      data.email || '',
+      data.kampus || '',
+      data.jurusan || '',
+      data.mulaiMagang || '',
+      data.selesaiMagang || '',
+      '', // fotoUrl kosong dulu dari admin
+      data.status || 'active',
+      data.role || 'intern',
+      data.idLokasi || '',
+      newId
+    ]);
+    return { success: true, message: 'Peserta baru berhasil ditambahkan.' };
+  }
+}
+
+function handleDeleteUserAdmin(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  var sheet = getSheet('WEB Register');
+  if (!sheet) return { success: false, message: 'Sheet tidak ditemukan.' };
+  var rows = sheet.getDataRange().getDisplayValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][14] === data.idPeserta) {
+      sheet.deleteRow(i + 1);
+      return { success: true, message: 'Peserta berhasil dihapus.' };
+    }
+  }
+  return { success: false, message: 'Peserta tidak ditemukan.' };
+}
+
+function handleToggleAdminRole(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  var sheet = getSheet('WEB Register');
+  if (!sheet) return { success: false, message: 'Sheet tidak ditemukan.' };
+  var rows = sheet.getDataRange().getDisplayValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][14] === data.idPeserta) {
+      var newRole = data.role === 'admin' ? 'admin' : 'intern';
+      sheet.getRange(i + 1, 13).setValue(newRole);
+      return { success: true, message: 'Role berhasil diubah menjadi ' + newRole + '.' };
+    }
+  }
+  return { success: false, message: 'Peserta tidak ditemukan.' };
+}
+
 // ─── UTILITIES KECIL ─────────────────────────────────────────
 function hitungJarak(lat1, lon1, lat2, lon2) {
   var R = 6371000, rad = Math.PI / 180;
@@ -1077,3 +1194,119 @@ function handleAssignLokasi(data) {
   }
   return { success: false, message: 'Peserta tidak ditemukan.' };
 }
+
+function handleGetAllUsersAdmin(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  var sheet = getSheet('WEB Register');
+  if (!sheet) return { success: true, data: [] };
+
+  var rows = sheet.getDataRange().getDisplayValues();
+  var list = [];
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][1]) {
+      var fotoUrl = rows[i][10] || '';
+      if (fotoUrl) {
+        var idFoto = extractDriveId(fotoUrl);
+        if (idFoto) fotoUrl = 'https://drive.google.com/thumbnail?id=' + idFoto + '&sz=w200';
+      }
+      list.push({
+        id:            rows[i][14],
+        nama:          rows[i][1],
+        tanggalLahir:  rows[i][2],
+        alamat:        rows[i][3],
+        noHp:          rows[i][4],
+        email:         rows[i][5],
+        kampus:        rows[i][6],
+        jurusan:       rows[i][7],
+        mulaiMagang:   rows[i][8],
+        selesaiMagang: rows[i][9],
+        foto:          fotoUrl,
+        status:        rows[i][11] || 'active',
+        role:          rows[i][12] || 'intern',
+        idLokasi:      rows[i][13] || ''
+      });
+    }
+  }
+  return { success: true, data: list };
+}
+
+function handleSaveUserAdmin(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  if (!data.nama || !data.nama.trim()) return { success: false, message: 'Nama wajib diisi.' };
+
+  var sheet = getOrCreateSheet('WEB Register');
+  var rows  = sheet.getDataRange().getDisplayValues();
+
+  if (data.id) {
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][14] === data.id) {
+        if (data.nama !== undefined) sheet.getRange(i + 1, 2).setValue(data.nama);
+        if (data.tanggalLahir !== undefined) sheet.getRange(i + 1, 3).setValue(data.tanggalLahir);
+        if (data.alamat !== undefined) sheet.getRange(i + 1, 4).setValue(data.alamat);
+        if (data.noHp !== undefined) sheet.getRange(i + 1, 5).setValue(data.noHp);
+        if (data.email !== undefined) sheet.getRange(i + 1, 6).setValue(data.email);
+        if (data.kampus !== undefined) sheet.getRange(i + 1, 7).setValue(data.kampus);
+        if (data.jurusan !== undefined) sheet.getRange(i + 1, 8).setValue(data.jurusan);
+        if (data.role !== undefined) sheet.getRange(i + 1, 13).setValue(data.role);
+        if (data.idLokasi !== undefined) sheet.getRange(i + 1, 14).setValue(data.idLokasi);
+        return { success: true, message: 'Data peserta berhasil disimpan!' };
+      }
+    }
+    return { success: false, message: 'Peserta tidak ditemukan.' };
+  }
+
+  var newId = generatePesertaId();
+  sheet.appendRow([
+    new Date().toISOString(),
+    data.nama.trim(),
+    data.tanggalLahir ? data.tanggalLahir.trim() : '',
+    data.alamat || '',
+    data.noHp || '',
+    data.email || '',
+    data.kampus || '',
+    data.jurusan || '',
+    '',
+    '',
+    '',
+    'active',
+    data.role || 'intern',
+    data.idLokasi || '',
+    newId
+  ]);
+  return { success: true, message: 'Peserta baru berhasil ditambahkan!', id: newId };
+}
+
+function handleDeleteUserAdmin(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  if (!data.idPeserta) return { success: false, message: 'ID Peserta wajib diisi.' };
+
+  var sheet = getSheet('WEB Register');
+  if (!sheet) return { success: false, message: 'Sheet WEB Register tidak ditemukan.' };
+
+  var rows = sheet.getDataRange().getDisplayValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][14] === data.idPeserta) {
+      sheet.deleteRow(i + 1);
+      return { success: true, message: 'Peserta berhasil dihapus.' };
+    }
+  }
+  return { success: false, message: 'Peserta tidak ditemukan.' };
+}
+
+function handleToggleAdminRole(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  if (!data.idPeserta || !data.role) return { success: false, message: 'Data parameter tidak lengkap.' };
+
+  var sheet = getSheet('WEB Register');
+  if (!sheet) return { success: false, message: 'Sheet WEB Register tidak ditemukan.' };
+
+  var rows = sheet.getDataRange().getDisplayValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][14] === data.idPeserta) {
+      sheet.getRange(i + 1, 13).setValue(data.role);
+      return { success: true, message: 'Role peserta berhasil diubah.' };
+    }
+  }
+  return { success: false, message: 'Peserta tidak ditemukan.' };
+}
+

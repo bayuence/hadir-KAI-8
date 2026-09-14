@@ -81,5 +81,17 @@ export const api = {
 
     assignLokasi: (idPeserta, idLokasi) =>
       fetchGAS({ action: 'assignLokasi', idPeserta, idLokasi, adminToken: ADMIN_TOKEN }),
+
+    getAllUsers: () =>
+      fetchGAS({ action: 'getAllUsersAdmin', adminToken: ADMIN_TOKEN }),
+      
+    saveUser: (payload) =>
+      fetchGAS({ action: 'saveUserAdmin', ...payload, adminToken: ADMIN_TOKEN }),
+      
+    deleteUser: (idPeserta) =>
+      fetchGAS({ action: 'deleteUserAdmin', idPeserta, adminToken: ADMIN_TOKEN }),
+      
+    toggleAdminRole: (idPeserta, role) =>
+      fetchGAS({ action: 'toggleAdminRole', idPeserta, role, adminToken: ADMIN_TOKEN }),
   }
 }
