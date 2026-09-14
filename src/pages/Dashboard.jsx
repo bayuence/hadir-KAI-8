@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import { formatTanggal, formatTime, hitungDurasi } from '../utils/date'
+import { useGeo } from '../hooks/useGeo'
 import BottomNav from '../components/BottomNav'
 import LocationBanner from '../components/LocationBanner'
 import './Dashboard.css'
@@ -10,6 +11,7 @@ import './Dashboard.css'
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user, token } = useAuth()
+  const geo = useGeo(user?.lat, user?.long, user?.radius || 100)
   const [status, setStatus] = useState({ sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null })
   const [loading, setLoading] = useState(true)
   const [jam, setJam] = useState(new Date().toLocaleTimeString('id-ID', { hour12: false }))
@@ -60,13 +62,15 @@ export default function Dashboard() {
   }, [status])
 
   useEffect(() => {
-    if (user) {
+    let isMounted = true
+    if (user?.id) {
       api.getStatusHariIni(user.id, token)
-        .then(d => { if (d.success) setStatus(d.data) })
+        .then(d => { if (isMounted && d.success) setStatus(d.data) })
         .catch(() => {})
-        .finally(() => setLoading(false))
+        .finally(() => { if (isMounted) setLoading(false) })
     }
-  }, [user, token])
+    return () => { isMounted = false }
+  }, [user?.id, token])
 
   const durasi = hitungDurasi(status.jamMasuk, status.jamPulang)
 
@@ -169,19 +173,28 @@ export default function Dashboard() {
         </div>
 
         <div className="dash-actions animate-fade-up">
-          <button className="btn btn-success" disabled={status.sudahMasuk} onClick={() => navigate('/presensi/masuk')}>
+          <button 
+            className="btn btn-success" 
+            disabled={status.sudahMasuk || geo.isDiLuarArea || geo.distance === null || geo.err} 
+            onClick={() => navigate('/presensi/masuk')}
+          >
             <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
               <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5"/>
               <path d="M7 10l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            {status.sudahMasuk ? 'Sudah Presensi Masuk' : 'Presensi Masuk'}
+            {status.sudahMasuk ? 'Sudah Presensi Masuk' : geo.err ? 'GPS Error' : (geo.distance === null ? 'Mencari Lokasi...' : (geo.isDiLuarArea ? 'Di Luar Area' : 'Presensi Masuk'))}
           </button>
-          <button className="btn btn-outline" style={{ color: status.sudahMasuk && !status.sudahPulang ? 'var(--red)' : undefined, borderColor: status.sudahMasuk && !status.sudahPulang ? 'var(--red)' : undefined }} disabled={!status.sudahMasuk || status.sudahPulang} onClick={() => navigate('/presensi/pulang')}>
+          <button 
+            className="btn btn-outline" 
+            style={{ color: status.sudahMasuk && !status.sudahPulang && !geo.isDiLuarArea ? 'var(--red)' : undefined, borderColor: status.sudahMasuk && !status.sudahPulang && !geo.isDiLuarArea ? 'var(--red)' : undefined }} 
+            disabled={!status.sudahMasuk || status.sudahPulang || geo.isDiLuarArea || geo.distance === null || geo.err} 
+            onClick={() => navigate('/presensi/pulang')}
+          >
             <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
               <path d="M12 4l-7 6 7 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M5 10h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
-            {status.sudahPulang ? 'Sudah Presensi Pulang' : 'Presensi Pulang'}
+            {status.sudahPulang ? 'Sudah Presensi Pulang' : geo.err ? 'GPS Error' : (geo.distance === null ? 'Mencari Lokasi...' : (geo.isDiLuarArea ? 'Di Luar Area' : 'Presensi Pulang'))}
           </button>
           <button className="btn btn-ghost" onClick={() => navigate('/izin')}>
             <svg viewBox="0 0 20 20" fill="none" width="18" height="18">

@@ -260,8 +260,9 @@ export default function AdminLokasi() {
             ) : pesertaList.length === 0 ? (
               <div className="admin-empty"><p>Belum ada peserta aktif.</p></div>
             ) : (() => {
+                const q = searchQuery.toLowerCase().trim()
                 const filtered = pesertaList.filter(p =>
-                  p.nama?.toLowerCase().includes(searchQuery.toLowerCase())
+                  p.nama?.toLowerCase().includes(q) || p.id?.toLowerCase().includes(q)
                 )
                 return filtered.length === 0 ? (
                   <div className="admin-empty"><p>Tidak ada peserta dengan nama "{searchQuery}"</p></div>

@@ -67,18 +67,22 @@ export default function Profil() {
   const isAdmin = user?.role === 'admin'
 
   useEffect(() => {
-    if (!user || !token) return
+    let isMounted = true
+    if (!user?.id || !token) return
+    
     api.getProfile(user.id, token)
       .then(res => {
+        if (!isMounted) return // Prevent updating state if unmounted (e.g. user logged out)
         if (res.success && res.data) {
-          // Konversi foto ke format lh3 Safari-safe
           if (res.data.foto) res.data.foto = driveAvatarUrl(res.data.foto) || res.data.foto
           setProfileData(res.data)
           loginContext({ ...user, ...res.data }, token)
         }
       })
       .catch(() => {})
-  }, [user, token])
+      
+    return () => { isMounted = false }
+  }, [user?.id, token]) // Hanya bergantung pada ID dan token, bukan seluruh object user
 
   // Merge: profileData override semua kecuali foto — foto tetap dari user (localStorage) jika profileData tidak punya
   const profile = profileData
@@ -143,7 +147,7 @@ export default function Profil() {
               ))}
             </nav>
             <div className="sidebar-divider" />
-            <button className="sidebar-logout" onClick={logoutContext}>
+            <button className="sidebar-logout" onClick={() => { logoutContext(); navigate('/login'); }}>
               <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"
                   stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -323,7 +327,7 @@ export default function Profil() {
 
         <button className="btn btn-outline"
           style={{ color: 'var(--red)', borderColor: 'var(--red)', marginTop: 8, width: '100%' }}
-          onClick={logoutContext}>
+          onClick={() => { logoutContext(); navigate('/login'); }}>
           Keluar dari Akun
         </button>
       </div>

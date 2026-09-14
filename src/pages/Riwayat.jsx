@@ -64,13 +64,14 @@ export default function Riwayat() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!user || !token) { navigate('/login'); return }
+    let isMounted = true
+    if (!user?.id || !token) { navigate('/login'); return }
     api.getRiwayat(user.id, token)
       .then(res => {
+        if (!isMounted) return
         if (res.success) {
           setRiwayat(res.data || [])
         } else {
-          // Sesi expired atau error lain
           if (res.message && res.message.includes('Sesi')) {
             navigate('/login')
           } else {
@@ -78,9 +79,15 @@ export default function Riwayat() {
           }
         }
       })
-      .catch(err => { console.error('Error fetching riwayat:', err); setError('Tidak dapat terhubung ke server') })
-      .finally(() => setLoading(false))
-  }, [user, token])
+      .catch(err => { 
+        if (!isMounted) return
+        console.error('Error fetching riwayat:', err); 
+        setError('Tidak dapat terhubung ke server') 
+      })
+      .finally(() => { if (isMounted) setLoading(false) })
+      
+    return () => { isMounted = false }
+  }, [user?.id, token])
 
   // Filter data — gunakan parseTanggal agar cocok dengan semua format
   const filtered = riwayat.filter(item => {

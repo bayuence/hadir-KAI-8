@@ -724,15 +724,24 @@ function handleCheckIn(data) {
   for (var i = 1; i < regRows.length; i++) if (regRows[i][14] === data.idPeserta) { peserta = regRows[i]; break; }
   
   var idLokasi = peserta[13];
+  var namaLokasi = 'KANTOR DAOP';
+  
   if (idLokasi) {
-    var lokSheet = getSheet('WEB Lokasi');
-    if (lokSheet) {
-      var lokRows = lokSheet.getDataRange().getDisplayValues();
-      for (var j = 1; j < lokRows.length; j++) {
-        if (lokRows[j][0] === idLokasi) {
-          var jarak  = hitungJarak(data.latitude, data.longitude, lokRows[j][3], lokRows[j][4]);
-          var radius = lokRows[j][5] || CONFIG.GEOFENCE_RADIUS;
-          if (jarak > radius) return { success: false, message: 'Di luar area (' + Math.round(jarak) + 'm).' };
+    namaLokasi = idLokasi; // Default to ID if not found
+    var penSheet = getSheet('WEB Penugasan');
+    if (penSheet) {
+      var penRows = penSheet.getDataRange().getValues();
+      for (var j = 1; j < penRows.length; j++) {
+        if (penRows[j][0] === idLokasi && penRows[j][1] === 'lokasi') {
+          namaLokasi = penRows[j][3];
+          var latLokasi = parseFloat(penRows[j][5]);
+          var lngLokasi = parseFloat(penRows[j][6]);
+          var radiusLokasi = parseInt(penRows[j][7]) || CONFIG.GEOFENCE_RADIUS;
+          
+          if (!isNaN(latLokasi) && !isNaN(lngLokasi)) {
+            var jarak  = hitungJarak(data.latitude, data.longitude, latLokasi, lngLokasi);
+            if (jarak > radiusLokasi) return { success: false, message: 'Di luar area (' + Math.round(jarak) + 'm).' };
+          }
           break;
         }
       }
@@ -754,13 +763,6 @@ function handleCheckIn(data) {
 
   var jamMasuk = formatJam(data.timestamp ? new Date(data.timestamp) : new Date());
   var fotoUrl = data.foto64 ? uploadFoto(data.foto64, 'masuk_' + data.idPeserta + '_' + today.replace(/\//g,'-') + '.jpg') : '';
-  
-  var namaLokasi = idLokasi || 'KANTOR DAOP';
-  var lS = getSheet('WEB Lokasi');
-  if (lS && idLokasi) {
-    var lR = lS.getDataRange().getDisplayValues();
-    for (var m = 1; m < lR.length; m++) if (lR[m][0] === idLokasi) { namaLokasi = lR[m][1]; break; }
-  }
 
   dataSheet.appendRow([today, data.idPeserta, peserta[1], namaLokasi, jamMasuk, fotoUrl, '', '', '', data.latitude+','+data.longitude, '', 'Hadir']);
   return { success: true, jamMasuk: jamMasuk };
