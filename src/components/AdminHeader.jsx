@@ -77,7 +77,7 @@ export default function AdminHeader({ title }) {
             src={profile.foto}
             name={profile.nama || ''}
             size={52}
-            style={{ border: '2px solid rgba(255,255,255,0.3)' }}
+            style={{ border: '2px solid rgba(255,255,255,0.3)', margin: '0 auto 12px' }}
           />
           <p className="sidebar-name">{profile.nama}</p>
           <p className="sidebar-lokasi">{profile.lokasi || '—'}</p>
