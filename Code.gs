@@ -521,11 +521,11 @@ function handleGetPesertaList() {
   var list = [];
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][1] && rows[i][11] === 'active') {
-      // Convert URL foto ke format thumbnail agar bisa diembed di browser
+      // Konversi URL foto ke format lh3 CDN Google untuk daftar peserta
       var fotoUrl = rows[i][10] || '';
       if (fotoUrl) {
         var idFoto = extractDriveId(fotoUrl);
-        if (idFoto) fotoUrl = 'https://drive.google.com/thumbnail?id=' + idFoto + '&sz=w200';
+        if (idFoto) fotoUrl = 'https://lh3.googleusercontent.com/d/' + idFoto + '=s200';
       }
       list.push({
         id:       rows[i][14],
@@ -605,11 +605,12 @@ function handleLogin(data) {
           }
         }
   
-        // Konversi URL foto ke format thumbnail yang bisa diembed di browser
+        // Konversi URL foto ke format lh3 CDN Google
+        // lh3.googleusercontent.com tidak butuh cookie/session, aman di semua browser & Safari
         var fotoLogin = rows[i][10] || '';
         if (fotoLogin) {
           var idFotoLogin = extractDriveId(fotoLogin);
-          if (idFotoLogin) fotoLogin = 'https://drive.google.com/thumbnail?id=' + idFotoLogin + '&sz=w400';
+          if (idFotoLogin) fotoLogin = 'https://lh3.googleusercontent.com/d/' + idFotoLogin + '=s400';
         }
 
         var token = createSession(rows[i][14]);
@@ -664,11 +665,12 @@ function handleGetProfile(data) {
   var rows = sheet.getDataRange().getDisplayValues();
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][14] === idPeserta) {
-      // Konversi URL foto ke format thumbnail yang bisa diembed
+      // Konversi URL foto ke format lh3 CDN Google
+      // lh3.googleusercontent.com tidak butuh cookie/session, aman di semua browser & Safari
       var fotoUrl = rows[i][10] || '';
       if (fotoUrl) {
         var idFoto = extractDriveId(fotoUrl);
-        if (idFoto) fotoUrl = 'https://drive.google.com/thumbnail?id=' + idFoto + '&sz=w400';
+        if (idFoto) fotoUrl = 'https://lh3.googleusercontent.com/d/' + idFoto + '=s400';
       }
       
       var lat = null, lng = null, radius = 100, lokasiNama = rows[i][13], unitKerjaNama = '—';

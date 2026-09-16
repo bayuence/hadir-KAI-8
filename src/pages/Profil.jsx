@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import BottomNav from '../components/BottomNav'
-import { driveAvatarUrl } from '../utils/driveImage'
+import Avatar from '../components/Avatar'
 import './Profil.css'
 
 const ADMIN_MENUS = [
@@ -60,7 +60,7 @@ const ADMIN_MENUS = [
 ]
 
 export default function Profil() {
-  const { user, token, loginContext, logoutContext } = useAuth()
+  const { user, token, logoutContext } = useAuth()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileData, setProfileData] = useState(null)
@@ -72,24 +72,23 @@ export default function Profil() {
     
     api.getProfile(user.id, token)
       .then(res => {
-        if (!isMounted) return // Prevent updating state if unmounted (e.g. user logged out)
+        if (!isMounted) return
         if (res.success && res.data) {
-          if (res.data.foto) res.data.foto = driveAvatarUrl(res.data.foto) || res.data.foto
+          // Simpan data mentah — Avatar component yang akan konversi URL foto
+          // Jangan panggil loginContext dari sini untuk menghindari loop re-render
           setProfileData(res.data)
-          loginContext({ ...user, ...res.data }, token)
         }
       })
       .catch(() => {})
       
     return () => { isMounted = false }
-  }, [user?.id, token]) // Hanya bergantung pada ID dan token, bukan seluruh object user
+  }, [user?.id, token])
 
-  // Merge: profileData override semua, pastikan foto dikonversi ke format lh3 Safari/PWA-safe
-  const rawFoto = profileData?.foto || user?.foto
-  const safeFoto = rawFoto ? (driveAvatarUrl(rawFoto) || rawFoto) : null
+  // Merge data: profileData override semua field dari user context
+  // Biarkan Avatar component yang handle konversi URL foto
   const profile = profileData
-    ? { ...user, ...profileData, foto: safeFoto }
-    : (user ? { ...user, foto: safeFoto } : null)
+    ? { ...user, ...profileData }
+    : (user || null)
 
   return (
     <div className="app-shell">
@@ -104,10 +103,12 @@ export default function Profil() {
               </svg>
             </button>
             <div className="sidebar-profile" onClick={() => { setSidebarOpen(false); navigate('/profil') }} style={{ cursor: 'pointer' }}>
-              {profile.foto ? (
-                <img src={profile.foto} alt={profile.nama} className="sidebar-avatar" style={{objectFit: 'cover', objectPosition: 'top', borderRadius:'50%'}} onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}/>
-              ) : null}
-              <div className="sidebar-avatar" style={{display: profile.foto ? 'none' : 'flex'}}>{profile.nama?.charAt(0).toUpperCase()}</div>
+              <Avatar
+                src={profile.foto}
+                name={profile.nama}
+                size={52}
+                style={{ border: '2px solid rgba(255,255,255,0.3)' }}
+              />
               <p className="sidebar-name">{profile.nama}</p>
               <p className="sidebar-lokasi">{profile.lokasi || '—'}</p>
               <span className="sidebar-role-badge">Administrator</span>
@@ -178,11 +179,12 @@ export default function Profil() {
 
         {profile && (
           <div className="profil-card">
-            {profile.foto ? (
-              <img src={profile.foto} alt={profile.nama} className="profil-avatar-lg" style={{objectFit: 'cover', objectPosition: 'top', borderRadius:'50%'}}
-                onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}/>
-            ) : null}
-            <div className="profil-avatar-lg" style={{display: profile.foto ? 'none' : 'flex'}}>{profile.nama?.charAt(0).toUpperCase()}</div>
+            <Avatar
+              src={profile.foto}
+              name={profile.nama}
+              size={88}
+              style={{ border: '3px solid #e5e7eb', margin: '0 auto 12px' }}
+            />
             <p className="profil-nama">{profile.nama}</p>
             <p className="profil-lokasi">{profile.lokasi || '—'}</p>
             <span className={`profil-role-badge ${isAdmin ? 'badge-admin' : 'badge-intern'}`}>

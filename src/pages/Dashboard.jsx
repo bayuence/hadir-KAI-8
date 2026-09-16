@@ -4,9 +4,9 @@ import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import { formatTanggal, formatTime, hitungDurasi } from '../utils/date'
 import { useGeo } from '../hooks/useGeo'
-import { driveAvatarUrl } from '../utils/driveImage'
 import BottomNav from '../components/BottomNav'
 import LocationBanner from '../components/LocationBanner'
+import Avatar from '../components/Avatar'
 import './Dashboard.css'
 
 export default function Dashboard() {
@@ -139,15 +139,13 @@ export default function Dashboard() {
             <p className="dash-greeting">Halo, {user.nama.split(' ')[0]}</p>
             <p className="dash-date">{formatTanggal()}</p>
           </div>
-          <div onClick={() => navigate('/profil')} style={{ cursor: 'pointer' }}>
-            {user.foto ? (
-              <img src={driveAvatarUrl(user.foto) || user.foto} alt={user.nama} className="dash-avatar" style={{objectFit: 'cover', objectPosition: 'top'}}
-                onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}/>
-            ) : null}
-            <div className="dash-avatar" style={{display: user.foto ? 'none' : 'flex'}}>
-              {user.nama.charAt(0).toUpperCase()}
-            </div>
-          </div>
+          <Avatar
+            src={user.foto}
+            name={user.nama}
+            size={42}
+            style={{ cursor: 'pointer', transition: 'opacity 0.25s', flexShrink: 0 }}
+            onClick={() => navigate('/profil')}
+          />
         </div>
 
         <div className="dash-location animate-fade-in">

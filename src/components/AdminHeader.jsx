@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import Avatar from './Avatar'
 
 const ADMIN_MENUS = [
   {
@@ -72,10 +73,12 @@ export default function AdminHeader({ title }) {
           </svg>
         </button>
         <div className="sidebar-profile" onClick={() => { setSidebarOpen(false); navigate('/profil') }} style={{ cursor: 'pointer' }} title="Buka Halaman Profil">
-          {profile.foto ? (
-            <img src={profile.foto} alt={profile.nama} className="sidebar-avatar" style={{objectFit: 'cover', objectPosition: 'top', borderRadius:'50%'}} onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}/>
-          ) : null}
-          <div className="sidebar-avatar" style={{display: profile.foto ? 'none' : 'flex'}}>{profile.nama?.charAt(0).toUpperCase()}</div>
+          <Avatar
+            src={profile.foto}
+            name={profile.nama || ''}
+            size={52}
+            style={{ border: '2px solid rgba(255,255,255,0.3)' }}
+          />
           <p className="sidebar-name">{profile.nama}</p>
           <p className="sidebar-lokasi">{profile.lokasi || '—'}</p>
           <span className="sidebar-role-badge">Administrator</span>

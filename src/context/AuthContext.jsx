@@ -17,7 +17,12 @@ export function AuthProvider({ children }) {
       try {
         const parsedUser = JSON.parse(storedUser)
         if (parsedUser.foto) {
-          parsedUser.foto = driveAvatarUrl(parsedUser.foto) || parsedUser.foto
+          const convertedFoto = driveAvatarUrl(parsedUser.foto)
+          if (convertedFoto && convertedFoto !== parsedUser.foto) {
+            // Migrasi URL foto lama ke format lh3 baru — simpan balik ke localStorage
+            parsedUser.foto = convertedFoto
+            try { localStorage.setItem('kai_user', JSON.stringify(parsedUser)) } catch (_) {}
+          }
         }
         setUser(parsedUser)
         setToken(storedToken)

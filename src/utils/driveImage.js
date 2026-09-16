@@ -21,12 +21,12 @@
 export function extractDriveFileId(url) {
   if (!url || typeof url !== 'string') return null
 
-  // Sudah format lh3 → ekstrak dari path
-  const lh3Match = url.match(/lh3\.googleusercontent\.com\/d\/([^/?&]+)/)
+  // Sudah format lh3 → ekstrak dari path (berhenti sebelum =sXXX parameter ukuran)
+  const lh3Match = url.match(/lh3\.googleusercontent\.com\/d\/([^/=?&]+)/)
   if (lh3Match) return lh3Match[1]
 
-  // Format ?id= atau &id=
-  const idParam = url.match(/[?&]id=([^&]+)/)
+  // Format ?id= atau &id= (termasuk drive.google.com/thumbnail?id=, /uc?id=, /open?id=)
+  const idParam = url.match(/[?&]id=([^&=]+)/)
   if (idParam) return idParam[1]
 
   // Format /file/d/FILE_ID/
