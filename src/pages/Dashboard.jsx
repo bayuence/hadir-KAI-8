@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import { formatTanggal, formatTime, hitungDurasi } from '../utils/date'
 import { useGeo } from '../hooks/useGeo'
+import { driveAvatarUrl } from '../utils/driveImage'
 import BottomNav from '../components/BottomNav'
 import LocationBanner from '../components/LocationBanner'
 import './Dashboard.css'
@@ -12,8 +13,24 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const { user, token } = useAuth()
   const geo = useGeo(user?.lat, user?.long, user?.radius || 100)
-  const [status, setStatus] = useState({ sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null })
-  const [loading, setLoading] = useState(true)
+
+  // Status dimuat instan dari cache localStorage (0 detik)
+  const [status, setStatus] = useState(() => {
+    if (user?.id) {
+      try {
+        const cached = localStorage.getItem(`kai_status_${user.id}`)
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          const today = new Date().toISOString().slice(0, 10)
+          if (parsed.date === today && parsed.data) {
+            return parsed.data
+          }
+        }
+      } catch (_) {}
+    }
+    return { sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null }
+  })
+
   const [jam, setJam] = useState(new Date().toLocaleTimeString('id-ID', { hour12: false }))
   const [runtime, setRuntime] = useState('00:00:00')
 
@@ -61,16 +78,41 @@ export default function Dashboard() {
     }
   }, [status])
 
-  useEffect(() => {
-    let isMounted = true
-    if (user?.id) {
-      api.getStatusHariIni(user.id, token)
-        .then(d => { if (isMounted && d.success) setStatus(d.data) })
-        .catch(() => {})
-        .finally(() => { if (isMounted) setLoading(false) })
-    }
-    return () => { isMounted = false }
+  // Sinkronisasi status presensi hari ini (background sync tanpa spinner)
+  const refreshStatus = useCallback(() => {
+    if (!user?.id || !token) return
+    api.getStatusHariIni(user.id, token)
+      .then(d => {
+        if (d.success && d.data) {
+          setStatus(d.data)
+          try {
+            const today = new Date().toISOString().slice(0, 10)
+            localStorage.setItem(`kai_status_${user.id}`, JSON.stringify({ date: today, data: d.data }))
+          } catch (_) {}
+        }
+      })
+      .catch(() => {})
   }, [user?.id, token])
+
+  useEffect(() => {
+    refreshStatus()
+
+    // Auto-sync otomatis saat berpindah aplikasi / membuka PWA di HP dari PC
+    const handleSync = () => {
+      if (document.visibilityState === 'visible') {
+        refreshStatus()
+      }
+    }
+    window.addEventListener('visibilitychange', handleSync)
+    window.addEventListener('focus', refreshStatus)
+    window.addEventListener('pageshow', refreshStatus)
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleSync)
+      window.removeEventListener('focus', refreshStatus)
+      window.removeEventListener('pageshow', refreshStatus)
+    }
+  }, [refreshStatus])
 
   const durasi = hitungDurasi(status.jamMasuk, status.jamPulang)
 
@@ -80,16 +122,7 @@ export default function Dashboard() {
     return { text: 'Belum Presensi', cls: 'badge-red' }
   }
 
-  if (loading || !user) return (
-    <div className="app-shell">
-      <div className="dashboard-skeleton">
-        <div className="skeleton-line w60" />
-        <div className="skeleton-line w40" />
-        <div className="skeleton-card" />
-        <div className="skeleton-btn" />
-      </div>
-    </div>
-  )
+  if (!user) return <div className="app-shell" style={{ background: '#ffffff', minHeight: '100dvh' }} />
 
   const sl = statusLabel()
 
@@ -108,7 +141,7 @@ export default function Dashboard() {
           </div>
           <div onClick={() => navigate('/profil')} style={{ cursor: 'pointer' }}>
             {user.foto ? (
-              <img src={user.foto} alt={user.nama} className="dash-avatar" style={{objectFit: 'cover', objectPosition: 'top'}}
+              <img src={driveAvatarUrl(user.foto) || user.foto} alt={user.nama} className="dash-avatar" style={{objectFit: 'cover', objectPosition: 'top'}}
                 onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}/>
             ) : null}
             <div className="dash-avatar" style={{display: user.foto ? 'none' : 'flex'}}>

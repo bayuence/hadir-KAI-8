@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { driveAvatarUrl } from '../utils/driveImage'
+import { api } from '../services/api'
 
 const AuthContext = createContext()
 
@@ -9,23 +10,42 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Load auth from storage on mount
+    // Load auth from storage on mount secara instan (0 detik)
     const storedUser = localStorage.getItem('kai_user')
     const storedToken = localStorage.getItem('kai_token')
     if (storedUser && storedToken) {
-      const parsedUser = JSON.parse(storedUser)
-      // Fix: konversi URL foto Drive ke format lh3 (Safari-compatible, tidak butuh cookie)
-      if (parsedUser.foto) {
-        parsedUser.foto = driveAvatarUrl(parsedUser.foto) || parsedUser.foto
+      try {
+        const parsedUser = JSON.parse(storedUser)
+        if (parsedUser.foto) {
+          parsedUser.foto = driveAvatarUrl(parsedUser.foto) || parsedUser.foto
+        }
+        setUser(parsedUser)
+        setToken(storedToken)
+
+        // Background sync: Ambil data profil & foto terbaru dari backend agar selalu sinkron
+        // Tanpa loading spinner / tanpa memblokir tampilan aplikasi
+        api.getProfile(parsedUser.id, storedToken)
+          .then(res => {
+            if (res.success && res.data) {
+              const freshFoto = res.data.foto ? (driveAvatarUrl(res.data.foto) || res.data.foto) : parsedUser.foto
+              const updatedUser = { ...parsedUser, ...res.data, foto: freshFoto }
+              setUser(updatedUser)
+              localStorage.setItem('kai_user', JSON.stringify(updatedUser))
+            } else if (res.message && res.message.includes('Sesi')) {
+              // Jika sesi backend kedaluwarsa, bersihkan sesi agar tidak ada bug status gantung
+              logoutContext()
+            }
+          })
+          .catch(() => {})
+      } catch (e) {
+        console.error('Failed to parse stored user:', e)
       }
-      setUser(parsedUser)
-      setToken(storedToken)
     }
     setLoading(false)
   }, [])
 
   const loginContext = (userData, userToken) => {
-    // Konversi foto ke format lh3 Safari-safe saat login
+    // Konversi foto ke format lh3 Safari/PWA-safe saat login
     const userToSave = { ...userData }
     if (userToSave.foto) {
       userToSave.foto = driveAvatarUrl(userToSave.foto) || userToSave.foto
@@ -41,6 +61,13 @@ export function AuthProvider({ children }) {
     setToken(null)
     localStorage.removeItem('kai_user')
     localStorage.removeItem('kai_token')
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('kai_status_')) {
+          localStorage.removeItem(key)
+        }
+      })
+    } catch (_) {}
   }
 
   return (

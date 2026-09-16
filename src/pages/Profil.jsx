@@ -84,15 +84,17 @@ export default function Profil() {
     return () => { isMounted = false }
   }, [user?.id, token]) // Hanya bergantung pada ID dan token, bukan seluruh object user
 
-  // Merge: profileData override semua kecuali foto — foto tetap dari user (localStorage) jika profileData tidak punya
+  // Merge: profileData override semua, pastikan foto dikonversi ke format lh3 Safari/PWA-safe
+  const rawFoto = profileData?.foto || user?.foto
+  const safeFoto = rawFoto ? (driveAvatarUrl(rawFoto) || rawFoto) : null
   const profile = profileData
-    ? { ...user, ...profileData, foto: profileData.foto || user?.foto }
-    : user
+    ? { ...user, ...profileData, foto: safeFoto }
+    : (user ? { ...user, foto: safeFoto } : null)
 
   return (
     <div className="app-shell">
       {/* ── Admin Sidebar Drawer ─────────────────────────────────── */}
-      {isAdmin && (
+      {isAdmin && profile && (
         <>
           <div className={`sidebar-backdrop ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
           <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>

@@ -18,7 +18,7 @@ import AdminLokasi from './pages/admin/AdminLokasi'
 // Guard: hanya bisa diakses jika belum login
 function PublicRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="app-shell" />
+  if (loading) return <div className="app-shell" style={{ background: '#ffffff', minHeight: '100dvh' }} />
   // Semua user (admin & intern) diarahkan ke dashboard yang sama
   if (user) return <Navigate to="/dashboard" replace />
   return children
@@ -27,7 +27,7 @@ function PublicRoute({ children }) {
 // Guard: hanya bisa diakses jika sudah login
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="app-shell" />
+  if (loading) return <div className="app-shell" style={{ background: '#ffffff', minHeight: '100dvh' }} />
   if (!user) return <Navigate to="/login" replace />
   return children
 }
@@ -35,7 +35,7 @@ function PrivateRoute({ children }) {
 // Guard: hanya bisa diakses jika role === admin
 function AdminRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="app-shell" />
+  if (loading) return <div className="app-shell" style={{ background: '#ffffff', minHeight: '100dvh' }} />
   if (!user) return <Navigate to="/login" replace />
   if (user.role !== 'admin') return <Navigate to="/dashboard" replace />
   return children
