@@ -4,9 +4,12 @@
 
 .admin-wrap {
   padding: 24px 20px 100px;
-  max-width: 480px;
+  width: 100%;
+  max-width: 430px;
   margin: 0 auto;
   min-height: 100vh;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Header */

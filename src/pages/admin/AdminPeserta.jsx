@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { api } from '../../services/api'
 import AdminHeader from '../../components/AdminHeader'
 import BottomNav from '../../components/BottomNav'
-import { driveAvatarUrl } from '../../utils/driveImage'
+import Avatar from '../../components/Avatar'
 import AdminPesertaStats from './components/AdminPesertaStats'
 import AdminPesertaModal from './components/AdminPesertaModal'
 import './Admin.css'
@@ -316,14 +316,12 @@ export default function AdminPeserta() {
                 <div className={`peserta-card ${isAdminRole ? 'is-admin' : ''}`} key={user.id}>
                   <div className="peserta-card-main">
                     <div className="peserta-avatar">
-                      {user.foto ? (
-                        <img src={driveAvatarUrl(user.foto)} alt={user.nama} className="peserta-avatar-img"
-                          onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }}
-                        />
-                      ) : null}
-                      <span className="peserta-avatar-initial" style={user.foto ? {display:'none'} : {}}>
-                        {user.nama?.charAt(0)?.toUpperCase()}
-                      </span>
+                      <Avatar
+                        src={user.foto}
+                        name={user.nama || ''}
+                        size={44}
+                        style={{ borderRadius: '10px' }}
+                      />
                     </div>
 
                     <div className="peserta-card-info">

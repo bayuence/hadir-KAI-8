@@ -147,7 +147,7 @@ export default function Avatar({
           height: '100%',
           objectFit: 'cover',
           objectPosition: 'top',
-          borderRadius: '50%',
+          borderRadius: baseStyle.borderRadius,
           display: 'block',
           opacity: loaded ? 1 : 0,
           transition: 'opacity 0.3s ease',
