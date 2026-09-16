@@ -51,6 +51,59 @@
   animation-fill-mode: both;
 }
 
+/* Label row (label + badge di kanan) */
+.input-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.input-label-row .input-label {
+  margin-bottom: 0;
+}
+
+/* Badge "Memuat daftar..." */
+.peserta-loading-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--grey-500);
+  background: var(--grey-100);
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-weight: 500;
+}
+
+/* Spinner mini untuk badge */
+.spinner-tiny {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(0,0,0,0.15);
+  border-top-color: var(--grey-600);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Tombol retry muat ulang */
+.retry-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--black);
+  background: var(--grey-100);
+  border: 1px solid var(--grey-200);
+  border-radius: 20px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.retry-badge:hover { background: var(--grey-200); }
+
 /* Dropdown */
 .dropdown-wrap {
   position: relative;
@@ -73,6 +126,24 @@
 
 .input.input-with-icon {
   padding-left: 38px;
+}
+
+/* Ikon centang saat nama sudah dipilih */
+.input-check-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+/* Input state: nama sudah dipilih */
+.input.input-selected {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: var(--black);
 }
 
 .dropdown-list {
@@ -105,6 +176,11 @@
   font-weight: 500;
 }
 .dropdown-item:hover { background: var(--grey-100); }
+.dropdown-item--active {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.dropdown-item--active svg path { stroke: #16a34a; }
 
 .dropdown-empty {
   padding: 12px 14px;
@@ -197,3 +273,5 @@
   transition: var(--transition);
 }
 .login-register-link:hover { opacity: 0.6; }
+
+

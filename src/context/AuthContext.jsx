@@ -26,6 +26,10 @@ export function AuthProvider({ children }) {
         // Tanpa loading spinner / tanpa memblokir tampilan aplikasi
         api.getProfile(parsedUser.id, storedToken)
           .then(res => {
+            // Pastikan token di storage masih sama (belum ada login/logout baru)
+            const currentToken = localStorage.getItem('kai_token')
+            if (currentToken !== storedToken) return // Sesi sudah berubah, abaikan
+
             if (res.success && res.data) {
               const freshFoto = res.data.foto ? (driveAvatarUrl(res.data.foto) || res.data.foto) : parsedUser.foto
               const updatedUser = { ...parsedUser, ...res.data, foto: freshFoto }
@@ -33,16 +37,23 @@ export function AuthProvider({ children }) {
               localStorage.setItem('kai_user', JSON.stringify(updatedUser))
             } else if (res.message && res.message.includes('Sesi')) {
               // Jika sesi backend kedaluwarsa, bersihkan sesi agar tidak ada bug status gantung
-              logoutContext()
+              // Hanya logout jika token di storage masih sama (belum ada aksi login baru)
+              if (localStorage.getItem('kai_token') === storedToken) {
+                logoutContext()
+              }
             }
           })
           .catch(() => {})
       } catch (e) {
         console.error('Failed to parse stored user:', e)
+        // Bersihkan data korup
+        localStorage.removeItem('kai_user')
+        localStorage.removeItem('kai_token')
       }
     }
     setLoading(false)
   }, [])
+
 
   const loginContext = (userData, userToken) => {
     // Konversi foto ke format lh3 Safari/PWA-safe saat login

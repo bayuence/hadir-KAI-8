@@ -538,6 +538,25 @@ function handleGetPesertaList() {
   return { success: true, data: list };
 }
 
+function normalizeTanggalLahir(str) {
+  if (!str) return '';
+  var s = String(str).trim();
+  var parts = s.split(/[\/\-\.]/);
+  if (parts.length === 3) {
+    var p1 = parseInt(parts[0], 10);
+    var p2 = parseInt(parts[1], 10);
+    var p3 = parseInt(parts[2], 10);
+    if (isNaN(p1) || isNaN(p2) || isNaN(p3)) return s;
+    if (p1 > 1000) {
+      // Format YYYY-MM-DD -> DD/MM/YYYY
+      return (p3 < 10 ? '0' + p3 : '' + p3) + '/' + (p2 < 10 ? '0' + p2 : '' + p2) + '/' + p1;
+    }
+    // Format D/M/YYYY atau DD/MM/YYYY -> DD/MM/YYYY
+    return (p1 < 10 ? '0' + p1 : '' + p1) + '/' + (p2 < 10 ? '0' + p2 : '' + p2) + '/' + p3;
+  }
+  return s;
+}
+
 function handleLogin(data) {
   var nama = data.nama, tglLahir = data.tanggalLahir;
   if (!nama || !tglLahir) return { success: false, message: 'Nama dan tanggal lahir harus diisi' };
@@ -546,12 +565,15 @@ function handleLogin(data) {
   if (!sheet) return { success: false, message: 'Database WEB Register tidak ditemukan.' };
 
   var rows = sheet.getDataRange().getDisplayValues();
+  var inputTglNorm = normalizeTanggalLahir(tglLahir);
+
   for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][1]).toLowerCase() === nama.trim().toLowerCase()) {
+    if (String(rows[i][1]).toLowerCase().trim() === String(nama).toLowerCase().trim()) {
       var rowTgl = rows[i][2].trim();
       if (rowTgl === '') return { success: false, message: 'Tanggal lahir belum diatur oleh admin. Minta admin untuk mengaturnya di WEB Register.'};
       
-      if (rowTgl === tglLahir.trim()) {
+      var rowTglNorm = normalizeTanggalLahir(rowTgl);
+      if (rowTglNorm === inputTglNorm) {
         if (rows[i][11] === 'pending')  return { success: false, message: 'Akun Anda menunggu persetujuan admin.' };
         if (rows[i][11] === 'rejected') return { success: false, message: 'Akun Anda ditolak.' };
         if (rows[i][11] !== 'active')   return { success: false, message: 'Status akun tidak valid.' };
