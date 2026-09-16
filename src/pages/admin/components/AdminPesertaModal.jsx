@@ -1,4 +1,33 @@
-import React from 'react'
+import React, { useMemo } from 'react'
+
+/**
+ * Konversi DD/MM/YYYY → YYYY-MM-DD (untuk value input[type=date])
+ */
+function toIsoDate(ddmmyyyy) {
+  if (!ddmmyyyy) return ''
+  // Sudah format YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(ddmmyyyy)) return ddmmyyyy
+  // Format DD/MM/YYYY atau D/M/YYYY
+  const parts = ddmmyyyy.split('/')
+  if (parts.length === 3) {
+    const [d, m, y] = parts
+    return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  }
+  return ''
+}
+
+/**
+ * Konversi YYYY-MM-DD → DD/MM/YYYY (untuk disimpan ke backend)
+ */
+function toDdMmYyyy(isoDate) {
+  if (!isoDate) return ''
+  const parts = isoDate.split('-')
+  if (parts.length === 3) {
+    const [y, m, d] = parts
+    return `${d}/${m}/${y}`
+  }
+  return isoDate
+}
 
 export default function AdminPesertaModal({
   modalOpen,
@@ -13,9 +42,22 @@ export default function AdminPesertaModal({
 }) {
   if (!modalOpen) return null
 
+  // Nilai input date dalam format ISO (YYYY-MM-DD) agar date picker berfungsi
+  const dateValue = useMemo(() => toIsoDate(formData.tanggalLahir), [formData.tanggalLahir])
+
+  const handleDateChange = (e) => {
+    // Simpan ke formData dalam format DD/MM/YYYY agar kompatibel dengan backend
+    setFormData({ ...formData, tanggalLahir: toDdMmYyyy(e.target.value) })
+  }
+
   return (
     <div className="lok-overlay" onClick={() => setModalOpen(false)}>
-      <div className="lok-modal" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+      <div
+        className="lok-modal"
+        style={{ maxWidth: '430px', borderRadius: '20px' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
         <div className="lok-modal-header">
           <div>
             <h3>{editingUser ? 'Edit Data Peserta' : 'Tambah Peserta Baru'}</h3>
@@ -29,8 +71,9 @@ export default function AdminPesertaModal({
         </div>
 
         <form onSubmit={handleSaveForm}>
+          {/* Nama */}
           <div className="lok-form-group">
-            <label>Nama Lengkap *</label>
+            <label>Nama Lengkap <span style={{ color: '#ef4444' }}>*</span></label>
             <input
               type="text"
               placeholder="Misal: Budi Santoso"
@@ -42,20 +85,52 @@ export default function AdminPesertaModal({
           </div>
 
           <div className="lok-form-row">
+            {/* Tanggal Lahir — Date Picker Modern */}
             <div className="lok-form-group">
-              <label>Tgl Lahir (DD/MM/YYYY) *</label>
-              <input
-                type="text"
-                placeholder="15/08/2002"
-                value={formData.tanggalLahir}
-                onChange={e => setFormData({ ...formData, tanggalLahir: e.target.value })}
-                required
-              />
+              <label>
+                Tanggal Lahir <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="date"
+                  value={dateValue}
+                  onChange={handleDateChange}
+                  max={new Date().toISOString().split('T')[0]}
+                  min="1970-01-01"
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #e2e8f0',
+                    background: '#fafafa',
+                    fontSize: '0.85rem',
+                    color: '#1e293b',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                  onFocus={e => { e.target.style.borderColor = '#2563eb'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)' }}
+                  onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none' }}
+                />
+                {formData.tanggalLahir && (
+                  <span style={{
+                    position: 'absolute', right: 0, top: '100%',
+                    fontSize: '11px', color: '#64748b', marginTop: '3px',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    📅 {formData.tanggalLahir}
+                  </span>
+                )}
+              </div>
             </div>
+
+            {/* Role */}
             <div className="lok-form-group">
               <label>Hak Akses / Role</label>
               <select
-                style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.85rem' }}
+                style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.85rem', cursor: 'pointer' }}
                 value={formData.role}
                 onChange={e => setFormData({ ...formData, role: e.target.value })}
               >
@@ -90,7 +165,7 @@ export default function AdminPesertaModal({
             <div className="lok-form-group">
               <label>No. HP / WhatsApp</label>
               <input
-                type="text"
+                type="tel"
                 placeholder="081234567890"
                 value={formData.noHp}
                 onChange={e => setFormData({ ...formData, noHp: e.target.value })}
@@ -110,7 +185,7 @@ export default function AdminPesertaModal({
           <div className="lok-form-group">
             <label>Lokasi Penempatan Kerja</label>
             <select
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.85rem' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.85rem', cursor: 'pointer' }}
               value={formData.idLokasi}
               onChange={e => setFormData({ ...formData, idLokasi: e.target.value })}
             >
@@ -130,7 +205,21 @@ export default function AdminPesertaModal({
               Batal
             </button>
             <button type="submit" className="lok-btn-save" disabled={submitting}>
-              {submitting ? 'Menyimpan...' : 'Simpan Data'}
+              {submitting ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 1s linear infinite' }}>
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  </svg>
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                  </svg>
+                  Simpan Data
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -138,3 +227,4 @@ export default function AdminPesertaModal({
     </div>
   )
 }
+

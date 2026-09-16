@@ -129,27 +129,27 @@ export default function AdminPeserta() {
 
   const handleSaveForm = async (e) => {
     e.preventDefault()
-    if (!formData.nama.trim()) return alert('Nama wajib diisi!')
+    if (!formData.nama.trim()) return showToast('Nama wajib diisi!', 'error')
+    if (!formData.tanggalLahir) return showToast('Tanggal lahir wajib diisi!', 'error')
     
     setSubmitting(true)
     let res
-    if (api.admin.saveUser) {
+    try {
       res = await api.admin.saveUser(formData)
-    } else {
-      if (formData.id) {
-        res = await api.admin.assignLokasi(formData.id, formData.idLokasi)
-      } else {
-        res = { success: false, message: 'Backend belum diperbarui untuk tambah peserta.' }
-      }
+    } catch (err) {
+      setSubmitting(false)
+      showToast('Gagal menghubungi server. Pastikan Code.gs sudah di-deploy ulang.', 'error')
+      return
     }
     setSubmitting(false)
 
-    if (res.success) {
+    if (res && res.success) {
       showToast(res.message || 'Data berhasil disimpan!')
       setModalOpen(false)
       loadData()
     } else {
-      alert(res.message || 'Gagal menyimpan data')
+      const errMsg = res?.message || 'Gagal menyimpan data. Coba deploy ulang Code.gs.'
+      showToast(errMsg, 'error')
     }
   }
 
