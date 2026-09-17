@@ -2,93 +2,223 @@
    ADMIN PRESENSI (REKAP PRESENSI) — CSS
    ============================================================ */
 
-.admin-date-picker {
+/* Date Navigation */
+.ap-date-nav {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  font-size: 0.85rem;
-  color: #64748b;
-  font-weight: 500;
-}
-.admin-date-input {
-  flex: 1;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 0.88rem;
-  outline: none;
+  justify-content: space-between;
   background: white;
-  color: #1e293b;
+  border-radius: 16px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+  margin-bottom: 20px;
 }
-.admin-date-input:focus { border-color: #2563eb; }
-
-.admin-search-wrap {
-  position: relative;
-  margin-bottom: 12px;
-}
-.admin-search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-}
-.admin-search-input {
-  width: 100%;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 10px 12px 10px 36px;
-  font-size: 0.88rem;
-  outline: none;
-  background: white;
-  box-sizing: border-box;
-}
-.admin-search-input:focus { border-color: #2563eb; }
-
-.admin-presensi-summary {
-  display: flex;
-  gap: 16px;
-  font-size: 0.8rem;
-  color: #64748b;
-  margin-bottom: 12px;
-  font-weight: 500;
-}
-
-.admin-presensi-list { display: flex; flex-direction: column; gap: 10px; }
-.admin-presensi-row {
-  background: white;
-  border-radius: 14px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-.admin-presensi-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  color: white;
-  font-weight: 700;
+.ap-date-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: none;
+  background: #f1f5f9;
+  color: #475569;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-.admin-presensi-info { flex: 1; }
-.admin-presensi-nama { font-weight: 600; color: #1e293b; font-size: 0.88rem; }
-.admin-presensi-meta { font-size: 0.75rem; color: #94a3b8; }
-.admin-presensi-times { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
-.admin-time-chip { display: flex; align-items: center; gap: 5px; font-size: 0.78rem; color: #475569; }
-.dot-green-sm { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
-.dot-red-sm { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0; }
-.admin-total-chip {
-  font-size: 0.72rem;
+.ap-date-btn:active { background: #e2e8f0; transform: scale(0.95); }
+.ap-date-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+.ap-date-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #94a3b8;
+  font-weight: 700;
+}
+.ap-date-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 2px;
+}
+.ap-date-input-hidden {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Stats Grid */
+.ap-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.ap-stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+  border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+.ap-stat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.ap-stat-card.primary { border-color: #e0e7ff; }
+.ap-stat-card.primary .ap-stat-icon { background: #e0e7ff; color: #4f46e5; }
+.ap-stat-card.warning { border-color: #fef3c7; }
+.ap-stat-card.warning .ap-stat-icon { background: #fef3c7; color: #d97706; }
+.ap-stat-card.info { border-color: #e0f2fe; }
+.ap-stat-card.info .ap-stat-icon { background: #e0f2fe; color: #0284c7; }
+
+.ap-stat-info { display: flex; flex-direction: column; }
+.ap-stat-val { font-size: 1.25rem; font-weight: 800; color: #0f172a; line-height: 1; margin-bottom: 4px; }
+.ap-stat-lbl { font-size: 0.65rem; font-weight: 600; color: #64748b; text-transform: uppercase; }
+
+/* Search */
+.ap-search-wrap {
+  position: relative;
+  margin-bottom: 20px;
+}
+.ap-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  width: 18px;
+  height: 18px;
+}
+.ap-search-input {
+  width: 100%;
+  border: 2px solid #f1f5f9;
+  border-radius: 14px;
+  padding: 14px 16px 14px 40px;
+  font-size: 0.95rem;
+  outline: none;
+  background: #f8fafc;
+  color: #1e293b;
+  font-weight: 500;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+.ap-search-input:focus {
+  border-color: #cbd5e1;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+/* Empty State */
+.ap-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+.ap-empty-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
   background: #f1f5f9;
-  color: #475569;
-  padding: 2px 8px;
-  border-radius: 100px;
-  font-weight: 600;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.ap-empty-circle svg { width: 32px; height: 32px; }
+.ap-empty-state h4 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 0 0 6px; }
+.ap-empty-state p { font-size: 0.9rem; color: #64748b; margin: 0; max-width: 250px; }
+
+/* List */
+.ap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ap-card {
+  background: white;
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.02);
+  transition: transform 0.2s;
+}
+.ap-card:active { transform: scale(0.98); }
+.ap-card-avatar {
+  border: 2px solid #f1f5f9;
+}
+.ap-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.ap-card-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ap-card-loc {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ap-card-times {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+.ap-time-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ap-time-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.ap-time-dot.in { background: #10b981; }
+.ap-time-dot.out { background: #ef4444; }
+.ap-time-val {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+  font-family: monospace;
+  letter-spacing: -0.5px;
 }
