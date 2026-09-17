@@ -70,15 +70,39 @@ export default function Riwayat() {
   // ── Summary ──────────────────────────────────────────────────────────────
   const totalHari = riwayat.filter(i => i.status === 'Hadir').length
 
-  const totalJamMenit = riwayat.reduce((acc, item) => {
-    if (!item.totalJam) return acc
-    const m = item.totalJam.match(/(\d+)j\s*(\d+)m/)
-    return m ? acc + parseInt(m[1]) * 60 + parseInt(m[2]) : acc
+  const totalDetik = riwayat.reduce((acc, item) => {
+    if (item.status !== 'Hadir') return acc
+    if (item.jamMasuk && item.jamPulang) {
+      const parseSec = (t) => {
+        const parts = String(t).trim().split(':')
+        if (parts.length >= 2) {
+          const h = parseInt(parts[0], 10) || 0
+          const m = parseInt(parts[1], 10) || 0
+          const s = parseInt(parts[2], 10) || 0
+          return h * 3600 + m * 60 + s
+        }
+        return null
+      }
+      const s1 = parseSec(item.jamMasuk)
+      const s2 = parseSec(item.jamPulang)
+      if (s1 !== null && s2 !== null && s2 >= s1) {
+        return acc + (s2 - s1)
+      }
+    }
+    if (item.totalJam) {
+      const m = item.totalJam.match(/(\d+)j\s*(\d+)m/)
+      if (m) return acc + (parseInt(m[1], 10) * 3600) + (parseInt(m[2], 10) * 60)
+    }
+    return acc
   }, 0)
 
-  const totalJamStr = totalJamMenit > 0
-    ? `${Math.floor(totalJamMenit / 60)}j ${totalJamMenit % 60}m`
+  const totalJamStr = totalDetik > 0
+    ? `${Math.floor(totalDetik / 3600)}j ${Math.floor((totalDetik % 3600) / 60)}m`
     : ''
+
+  const totalTimeDetailStr = totalDetik > 0
+    ? `${Math.floor(totalDetik / 3600)} Jam ${Math.floor((totalDetik % 3600) / 60)} Menit ${totalDetik % 60} Detik`
+    : '0 Jam 0 Menit 0 Detik'
 
   // ── Handler download PDF ─────────────────────────────────────────────────
   const handleDownloadPDF = async () => {
@@ -125,6 +149,21 @@ export default function Riwayat() {
       </div>
 
       <div className="riwayat-wrap">
+
+        {/* ── Ringkasan Kehadiran (Di Atas Filter) ── */}
+        {!loading && !error && riwayat.length > 0 && (
+          <div className="riwayat-summary-card animate-fade-in">
+            <div className="rsc-item">
+              <span className="rsc-label">Total Hadir</span>
+              <span className="rsc-val">{totalHari} Hari</span>
+            </div>
+            <div className="rsc-divider" />
+            <div className="rsc-item">
+              <span className="rsc-label">Total Waktu Kerja</span>
+              <span className="rsc-val">{totalTimeDetailStr}</span>
+            </div>
+          </div>
+        )}
 
         {/* ── Filter ── */}
         <div className="filter-row animate-fade-in">
