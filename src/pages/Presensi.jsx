@@ -24,9 +24,46 @@ export default function Presensi({ type = 'masuk' }) {
     return () => clearInterval(t)
   }, [])
 
+  // Kompresi Gambar ke ~100KB
+  const compressImage = (dataUrl, callback) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      let width = img.width
+      let height = img.height
+      const MAX_DIM = 800 // Membatasi dimensi agar ukuran terjaga < 100KB
+
+      if (width > height) {
+        if (width > MAX_DIM) {
+          height = Math.round((height * MAX_DIM) / width)
+          width = MAX_DIM
+        }
+      } else {
+        if (height > MAX_DIM) {
+          width = Math.round((width * MAX_DIM) / height)
+          height = MAX_DIM
+        }
+      }
+
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, width, height)
+      
+      // Kualitas 0.6 menghasilkan ukuran sangat ringan (biasanya 50-90KB)
+      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6)
+      callback(compressedBase64)
+    }
+    img.src = dataUrl
+  }
+
   const ambilFoto = useCallback(() => {
     const imageSrc = webcamRef.current.getScreenshot()
-    setFoto(imageSrc)
+    if (imageSrc) {
+      compressImage(imageSrc, (compressed) => {
+        setFoto(compressed)
+      })
+    }
   }, [webcamRef])
 
   const submitPresensi = async () => {
