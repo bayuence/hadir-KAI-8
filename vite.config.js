@@ -22,19 +22,19 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: '/logo-kai.png',
+            src: '/logo-kai-notif.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/logo-kai.png',
+            src: '/logo-kai-notif.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/logo-kai.png',
+            src: '/logo-kai-notif.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
