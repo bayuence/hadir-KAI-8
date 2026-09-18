@@ -1058,46 +1058,59 @@ function handleAjukanIzin(data) {
 function handleGetIzinSaya(data) {
   if (!validateSession(data.token)) return { success: false, message: 'Sesi invalid.' };
   
-  var izinSheet = getSheet('WEB Izin');
   var result = [];
-  if (izinSheet) {
-    var rows = izinSheet.getDataRange().getDisplayValues();
-    for (var i = 1; i < rows.length; i++) {
-      if (rows[i][1] === data.idPeserta) {
+  var seenKeys = {};
+
+  // 1. Baca dari WEB Presensi terlebih dahulu (sumber utama termasuk histori form lama)
+  var pSheet = getSheet('WEB Presensi');
+  if (pSheet) {
+    var pRows = pSheet.getDataRange().getDisplayValues();
+    for (var j = 1; j < pRows.length; j++) {
+      if (pRows[j][1] === data.idPeserta && pRows[j][11] && pRows[j][11].toLowerCase().startsWith('ijin')) {
+        var tglNorm = normalizeTanggal(pRows[j][0]);
+        var displayJenis = 'Lainnya';
+        var stLower = pRows[j][11].toLowerCase();
+        if (stLower.indexOf('sakit') !== -1) displayJenis = 'Sakit';
+        else if (stLower.indexOf('kampus') !== -1 || stLower.indexOf('kuliah') !== -1) displayJenis = 'Kuliah';
+
+        var key = tglNorm + '_' + data.idPeserta;
+        seenKeys[key] = true;
+
         result.push({
-          id: rows[i][0],
-          tanggal: rows[i][3],
-          jenis: rows[i][4],
-          keterangan: rows[i][5],
-          fotoUrl: rows[i][6],
-          status: rows[i][7] || 'approved'
+          id: 'P-' + j,
+          tanggal: tglNorm,
+          jenis: displayJenis,
+          keterangan: pRows[j][3] || '',
+          fotoUrl: pRows[j][5] || '',
+          status: 'approved'
         });
       }
     }
   }
-  
-  if (result.length === 0) {
-    var pSheet = getSheet('WEB Presensi');
-    if (pSheet) {
-      var pRows = pSheet.getDataRange().getDisplayValues();
-      for (var j = 1; j < pRows.length; j++) {
-        if (pRows[j][1] === data.idPeserta && pRows[j][11] && pRows[j][11].toLowerCase().startsWith('ijin')) {
-          var displayJenis = 'Lainnya';
-          if (pRows[j][11] === 'Ijin Sakit') displayJenis = 'Sakit';
-          if (pRows[j][11] === 'Ijin Kampus') displayJenis = 'Kuliah';
+
+  // 2. Tambahkan entri unik dari WEB Izin jika ada
+  var izinSheet = getSheet('WEB Izin');
+  if (izinSheet) {
+    var rows = izinSheet.getDataRange().getDisplayValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][1] === data.idPeserta) {
+        var tglNormIzin = normalizeTanggal(rows[i][3]);
+        var keyIzin = tglNormIzin + '_' + data.idPeserta;
+        if (!seenKeys[keyIzin]) {
+          seenKeys[keyIzin] = true;
           result.push({
-            id: 'P-' + j,
-            tanggal: normalizeTanggal(pRows[j][0]),
-            jenis: displayJenis,
-            keterangan: pRows[j][3] || '',
-            fotoUrl: pRows[j][5] || '',
-            status: 'approved'
+            id: rows[i][0],
+            tanggal: tglNormIzin,
+            jenis: rows[i][4],
+            keterangan: rows[i][5],
+            fotoUrl: rows[i][6],
+            status: rows[i][7] || 'approved'
           });
         }
       }
     }
   }
-  
+
   return { success: true, data: result.reverse() };
 }
 
