@@ -118,6 +118,7 @@ function setupPeralihanAwal() {
   setupDropdownRole();
   migrasiDataAwal();
   setupRealtimeSync();
+  setupAutoSync();       // Pasang sinkronisasi harian otomatis
   Logger.log("Semua setup selesai!");
 }
 
@@ -321,58 +322,176 @@ function migrasiDataAwal() {
     Logger.log("Migrasi peserta selesai.");
   }
 
-  
   // 2. Migrasi Presensi Lama -> ke SATU sheet 'WEB Presensi'
-  var oldRes = ss.getSheetByName('Form Responses 1');
   // Hanya migrasi jika WEB Presensi masih kosong (cuma header)
+  var oldRes = ss.getSheetByName('Form Responses 1');
   if (oldRes && pSheet.getLastRow() <= 1) {
-    var respRows = oldRes.getDataRange().getDisplayValues(); // Gunakan getDisplayValues agar aman dari objek Date
-    var allRegRows = webReg.getDataRange().getDisplayValues();
-    var mapPeserta = {};
-    for (var k = 1; k < allRegRows.length; k++) {
-      mapPeserta[String(allRegRows[k][1]).toLowerCase().trim()] = { id: allRegRows[k][14], nama: allRegRows[k][1] };
-    }
-    
-    // Simpan data di memory dulu agar cepat
-    var presensiMap = {}; // format: "ID_TANGGAL" -> rowData
-    
-    for (var r = 1; r < respRows.length; r++) {
-      var rNama = String(respRows[r][1]).toLowerCase().trim();
-      var pData = mapPeserta[rNama];
-      if (pData) {
-        var tgl = respRows[r][5];
-        var konf = String(respRows[r][6]).toLowerCase().trim();
-        var jam = formatJam(respRows[r][0]); // Jam Submit
-        var lokasi = respRows[r][4];
-        // Kolom H (index 7) = DOKUMENTASI = URL foto Google Drive
-        var fotoUrl = respRows[r][7] || '';
-        
-        if (tgl) {
-          var key = pData.id + "_" + tgl;
-          if (!presensiMap[key]) {
-            // [Tgl, ID, Nama, Lokasi, Masuk, FotoM, Pulang, FotoP, Total, GPSM, GPSP, Status]
-            presensiMap[key] = [tgl, pData.id, pData.nama, lokasi, '', '', '', '', '', '', '', 'Hadir'];
-          }
-          if (konf === 'datang' && !presensiMap[key][4]) {
-            presensiMap[key][4] = jam;
-            if (fotoUrl) presensiMap[key][5] = fotoUrl; // simpan foto masuk
-          } else if (konf === 'pulang' && !presensiMap[key][6]) {
-            presensiMap[key][6] = jam;
-            if (fotoUrl) presensiMap[key][7] = fotoUrl; // simpan foto pulang
-            presensiMap[key][8] = hitungTotalJam(presensiMap[key][4] || jam, jam);
-          }
-        }
-      }
-    }
-    
-    // Tulis ke sheet sekaligus
-    var writeData = [];
-    for (var key in presensiMap) { writeData.push(presensiMap[key]); }
-    if (writeData.length > 0) {
-      pSheet.getRange(2, 1, writeData.length, writeData[0].length).setValues(writeData);
-    }
+    // Gunakan helper sinkron agar logik ijin sudah benar sejak awal
+    _prosesFormResponsesToPresensi(oldRes, webReg, pSheet, true);
     Logger.log("Migrasi riwayat presensi selesai.");
   }
+}
+
+// ============================================================
+// SINKRONISASI OTOMATIS: Form Responses 1 -> WEB Presensi
+// ============================================================
+// Fungsi ini aman dijalankan berulang kali — tidak akan duplikat.
+// Bisa dijalankan manual kapan saja dari Apps Script Editor.
+// Juga dipanggil otomatis setiap hari (trigger harian).
+function sinkronFormResponses() {
+  var oldRes = getSheet('Form Responses 1');
+  var webReg = getSheet('WEB Register');
+  var pSheet = getOrCreateSheet('WEB Presensi');
+  
+  if (!oldRes) { Logger.log('Sheet Form Responses 1 tidak ditemukan.'); return; }
+  if (!webReg) { Logger.log('Sheet WEB Register tidak ditemukan.'); return; }
+  
+  if (pSheet.getLastRow() === 0) {
+    pSheet.appendRow(['TANGGAL', 'ID PESERTA', 'NAMA', 'LOKASI', 'JAM MASUK', 'FOTO MASUK', 'JAM PULANG', 'FOTO PULANG', 'TOTAL JAM', 'GPS MASUK', 'GPS PULANG', 'STATUS']);
+  }
+  
+  var added = _prosesFormResponsesToPresensi(oldRes, webReg, pSheet, false);
+  Logger.log('sinkronFormResponses selesai. Baris baru/diupdate: ' + added);
+}
+
+// ─── Helper inti: proses Form Responses 1 -> WEB Presensi ────
+// forceOverwrite=true  : tulis ulang semua (migrasi pertama kali, WEB Presensi kosong)
+// forceOverwrite=false : incremental — hanya tambah/update yang belum ada
+function _prosesFormResponsesToPresensi(oldRes, webReg, pSheet, forceOverwrite) {
+  var respRows = oldRes.getDataRange().getDisplayValues();
+  var allRegRows = webReg.getDataRange().getDisplayValues();
+  
+  // Buat map peserta: nama_lowercase -> { id, nama }
+  var mapPeserta = {};
+  for (var k = 1; k < allRegRows.length; k++) {
+    var kNama = String(allRegRows[k][1]).toLowerCase().trim();
+    if (kNama) mapPeserta[kNama] = { id: allRegRows[k][14], nama: allRegRows[k][1] };
+  }
+  
+  // Baca data WEB Presensi yang sudah ada: map "ID_TANGGALNORM" -> baris (1-indexed)
+  var existingRows = pSheet.getDataRange().getDisplayValues();
+  var existingMap = {}; // key -> row index (1-indexed, for getRange)
+  if (!forceOverwrite) {
+    for (var e = 1; e < existingRows.length; e++) {
+      var eKey = existingRows[e][1] + '_' + normalizeTanggal(existingRows[e][0]);
+      existingMap[eKey] = e + 1; // row number in sheet
+    }
+  }
+  
+  // Proses semua baris Form Responses 1 ke dalam presensiMap di memori
+  // Key: "ID_TANGGALNORM" -> rowData array [12 kolom]
+  var presensiMap = {};
+  
+  for (var r = 1; r < respRows.length; r++) {
+    var rNama  = String(respRows[r][1]).toLowerCase().trim();
+    var pData  = mapPeserta[rNama];
+    if (!pData || !pData.id) continue;
+    
+    var tanggal = respRows[r][5];
+    var tglNorm = normalizeTanggal(tanggal);
+    if (!tglNorm) continue;
+    
+    var konfirmasi = String(respRows[r][6]).toLowerCase().trim();
+    var jam        = formatJam(respRows[r][0]);
+    var lokasi     = respRows[r][4] || '';
+    var fotoUrl    = respRows[r][7] || '';
+    
+    var key = pData.id + '_' + tglNorm;
+    
+    // Tentukan status
+    var isIjin = (konfirmasi === 'ijin sakit' ||
+                  konfirmasi === 'ijin acara kampus' ||
+                  konfirmasi === 'ijin keperluan lain');
+    var statusLabel = konfirmasi === 'ijin sakit'          ? 'Ijin Sakit'
+                    : konfirmasi === 'ijin acara kampus'   ? 'Ijin Kampus'
+                    : konfirmasi === 'ijin keperluan lain' ? 'Ijin Lain'
+                    : 'Hadir';
+    
+    if (!presensiMap[key]) {
+      // [Tgl, ID, Nama, Lokasi, JamMasuk, FotoM, JamPulang, FotoP, TotalJam, GPS_M, GPS_P, Status]
+      presensiMap[key] = [tglNorm, pData.id, pData.nama, lokasi, '', '', '', '', '', '', '', isIjin ? statusLabel : 'Hadir'];
+    }
+    
+    if (konfirmasi === 'datang') {
+      if (!presensiMap[key][4]) { // Hanya set sekali (pertama)
+        presensiMap[key][4] = jam;
+        if (lokasi) presensiMap[key][3] = lokasi;
+        if (fotoUrl) presensiMap[key][5] = fotoUrl;
+      }
+    } else if (konfirmasi === 'pulang') {
+      if (!presensiMap[key][6]) { // Hanya set sekali
+        presensiMap[key][6] = jam;
+        if (fotoUrl) presensiMap[key][7] = fotoUrl;
+        presensiMap[key][8] = hitungTotalJam(presensiMap[key][4] || jam, jam);
+      }
+    } else if (isIjin) {
+      // Override status ke ijin dan pastikan lokasi terisi
+      presensiMap[key][11] = statusLabel;
+      if (lokasi) presensiMap[key][3] = lokasi;
+    }
+  }
+  
+  // Tulis ke WEB Presensi
+  var newRows = [];
+  var updatedCount = 0;
+  
+  for (var key in presensiMap) {
+    var row = presensiMap[key];
+    var existingRowIdx = existingMap[key];
+    
+    if (forceOverwrite || !existingRowIdx) {
+      // Data belum ada di WEB Presensi — tambahkan
+      newRows.push(row);
+    } else {
+      // Data sudah ada — update kolom yang kosong saja (non-destructive)
+      var cur = existingRows[existingRowIdx - 1]; // 0-indexed
+      var needUpdate = false;
+      
+      // Update jam masuk jika belum ada
+      if (!cur[4] && row[4]) { pSheet.getRange(existingRowIdx, 5).setValue(row[4]); needUpdate = true; }
+      if (!cur[5] && row[5]) { pSheet.getRange(existingRowIdx, 6).setValue(row[5]); needUpdate = true; } // foto masuk
+      // Update jam pulang jika belum ada
+      if (!cur[6] && row[6]) {
+        pSheet.getRange(existingRowIdx, 7).setValue(row[6]);
+        if (row[7]) pSheet.getRange(existingRowIdx, 8).setValue(row[7]); // foto pulang
+        if (row[8]) pSheet.getRange(existingRowIdx, 9).setValue(row[8]); // total jam
+        needUpdate = true;
+      }
+      // Update status jika sebelumnya hanya 'Hadir' dan sekarang ada ijin
+      if (cur[11] === 'Hadir' && row[11] !== 'Hadir') {
+        pSheet.getRange(existingRowIdx, 12).setValue(row[11]);
+        needUpdate = true;
+      }
+      if (needUpdate) updatedCount++;
+    }
+  }
+  
+  // Tulis semua baris baru sekaligus (batch — lebih cepat)
+  if (newRows.length > 0) {
+    var startRow = pSheet.getLastRow() + 1;
+    pSheet.getRange(startRow, 1, newRows.length, 12).setValues(newRows);
+  }
+  
+  return newRows.length + updatedCount;
+}
+
+// ─── Setup trigger harian otomatis (sinkronisasi jam 02.00 dini hari) ────
+// Panggil ini 1x dari setupPeralihanAwal atau jalankan manual jika belum aktif.
+function setupAutoSync() {
+  // Hapus trigger sinkron lama jika ada (hindari duplikat)
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'sinkronFormResponses') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  // Buat trigger baru: sinkronisasi otomatis setiap hari jam 02.00–03.00
+  ScriptApp.newTrigger('sinkronFormResponses')
+    .timeBased()
+    .everyDays(1)
+    .atHour(2)
+    .create();
+  Logger.log('Trigger sinkronisasi harian berhasil dipasang (02.00 setiap hari).');
 }
 
 function setupRealtimeSync() {
@@ -459,6 +578,15 @@ function onOldFormSubmit(e) {
     if (pRows[x][0] === tanggal && pRows[x][1] === pId) { foundRow = x + 1; break; }
   }
   
+  // Tentukan apakah ini entri ijin dan label statusnya
+  var isIjin = (konfirmasi === 'ijin sakit' ||
+                konfirmasi === 'ijin acara kampus' ||
+                konfirmasi === 'ijin keperluan lain');
+  var statusLabel = konfirmasi === 'ijin sakit'          ? 'Ijin Sakit'
+                  : konfirmasi === 'ijin acara kampus'   ? 'Ijin Kampus'
+                  : konfirmasi === 'ijin keperluan lain' ? 'Ijin Lain'
+                  : 'Hadir';
+  
   if (foundRow > -1) {
     if (konfirmasi === 'datang' && !pRows[foundRow-1][4]) {
        pSheet.getRange(foundRow, 5).setValue(jamSubmit);
@@ -469,12 +597,19 @@ function onOldFormSubmit(e) {
        if (fotoUrl) pSheet.getRange(foundRow, 8).setValue(fotoUrl); // Foto Pulang
        var jamM = pRows[foundRow-1][4] || jamSubmit;
        pSheet.getRange(foundRow, 9).setValue(hitungTotalJam(String(jamM), String(jamSubmit)));
+    } else if (isIjin) {
+       // Row sudah ada di tanggal itu — update status & lokasi saja
+       pSheet.getRange(foundRow, 12).setValue(statusLabel);
+       pSheet.getRange(foundRow, 4).setValue(lokasi);
     }
   } else {
     if (konfirmasi === 'datang') {
       pSheet.appendRow([tanggal, pId, pNamaAsli, lokasi, jamSubmit, fotoUrl, '', '', '', '', '', 'Hadir']);
     } else if (konfirmasi === 'pulang') {
       pSheet.appendRow([tanggal, pId, pNamaAsli, lokasi, '', '', jamSubmit, '', '', '', '', 'Hadir']);
+    } else if (isIjin) {
+      // ✅ Buat baris baru dengan status ijin yang sesuai (tanpa jam masuk/pulang)
+      pSheet.appendRow([tanggal, pId, pNamaAsli, lokasi, '', '', '', '', '', '', '', statusLabel]);
     }
   }
 }

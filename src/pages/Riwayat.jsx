@@ -60,7 +60,11 @@ export default function Riwayat() {
   }
 
   const filtered = riwayat.filter(item => {
-    const matchStatus = statusFilter === 'Semua Status' || item.status === statusFilter
+    const isIjin = item.status && item.status.toLowerCase().startsWith('ijin')
+    const matchStatus =
+      statusFilter === 'Semua Status' ||
+      item.status === statusFilter ||
+      (statusFilter === 'Izin' && isIjin) // 'Izin' filter cocokkan semua varian ijin
     if (bulanFilter === 'Semua') return matchStatus
     const d = parseTanggal(item.tanggal)
     if (!d) return false
@@ -214,7 +218,7 @@ export default function Riwayat() {
                   </div>
                   <span className={`badge ${
                     item.status === 'Hadir' ? 'badge-green'
-                    : item.status === 'Izin' ? 'badge-amber'
+                    : (item.status && item.status.toLowerCase().startsWith('ijin')) ? 'badge-amber'
                     : 'badge-red'
                   }`}>
                     {item.status}
