@@ -1,18 +1,36 @@
 const GAS_URL = import.meta.env.VITE_GAS_URL
 const ADMIN_TOKEN = 'KAI_DAOP8_ADMIN_2026'
 
-async function fetchGAS(payload) {
+// Timeout default: 20 detik — cukup untuk GAS cold start, tidak bikin freeze
+const DEFAULT_TIMEOUT_MS = 20_000
+
+async function fetchGAS(payload, timeoutMs = DEFAULT_TIMEOUT_MS) {
   if (!GAS_URL) return { success: false, message: 'URL API belum dikonfigurasi' }
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+
   try {
     const res = await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal,
     })
+    clearTimeout(timer)
     return await res.json()
   } catch (error) {
+    clearTimeout(timer)
+    if (error.name === 'AbortError') {
+      console.warn('GAS request timed out:', payload.action)
+      return {
+        success: false,
+        message: 'Server sedang sibuk / baru aktif. Coba lagi dalam beberapa detik.',
+        timeout: true,
+      }
+    }
     console.error('API Error:', error)
-    return { success: false, message: 'Gagal menghubungi server' }
+    return { success: false, message: 'Gagal menghubungi server. Periksa koneksi internet.' }
   }
 }
 

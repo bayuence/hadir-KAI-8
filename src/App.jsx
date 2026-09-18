@@ -15,10 +15,43 @@ import AdminPresensi from './pages/admin/AdminPresensi'
 import AdminIzin from './pages/admin/AdminIzin'
 import AdminLokasi from './pages/admin/AdminLokasi'
 
+// Loading screen yang informatif — tampil sesaat saat auth state dicek dari localStorage
+function AppLoadingScreen() {
+  return (
+    <div className="app-shell" style={{
+      background: '#f8fafc',
+      minHeight: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 16,
+    }}>
+      <img src="/logo-kai.png" alt="KAI" style={{ width: 56, height: 56, objectFit: 'contain', opacity: 0.85 }} />
+      <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+        {[0, 1, 2].map(i => (
+          <span key={i} style={{
+            width: 8, height: 8, borderRadius: '50%', background: '#dc2626',
+            display: 'inline-block',
+            animation: 'dot-bounce 1.2s ease-in-out infinite',
+            animationDelay: `${i * 0.2}s`,
+          }} />
+        ))}
+      </div>
+      <style>{`
+        @keyframes dot-bounce {
+          0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 // Guard: hanya bisa diakses jika belum login
 function PublicRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="app-shell" style={{ background: '#ffffff', minHeight: '100dvh' }} />
+  if (loading) return <AppLoadingScreen />
   // Semua user (admin & intern) diarahkan ke dashboard yang sama
   if (user) return <Navigate to="/dashboard" replace />
   return children
@@ -27,7 +60,7 @@ function PublicRoute({ children }) {
 // Guard: hanya bisa diakses jika sudah login
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="app-shell" style={{ background: '#ffffff', minHeight: '100dvh' }} />
+  if (loading) return <AppLoadingScreen />
   if (!user) return <Navigate to="/login" replace />
   return children
 }
@@ -35,7 +68,7 @@ function PrivateRoute({ children }) {
 // Guard: hanya bisa diakses jika role === admin
 function AdminRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="app-shell" style={{ background: '#ffffff', minHeight: '100dvh' }} />
+  if (loading) return <AppLoadingScreen />
   if (!user) return <Navigate to="/login" replace />
   if (user.role !== 'admin') return <Navigate to="/dashboard" replace />
   return children

@@ -10,7 +10,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Load auth from storage on mount secara instan (0 detik)
+    // Load auth dari storage secara instan
     const storedUser = localStorage.getItem('kai_user')
     const storedToken = localStorage.getItem('kai_token')
     if (storedUser && storedToken) {
@@ -19,7 +19,6 @@ export function AuthProvider({ children }) {
         if (parsedUser.foto) {
           const convertedFoto = driveAvatarUrl(parsedUser.foto)
           if (convertedFoto && convertedFoto !== parsedUser.foto) {
-            // Migrasi URL foto lama ke format lh3 baru — simpan balik ke localStorage
             parsedUser.foto = convertedFoto
             try { localStorage.setItem('kai_user', JSON.stringify(parsedUser)) } catch (_) {}
           }
@@ -27,13 +26,15 @@ export function AuthProvider({ children }) {
         setUser(parsedUser)
         setToken(storedToken)
 
-        // Background sync: Ambil data profil & foto terbaru dari backend agar selalu sinkron
-        // Tanpa loading spinner / tanpa memblokir tampilan aplikasi
+        // Background sync: ambil profil terbaru — tidak blocking, timeout 15 detik
+        const syncController = new AbortController()
+        const syncTimer = setTimeout(() => syncController.abort(), 15_000)
+
         api.getProfile(parsedUser.id, storedToken)
           .then(res => {
-            // Pastikan token di storage masih sama (belum ada login/logout baru)
+            clearTimeout(syncTimer)
             const currentToken = localStorage.getItem('kai_token')
-            if (currentToken !== storedToken) return // Sesi sudah berubah, abaikan
+            if (currentToken !== storedToken) return
 
             if (res.success && res.data) {
               const freshFoto = res.data.foto ? (driveAvatarUrl(res.data.foto) || res.data.foto) : parsedUser.foto
@@ -41,17 +42,14 @@ export function AuthProvider({ children }) {
               setUser(updatedUser)
               localStorage.setItem('kai_user', JSON.stringify(updatedUser))
             } else if (res.message && res.message.includes('Sesi')) {
-              // Jika sesi backend kedaluwarsa, bersihkan sesi agar tidak ada bug status gantung
-              // Hanya logout jika token di storage masih sama (belum ada aksi login baru)
               if (localStorage.getItem('kai_token') === storedToken) {
                 logoutContext()
               }
             }
           })
-          .catch(() => {})
+          .catch(() => { clearTimeout(syncTimer) })
       } catch (e) {
         console.error('Failed to parse stored user:', e)
-        // Bersihkan data korup
         localStorage.removeItem('kai_user')
         localStorage.removeItem('kai_token')
       }

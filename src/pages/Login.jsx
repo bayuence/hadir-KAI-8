@@ -9,7 +9,10 @@ const BULAN = [
   'Juli','Agustus','September','Oktober','November','Desember'
 ]
 
-// Ambil cache peserta dari localStorage dengan aman
+// Cache TTL: 30 menit — cukup lama untuk menghindari GAS cold start berulang
+const CACHE_TTL_MS = 30 * 60 * 1000
+
+// Ambil cache peserta dari localStorage dengan aman + cek apakah masih fresh
 function getCachedPeserta() {
   try {
     const cached = localStorage.getItem('kai_peserta_list')
@@ -17,6 +20,14 @@ function getCachedPeserta() {
     const parsed = JSON.parse(cached)
     return Array.isArray(parsed) ? parsed : []
   } catch (_) { return [] }
+}
+
+function isCacheFresh() {
+  try {
+    const ts = localStorage.getItem('kai_peserta_list_ts')
+    if (!ts) return false
+    return Date.now() - parseInt(ts, 10) < CACHE_TTL_MS
+  } catch (_) { return false }
 }
 
 export default function Login() {
@@ -77,26 +88,39 @@ export default function Login() {
   }, [])
 
   // ─── Fetch daftar nama dengan auto-retry (maks 2x) ─────────
-  const fetchPeserta = useCallback(async (attempt = 0) => {
+  const fetchPeserta = useCallback(async (attempt = 0, force = false) => {
     if (!isMounted.current) return
+
+    // Cache cerdas: skip fetch ke GAS kalau data masih fresh (< 30 menit)
+    // kecuali dipaksa (tombol "Muat ulang" atau retry manual)
+    if (!force && attempt === 0 && isCacheFresh() && getCachedPeserta().length > 0) {
+      return // cache masih valid, tidak perlu hit GAS
+    }
+
     setLoadingPeserta(true)
     try {
       const data = await api.getPesertaList()
       if (!isMounted.current) return
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
         setDaftarNama(data.data)
-        try { localStorage.setItem('kai_peserta_list', JSON.stringify(data.data)) } catch (_) {}
+        try {
+          localStorage.setItem('kai_peserta_list', JSON.stringify(data.data))
+          localStorage.setItem('kai_peserta_list_ts', String(Date.now()))
+        } catch (_) {}
         setLoadingPeserta(false)
-      } else if (attempt < 2) {
-        // Retry dengan jeda 2 detik jika response kosong / gagal
-        setTimeout(() => fetchPeserta(attempt + 1), 2000)
+      } else if (data.timeout && attempt < 1) {
+        // Timeout GAS (cold start) — retry 1x dengan jeda 3 detik
+        setTimeout(() => fetchPeserta(attempt + 1, force), 3000)
+      } else if (!data.timeout && attempt < 2) {
+        // Retry biasa untuk response kosong
+        setTimeout(() => fetchPeserta(attempt + 1, force), 2000)
       } else {
         setLoadingPeserta(false)
       }
     } catch (_) {
       if (!isMounted.current) return
       if (attempt < 2) {
-        setTimeout(() => fetchPeserta(attempt + 1), 2000)
+        setTimeout(() => fetchPeserta(attempt + 1, force), 2000)
       } else {
         setLoadingPeserta(false)
       }
@@ -104,8 +128,8 @@ export default function Login() {
   }, [])
 
   useEffect(() => {
-    // Selalu refresh dari API saat mount — pastikan data selalu terbaru
-    fetchPeserta(0)
+    // Refresh dari API saat mount — lewati jika cache masih fresh
+    fetchPeserta(0, false)
   }, [fetchPeserta])
 
   // ─── Filter dropdown ─────────────────────────────────────────
@@ -218,7 +242,7 @@ export default function Login() {
                 <button
                   type="button"
                   className="retry-badge"
-                  onClick={() => fetchPeserta(0)}
+                  onClick={() => fetchPeserta(0, true)}
                 >
                   ↺ Muat ulang
                 </button>
