@@ -413,21 +413,25 @@ function _prosesFormResponsesToPresensi(oldRes, webReg, pSheet, forceOverwrite) 
     }
     
     if (konfirmasi === 'datang') {
-      if (!presensiMap[key][4]) { // Hanya set sekali (pertama)
+      if (!presensiMap[key][4]) {
         presensiMap[key][4] = jam;
         if (lokasi) presensiMap[key][3] = lokasi;
         if (fotoUrl) presensiMap[key][5] = fotoUrl;
       }
     } else if (konfirmasi === 'pulang') {
-      if (!presensiMap[key][6]) { // Hanya set sekali
+      if (!presensiMap[key][6]) {
         presensiMap[key][6] = jam;
         if (fotoUrl) presensiMap[key][7] = fotoUrl;
         presensiMap[key][8] = hitungTotalJam(presensiMap[key][4] || jam, jam);
       }
     } else if (isIjin) {
-      // Override status ke ijin dan pastikan lokasi terisi
+      // Ijin: 1x isi sudah cukup.
+      // Jam submit = jam lapor ijin (JAM MASUK), foto = bukti ijin (FOTO MASUK).
+      // Duplikat ijin di tanggal sama -> diabaikan (first-write-wins).
       presensiMap[key][11] = statusLabel;
       if (lokasi) presensiMap[key][3] = lokasi;
+      if (!presensiMap[key][4]) presensiMap[key][4] = jam;      // jam lapor ijin
+      if (!presensiMap[key][5] && fotoUrl) presensiMap[key][5] = fotoUrl; // bukti foto
     }
   }
   
@@ -447,9 +451,9 @@ function _prosesFormResponsesToPresensi(oldRes, webReg, pSheet, forceOverwrite) 
       var cur = existingRows[existingRowIdx - 1]; // 0-indexed
       var needUpdate = false;
       
-      // Update jam masuk jika belum ada
+      // Update jam masuk & foto masuk jika belum ada
       if (!cur[4] && row[4]) { pSheet.getRange(existingRowIdx, 5).setValue(row[4]); needUpdate = true; }
-      if (!cur[5] && row[5]) { pSheet.getRange(existingRowIdx, 6).setValue(row[5]); needUpdate = true; } // foto masuk
+      if (!cur[5] && row[5]) { pSheet.getRange(existingRowIdx, 6).setValue(row[5]); needUpdate = true; } // foto masuk / bukti ijin
       // Update jam pulang jika belum ada
       if (!cur[6] && row[6]) {
         pSheet.getRange(existingRowIdx, 7).setValue(row[6]);
@@ -457,7 +461,9 @@ function _prosesFormResponsesToPresensi(oldRes, webReg, pSheet, forceOverwrite) 
         if (row[8]) pSheet.getRange(existingRowIdx, 9).setValue(row[8]); // total jam
         needUpdate = true;
       }
-      // Update status jika sebelumnya hanya 'Hadir' dan sekarang ada ijin
+      // Update lokasi jika kosong
+      if (!cur[3] && row[3]) { pSheet.getRange(existingRowIdx, 4).setValue(row[3]); needUpdate = true; }
+      // Update status: Hadir -> Ijin jika seharusnya ijin
       if (cur[11] === 'Hadir' && row[11] !== 'Hadir') {
         pSheet.getRange(existingRowIdx, 12).setValue(row[11]);
         needUpdate = true;
@@ -572,10 +578,14 @@ function onOldFormSubmit(e) {
     pSheet.appendRow(['TANGGAL', 'ID PESERTA', 'NAMA', 'LOKASI', 'JAM MASUK', 'FOTO MASUK', 'JAM PULANG', 'FOTO PULANG', 'TOTAL JAM', 'GPS MASUK', 'GPS PULANG', 'STATUS']);
   }
   
+  var tanggalNorm = normalizeTanggal(tanggal);
   var pRows = pSheet.getDataRange().getDisplayValues();
   var foundRow = -1;
   for (var x = 1; x < pRows.length; x++) {
-    if (pRows[x][0] === tanggal && pRows[x][1] === pId) { foundRow = x + 1; break; }
+    // Normalize kedua sisi agar berbagai format tanggal bisa cocok
+    if (normalizeTanggal(pRows[x][0]) === tanggalNorm && pRows[x][1] === pId) {
+      foundRow = x + 1; break;
+    }
   }
   
   // Tentukan apakah ini entri ijin dan label statusnya
@@ -588,28 +598,35 @@ function onOldFormSubmit(e) {
                   : 'Hadir';
   
   if (foundRow > -1) {
+    // Row sudah ada untuk tanggal ini
     if (konfirmasi === 'datang' && !pRows[foundRow-1][4]) {
        pSheet.getRange(foundRow, 5).setValue(jamSubmit);
        pSheet.getRange(foundRow, 4).setValue(lokasi);
-       if (fotoUrl) pSheet.getRange(foundRow, 6).setValue(fotoUrl); // Foto Masuk
+       if (fotoUrl) pSheet.getRange(foundRow, 6).setValue(fotoUrl);
     } else if (konfirmasi === 'pulang' && !pRows[foundRow-1][6]) {
        pSheet.getRange(foundRow, 7).setValue(jamSubmit);
-       if (fotoUrl) pSheet.getRange(foundRow, 8).setValue(fotoUrl); // Foto Pulang
+       if (fotoUrl) pSheet.getRange(foundRow, 8).setValue(fotoUrl);
        var jamM = pRows[foundRow-1][4] || jamSubmit;
        pSheet.getRange(foundRow, 9).setValue(hitungTotalJam(String(jamM), String(jamSubmit)));
-    } else if (isIjin) {
-       // Row sudah ada di tanggal itu — update status & lokasi saja
-       pSheet.getRange(foundRow, 12).setValue(statusLabel);
-       pSheet.getRange(foundRow, 4).setValue(lokasi);
+    } else if (isIjin && pRows[foundRow-1][11] !== statusLabel) {
+      // Update status & lokasi jika belum sesuai
+      pSheet.getRange(foundRow, 12).setValue(statusLabel);
+      if (lokasi) pSheet.getRange(foundRow, 4).setValue(lokasi);
+      // Simpan jam & foto ijin jika belum ada (1x isi form sudah cukup)
+      if (!pRows[foundRow-1][4] && jamSubmit) pSheet.getRange(foundRow, 5).setValue(jamSubmit);
+      if (!pRows[foundRow-1][5] && fotoUrl)   pSheet.getRange(foundRow, 6).setValue(fotoUrl);
     }
+    // Ijin duplikat (status sudah sama) -> abaikan (first-write-wins)
   } else {
+    // Belum ada row untuk tanggal ini -> buat baru
     if (konfirmasi === 'datang') {
-      pSheet.appendRow([tanggal, pId, pNamaAsli, lokasi, jamSubmit, fotoUrl, '', '', '', '', '', 'Hadir']);
+      pSheet.appendRow([tanggalNorm, pId, pNamaAsli, lokasi, jamSubmit, fotoUrl, '', '', '', '', '', 'Hadir']);
     } else if (konfirmasi === 'pulang') {
-      pSheet.appendRow([tanggal, pId, pNamaAsli, lokasi, '', '', jamSubmit, '', '', '', '', 'Hadir']);
+      pSheet.appendRow([tanggalNorm, pId, pNamaAsli, lokasi, '', '', jamSubmit, fotoUrl, '', '', '', 'Hadir']);
     } else if (isIjin) {
-      // ✅ Buat baris baru dengan status ijin yang sesuai (tanpa jam masuk/pulang)
-      pSheet.appendRow([tanggal, pId, pNamaAsli, lokasi, '', '', '', '', '', '', '', statusLabel]);
+      // Ijin: 1x isi form sudah cukup.
+      // JAM MASUK = jam submit (jam lapor ijin), FOTO MASUK = bukti foto ijin.
+      pSheet.appendRow([tanggalNorm, pId, pNamaAsli, lokasi, jamSubmit, fotoUrl, '', '', '', '', '', statusLabel]);
     }
   }
 }
@@ -971,6 +988,116 @@ function handleGetRiwayat(data) {
       result.push({ no: no++, tanggal: tglNormal, lokasi: rows[i][3], jamMasuk: rows[i][4], fotoMasuk: rows[i][5], jamPulang: rows[i][6], fotoPulang: rows[i][7], totalJam: rows[i][8], gpsMasuk: rows[i][9], gpsPulang: rows[i][10], status: rows[i][11] });
     }
   }
+  return { success: true, data: result.reverse() };
+}
+
+// ─── HANDLER IZIN ────────────────────────────────────────────
+function mapJenisIzinKeStatus(jenis) {
+  if (!jenis) return 'Ijin Lain';
+  var j = String(jenis).toLowerCase().trim();
+  if (j === 'sakit' || j === 'ijin sakit') return 'Ijin Sakit';
+  if (j === 'kuliah' || j === 'ijin kampus' || j === 'ijin acara kampus') return 'Ijin Kampus';
+  return 'Ijin Lain';
+}
+
+function handleAjukanIzin(data) {
+  if (!validateSession(data.token)) return { success: false, message: 'Sesi invalid.' };
+  if (!data.idPeserta) return { success: false, message: 'ID Peserta tidak valid.' };
+  if (!data.tanggal) return { success: false, message: 'Tanggal izin harus diisi.' };
+
+  var tglInputNorm = normalizeTanggal(data.tanggal);
+  if (!tglInputNorm) return { success: false, message: 'Format tanggal tidak valid.' };
+
+  // Cari data peserta di WEB Register
+  var regSheet = getSheet('WEB Register');
+  if (!regSheet) return { success: false, message: 'Database peserta tidak ditemukan.' };
+  var regRows = regSheet.getDataRange().getDisplayValues();
+  var pesertaNama = '', pesertaLokasi = 'Izin (Online)';
+  for (var i = 1; i < regRows.length; i++) {
+    if (regRows[i][14] === data.idPeserta) {
+      pesertaNama = regRows[i][1];
+      if (regRows[i][13]) pesertaLokasi = regRows[i][13];
+      break;
+    }
+  }
+
+  var dataSheet = getOrCreateSheet('WEB Presensi');
+  if (dataSheet.getLastRow() === 0) {
+    dataSheet.appendRow(['TANGGAL', 'ID PESERTA', 'NAMA', 'LOKASI', 'JAM MASUK', 'FOTO MASUK', 'JAM PULANG', 'FOTO PULANG', 'TOTAL JAM', 'GPS MASUK', 'GPS PULANG', 'STATUS']);
+  }
+
+  var dsRows = dataSheet.getDataRange().getDisplayValues();
+  for (var k = dsRows.length - 1; k >= 1; k--) {
+    if (normalizeTanggal(dsRows[k][0]) === tglInputNorm && dsRows[k][1] === data.idPeserta) {
+      var st = (dsRows[k][11] || '').toLowerCase();
+      if (st === 'hadir') return { success: false, message: 'Anda sudah presensi hadir pada tanggal tersebut.' };
+      if (st.startsWith('ijin')) return { success: false, message: 'Anda sudah mengajukan izin pada tanggal tersebut.' };
+    }
+  }
+
+  var statusMapped = mapJenisIzinKeStatus(data.jenis);
+  var jamLapor = formatJam(new Date());
+  var fotoUrl = data.foto64 ? uploadFoto(data.foto64, 'izin_' + data.idPeserta + '_' + tglInputNorm.replace(/\//g, '-') + '.jpg') : '';
+
+  var lokasiField = data.keterangan ? (pesertaLokasi + ' (' + data.keterangan + ')') : pesertaLokasi;
+
+  // Append ke WEB Presensi
+  dataSheet.appendRow([tglInputNorm, data.idPeserta, pesertaNama, lokasiField, jamLapor, fotoUrl, '', '', '', '', '', statusMapped]);
+
+  // Append ke WEB Izin
+  var izinSheet = getOrCreateSheet('WEB Izin');
+  if (izinSheet.getLastRow() === 0) {
+    izinSheet.appendRow(['ID IZIN', 'ID PESERTA', 'NAMA', 'TANGGAL', 'JENIS', 'KETERANGAN', 'FOTO BUKTI', 'STATUS', 'TIMESTAMP']);
+  }
+  var idIzin = 'IZIN-' + Date.now();
+  izinSheet.appendRow([idIzin, data.idPeserta, pesertaNama, tglInputNorm, data.jenis || 'Lainnya', data.keterangan || '', fotoUrl, 'approved', new Date().toISOString()]);
+
+  return { success: true, message: 'Pengajuan izin berhasil dicatat.' };
+}
+
+function handleGetIzinSaya(data) {
+  if (!validateSession(data.token)) return { success: false, message: 'Sesi invalid.' };
+  
+  var izinSheet = getSheet('WEB Izin');
+  var result = [];
+  if (izinSheet) {
+    var rows = izinSheet.getDataRange().getDisplayValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][1] === data.idPeserta) {
+        result.push({
+          id: rows[i][0],
+          tanggal: rows[i][3],
+          jenis: rows[i][4],
+          keterangan: rows[i][5],
+          fotoUrl: rows[i][6],
+          status: rows[i][7] || 'approved'
+        });
+      }
+    }
+  }
+  
+  if (result.length === 0) {
+    var pSheet = getSheet('WEB Presensi');
+    if (pSheet) {
+      var pRows = pSheet.getDataRange().getDisplayValues();
+      for (var j = 1; j < pRows.length; j++) {
+        if (pRows[j][1] === data.idPeserta && pRows[j][11] && pRows[j][11].toLowerCase().startsWith('ijin')) {
+          var displayJenis = 'Lainnya';
+          if (pRows[j][11] === 'Ijin Sakit') displayJenis = 'Sakit';
+          if (pRows[j][11] === 'Ijin Kampus') displayJenis = 'Kuliah';
+          result.push({
+            id: 'P-' + j,
+            tanggal: normalizeTanggal(pRows[j][0]),
+            jenis: displayJenis,
+            keterangan: pRows[j][3] || '',
+            fotoUrl: pRows[j][5] || '',
+            status: 'approved'
+          });
+        }
+      }
+    }
+  }
+  
   return { success: true, data: result.reverse() };
 }
 
