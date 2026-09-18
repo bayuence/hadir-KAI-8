@@ -11,6 +11,7 @@ export default function NotificationPrompt() {
   const [permission, setPermission] = useState('default')
   const [loading, setLoading] = useState(false)
   const [testSent, setTestSent] = useState(false)
+  const [pesan, setPesan] = useState('Halo! Jangan lupa presensi masuk magang hari ini.')
 
   useEffect(() => {
     setPermission(getNotificationPermission())
@@ -27,23 +28,24 @@ export default function NotificationPrompt() {
     setLoading(false)
 
     if (res.success) {
-      // Kirim sambutan notifikasi langsung
-      sendNotification('HADIRKAI8 — Pengingat Aktif 🎉', {
+      sendNotification('HADIR KAI 8', {
         body: 'Notifikasi pengingat presensi berhasil diaktifkan di perangkat ini!',
         tag: 'kai-welcome-notif'
       })
       setTestSent(true)
-      setTimeout(() => setTestSent(false), 5000)
+      setTimeout(() => setTestSent(false), 4000)
     }
   }
 
-  const handleTestNotification = async () => {
+  const handleKirimPesan = async (e) => {
+    if (e) e.preventDefault()
+    const isiPesan = pesan.trim() || 'Mengingatkan untuk segera melakukan presensi hari ini.'
     setTestSent(true)
-    await sendNotification('HADIRKAI8 — Tes Notifikasi', {
-      body: 'Halo! Ini adalah contoh notifikasi pengingat presensi magang KAI Daop 8.',
-      tag: 'kai-test-reminder'
+    await sendNotification('HADIR KAI 8', {
+      body: isiPesan,
+      tag: 'kai-custom-msg'
     })
-    setTimeout(() => setTestSent(false), 4000)
+    setTimeout(() => setTestSent(false), 3000)
   }
 
   return (
@@ -57,21 +59,30 @@ export default function NotificationPrompt() {
 
       <div className="notif-prompt-content">
         {permission === 'granted' ? (
-          <>
+          <form onSubmit={handleKirimPesan} className="notif-input-form">
             <div className="notif-prompt-header">
               <span className="notif-badge-active">Pengingat Presensi Aktif</span>
             </div>
-            <p className="notif-prompt-desc">
-              Perangkat Anda siap menerima notifikasi jam masuk & pulang.
-            </p>
+            
+            <div className="notif-input-group">
+              <label className="notif-input-label">Pesan Notifikasi (Judul: <strong>HADIR KAI 8</strong>)</label>
+              <input
+                type="text"
+                className="notif-input-text"
+                placeholder="Tulis pesan notifikasi..."
+                value={pesan}
+                onChange={(e) => setPesan(e.target.value)}
+              />
+            </div>
+
             <button
-              className="btn-test-notif"
-              onClick={handleTestNotification}
+              type="submit"
+              className="btn-send-notif"
               disabled={testSent}
             >
-              {testSent ? '✓ Notifikasi Dikirim' : 'Kirim Tes Notifikasi'}
+              {testSent ? '✓ Terkirim' : 'Kirim Notifikasi'}
             </button>
-          </>
+          </form>
         ) : permission === 'denied' ? (
           <>
             <div className="notif-prompt-header">
@@ -90,6 +101,7 @@ export default function NotificationPrompt() {
               Dapatkan notifikasi otomatis setiap pagi agar tidak lupa presensi masuk.
             </p>
             <button
+              type="button"
               className="btn-enable-notif"
               onClick={handleEnable}
               disabled={loading}

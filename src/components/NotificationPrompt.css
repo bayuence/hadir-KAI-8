@@ -105,6 +105,64 @@
   box-shadow: none;
 }
 
+.notif-input-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notif-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notif-input-label {
+  font-size: 0.78rem;
+  color: #4b5563;
+}
+
+.notif-input-text {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 0.85rem;
+  color: #1f2937;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.notif-input-text:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.btn-send-notif {
+  align-self: flex-start;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+}
+
+.btn-send-notif:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-send-notif:disabled {
+  background: #9ca3af;
+  cursor: default;
+  box-shadow: none;
+}
+
 .btn-test-notif {
   background: white;
   color: #10b981;

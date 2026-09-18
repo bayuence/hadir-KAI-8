@@ -86,32 +86,126 @@ export const sendNotification = async (title, options = {}) => {
 }
 
 /**
- * Pengecekan otomatis saat aplikasi dibuka di pagi hari (07.00 - 08.30 WIB)
- * Jika peserta belum absen hari ini, kirimkan notifikasi pengingat lokal
+ * Pengecekan otomatis berkala jadwal presensi magang KAI Daop 8
+ * 
+ * Aturan Jam Kerja:
+ * - Senin s.d Kamis: 08.00 - 16.00 WIB
+ *   -> 07.45: Pengingat 15 menit sebelum masuk
+ *   -> 08.15: Pengingat bagi yang BELUM presensi masuk
+ *   -> 15.45: Pengingat 15 menit sebelum pulang (jika sudah masuk)
+ *   -> 16.15: Pengingat bagi yang BELUM presensi pulang (jika sudah masuk)
+ * 
+ * - Jum'at: 07.30 - 15.00 WIB
+ *   -> 07.15: Pengingat 15 menit sebelum masuk
+ *   -> 07.45: Pengingat bagi yang BELUM presensi masuk
+ *   -> 14.45: Pengingat 15 menit sebelum pulang (jika sudah masuk)
+ *   -> 15.15: Pengingat bagi yang BELUM presensi pulang (jika sudah masuk)
+ * 
+ * - Sabtu & Minggu: Libur (Tidak ada pengingat)
  */
-export const checkMorningReminder = (sudahMasuk) => {
-  if (sudahMasuk) return
+export const checkAutomatedReminders = (status = {}) => {
   if (!isNotificationSupported() || Notification.permission !== 'granted') return
 
   const now = new Date()
-  const day = now.getDay()
-  // Hanya hari kerja: Senin (1) sampai Jumat (5)
-  if (day === 0 || day === 6) return
+  const day = now.getDay() // 0 = Minggu, 1 = Senin, ..., 5 = Jumat, 6 = Sabtu
+  if (day === 0 || day === 6) return // Libur weekend
 
+  const isFriday = day === 5
   const hours = now.getHours()
   const minutes = now.getMinutes()
   const totalMinutes = hours * 60 + minutes
 
-  // Antara pukul 07.00 (420 menit) sampai 08.30 (510 menit)
-  if (totalMinutes >= 420 && totalMinutes <= 510) {
-    const todayStr = now.toISOString().slice(0, 10)
-    const key = `kai_morning_reminder_sent_${todayStr}`
+  const todayStr = now.toISOString().slice(0, 10)
+  const sendOncePerDay = (type, title, body, tag) => {
+    const key = `kai_notif_${type}_${todayStr}`
     if (!localStorage.getItem(key)) {
-      sendNotification('HADIRKAI8 — Pengingat Presensi', {
-        body: 'Selamat pagi! Jangan lupa melakukan presensi masuk magang hari ini sebelum pukul 08.00 WIB.',
-        tag: 'kai-morning-reminder'
-      })
+      sendNotification(title, { body, tag })
       localStorage.setItem(key, 'true')
     }
   }
+
+  // 1. Pengingat Sebelum Masuk (15 Menit Sebelum Jam Masuk)
+  // Senin-Kamis: 07.45 (465 mnt) | Jumat: 07.15 (435 mnt)
+  const preMasukStart = isFriday ? 435 : 465
+  const preMasukEnd = isFriday ? 449 : 479
+  if (totalMinutes >= preMasukStart && totalMinutes <= preMasukEnd) {
+    if (!status.sudahMasuk) {
+      sendOncePerDay(
+        'pre_masuk',
+        'HADIR KAI 8',
+        'Selamat pagi! Waktu presensi masuk akan dimulai 15 menit lagi. Segera persiapkan presensi Anda.',
+        'kai-pre-masuk'
+      )
+    }
+  }
+
+  // 2. Pengingat Terlambat / Belum Presensi Masuk (15 Menit Setelah Jam Masuk)
+  // Senin-Kamis: 08.15 (495 mnt) | Jumat: 07.45 (465 mnt)
+  const lateMasukStart = isFriday ? 465 : 495
+  const lateMasukEnd = isFriday ? 495 : 525
+  if (totalMinutes >= lateMasukStart && totalMinutes <= lateMasukEnd) {
+    if (!status.sudahMasuk) {
+      sendOncePerDay(
+        'late_masuk',
+        'HADIR KAI 8',
+        'Peringatan: Anda belum melakukan presensi masuk hari ini. Mohon segera melakukan presensi!',
+        'kai-late-masuk'
+      )
+    }
+  }
+
+  // 3. Pengingat Mulai Istirahat (Tepat Waktu)
+  // Senin-Kamis: 12.00 (720 mnt) | Jumat: 11.30 (690 mnt)
+  const breakStartMin = isFriday ? 690 : 720
+  const breakStartEnd = breakStartMin + 14
+  if (totalMinutes >= breakStartMin && totalMinutes <= breakStartEnd) {
+    const msg = isFriday
+      ? 'Waktu istirahat telah tiba (11.30 - 13.00 WIB). Selamat beristirahat & menunaikan ibadah Sholat Jum\'at!'
+      : 'Waktu istirahat telah tiba (12.00 - 13.00 WIB). Selamat beristirahat dan makan siang!'
+    sendOncePerDay('break_start', 'HADIR KAI 8', msg, 'kai-break-start')
+  }
+
+  // 4. Pengingat Selesai Istirahat (Tepat Waktu: 13.00 WIB)
+  // Senin s.d Jumat: 13.00 (780 mnt)
+  if (totalMinutes >= 780 && totalMinutes <= 794) {
+    sendOncePerDay(
+      'break_end',
+      'HADIR KAI 8',
+      'Waktu istirahat telah selesai (13.00 WIB). Selamat kembali melanjutkan aktivitas magang!',
+      'kai-break-end'
+    )
+  }
+
+  // 5. Pengingat Sebelum Pulang (15 Menit Sebelum Jam Pulang)
+  // Senin-Kamis: 15.45 (945 mnt) | Jumat: 14.45 (885 mnt)
+  const prePulangStart = isFriday ? 885 : 945
+  const prePulangEnd = isFriday ? 899 : 959
+  if (totalMinutes >= prePulangStart && totalMinutes <= prePulangEnd) {
+    if (status.sudahMasuk && !status.sudahPulang) {
+      sendOncePerDay(
+        'pre_pulang',
+        'HADIR KAI 8',
+        'Selamat sore! 15 menit lagi waktu jam pulang kerja. Persiapkan diri Anda untuk presensi pulang.',
+        'kai-pre-pulang'
+      )
+    }
+  }
+
+  // 4. Pengingat Belum Presensi Pulang (15 Menit Setelah Jam Pulang)
+  // Senin-Kamis: 16.15 (975 mnt) | Jumat: 15.15 (915 mnt)
+  const latePulangStart = isFriday ? 915 : 975
+  const latePulangEnd = isFriday ? 945 : 1005
+  if (totalMinutes >= latePulangStart && totalMinutes <= latePulangEnd) {
+    if (status.sudahMasuk && !status.sudahPulang) {
+      sendOncePerDay(
+        'late_pulang',
+        'HADIR KAI 8',
+        'Peringatan: Anda belum melakukan presensi pulang hari ini. Jangan sampai lupa untuk presensi pulang!',
+        'kai-late-pulang'
+      )
+    }
+  }
 }
+
+// Backward compatibility alias
+export const checkMorningReminder = checkAutomatedReminders

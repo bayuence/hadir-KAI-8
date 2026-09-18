@@ -4,6 +4,7 @@ import Webcam from 'react-webcam'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import { useGeo } from '../hooks/useGeo'
+import { sendNotification } from '../services/notificationService'
 import './Presensi.css'
 
 export default function Presensi({ type = 'masuk' }) {
@@ -86,6 +87,17 @@ export default function Presensi({ type = 'masuk' }) {
       const data = type === 'masuk' ? await api.checkIn(payload) : await api.checkOut(payload)
       
       if (data.success) {
+         if (type === 'masuk') {
+           sendNotification('HADIR KAI 8', {
+             body: 'Terima kasih sudah melakukan presensi masuk hari ini. Selamat beraktivitas!',
+             tag: 'kai-success-masuk'
+           })
+         } else {
+           sendNotification('HADIR KAI 8', {
+             body: 'Terima kasih sudah melakukan presensi pulang hari ini. Hati-hati di jalan!',
+             tag: 'kai-success-pulang'
+           })
+         }
          navigate('/dashboard', { replace: true })
       } else {
          setErrorMsg(data.message || 'Gagal menyimpan presensi.')

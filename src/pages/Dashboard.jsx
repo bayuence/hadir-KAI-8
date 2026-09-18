@@ -10,7 +10,7 @@ import Avatar from '../components/Avatar'
 import NotificationPrompt from '../components/NotificationPrompt'
 import IosInstallPrompt from '../components/IosInstallPrompt'
 import {
-  checkMorningReminder,
+  checkAutomatedReminders,
   getNotificationPermission,
   requestNotificationPermission,
   sendNotification
@@ -122,10 +122,14 @@ export default function Dashboard() {
     }
   }, [refreshStatus])
 
-  // Pengecekan otomatis pengingat presensi pagi
+  // Pengecekan otomatis berkala jadwal presensi magang KAI Daop 8
   useEffect(() => {
-    checkMorningReminder(status.sudahMasuk)
-  }, [status.sudahMasuk])
+    checkAutomatedReminders(status)
+    const interval = setInterval(() => {
+      checkAutomatedReminders(status)
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [status])
 
   // State sinkronisasi status izin notifikasi
   const [notifPermission, setNotifPermission] = useState(() => getNotificationPermission())
