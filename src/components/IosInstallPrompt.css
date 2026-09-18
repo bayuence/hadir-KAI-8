@@ -1,0 +1,128 @@
+.ios-install-banner {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  border: 1px solid rgba(0,0,0,0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.ios-install-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+}
+
+.ios-install-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.ios-install-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ios-install-title strong {
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.ios-badge {
+  display: inline-block;
+  align-self: flex-start;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ios-btn-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #9ca3af;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.ios-install-desc {
+  font-size: 0.85rem;
+  color: #4b5563;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.ios-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.ios-step-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 0.85rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.ios-step-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.ios-icon-share {
+  display: inline-block;
+  border: 1px solid #d1d5db;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: white;
+  font-size: 1.1em;
+  margin: 0 2px;
+}
+
+.ios-btn-ack {
+  width: 100%;
+  background: #f3f4f6;
+  color: #1f2937;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.ios-btn-ack:hover {
+  background: #e5e7eb;
+}

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import BottomNav from '../components/BottomNav'
 import Avatar from '../components/Avatar'
+import NotificationPrompt from '../components/NotificationPrompt'
 import './Profil.css'
 
 const ADMIN_MENUS = [
@@ -328,6 +329,9 @@ export default function Profil() {
             </div>
           </div>
         </div>
+
+        {/* Pengaturan Notifikasi (Sementara hanya admin) */}
+        {isAdmin && <NotificationPrompt />}
 
         <button className="btn btn-outline"
           style={{ color: 'var(--red)', borderColor: 'var(--red)', marginTop: 8, width: '100%' }}

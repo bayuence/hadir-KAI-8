@@ -7,6 +7,14 @@ import { useGeo } from '../hooks/useGeo'
 import BottomNav from '../components/BottomNav'
 import LocationBanner from '../components/LocationBanner'
 import Avatar from '../components/Avatar'
+import NotificationPrompt from '../components/NotificationPrompt'
+import IosInstallPrompt from '../components/IosInstallPrompt'
+import {
+  checkMorningReminder,
+  getNotificationPermission,
+  requestNotificationPermission,
+  sendNotification
+} from '../services/notificationService'
 import './Dashboard.css'
 
 export default function Dashboard() {
@@ -114,6 +122,46 @@ export default function Dashboard() {
     }
   }, [refreshStatus])
 
+  // Pengecekan otomatis pengingat presensi pagi
+  useEffect(() => {
+    checkMorningReminder(status.sudahMasuk)
+  }, [status.sudahMasuk])
+
+  // State sinkronisasi status izin notifikasi
+  const [notifPermission, setNotifPermission] = useState(() => getNotificationPermission())
+
+  useEffect(() => {
+    const updatePerm = () => setNotifPermission(getNotificationPermission())
+    window.addEventListener('focus', updatePerm)
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') updatePerm()
+    })
+    return () => {
+      window.removeEventListener('focus', updatePerm)
+    }
+  }, [])
+
+  const handleBellClick = async () => {
+    if (notifPermission !== 'granted') {
+      const res = await requestNotificationPermission()
+      const current = res.permission || getNotificationPermission()
+      setNotifPermission(current)
+      if (res.success) {
+        sendNotification('HADIRKAI8 — Pengingat Aktif 🎉', {
+          body: 'Notifikasi pengingat presensi berhasil diaktifkan di perangkat ini!',
+          tag: 'kai-welcome-notif'
+        })
+      } else if (current === 'denied') {
+        alert('Izin notifikasi diblokir pada browser Anda. Silakan klik ikon gembok / setelan situs di bilah alamat browser untuk mengizinkan notifikasi.')
+      }
+    } else {
+      sendNotification('HADIRKAI8 — Status Notifikasi Aktif', {
+        body: 'Izin notifikasi presensi sudah aktif di perangkat ini.',
+        tag: 'kai-bell-check'
+      })
+    }
+  }
+
   const durasi = hitungDurasi(status.jamMasuk, status.jamPulang)
 
   const statusLabel = () => {
@@ -129,6 +177,9 @@ export default function Dashboard() {
   return (
     <div className="app-shell">
       <div className="dashboard-wrap">
+        {/* Panduan Khusus Pengguna iPhone/iOS Safari (Sementar hanya untuk admin) */}
+        {user?.role === 'admin' && <IosInstallPrompt />}
+
         {/* Banner Section */}
         <div className="dash-banner animate-fade-in">
           <img src="/banner.jpg" alt="KAI Banner" className="banner-img" />
@@ -158,7 +209,21 @@ export default function Dashboard() {
 
         <LocationBanner />
 
-        <div className="dash-clock animate-fade-up">{jam}</div>
+        <div className="dash-clock-container animate-fade-up">
+          <div className="dash-clock">{jam}</div>
+          <button 
+            type="button"
+            className={`dash-bell-btn ${notifPermission === 'granted' ? 'bell-granted' : 'bell-denied'}`}
+            onClick={handleBellClick}
+            title={notifPermission === 'granted' ? 'Notifikasi Aktif (Izin Diberikan)' : 'Notifikasi Belum Diizinkan (Klik untuk mengaktifkan)'}
+            aria-label="Status Notifikasi Presensi"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+          </button>
+        </div>
 
         <div className="card dash-status-card animate-fade-up">
           <div className="flex items-center justify-between mb-4">
@@ -202,6 +267,9 @@ export default function Dashboard() {
           )}
 
         </div>
+
+        {/* Pengingat Notifikasi Presensi PWA (Sementara hanya admin) */}
+        {user?.role === 'admin' && <NotificationPrompt />}
 
         <div className="dash-actions animate-fade-up">
           <button 

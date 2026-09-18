@@ -18,7 +18,12 @@ var CONFIG = {
   ADMIN_TOKEN:     'KAI_DAOP8_ADMIN_2026',
   FOLDER_FOTO_ID:  'ISI_ID_FOLDER_DRIVE_FOTO', // GANTI INI NANTI JIKA MAU FOTO
   GEOFENCE_RADIUS: 100,
-  SESSION_EXPIRE:  24 * 60 * 60 * 1000
+  SESSION_EXPIRE:  24 * 60 * 60 * 1000,
+  
+  // Konfigurasi Meta WhatsApp Cloud API
+  WA_PHONE_NUMBER_ID: 'ISI_PHONE_NUMBER_ID_META_DISINI',
+  WA_ACCESS_TOKEN:    'ISI_ACCESS_TOKEN_META_DISINI',
+  WA_TEMPLATE_NAME:   'hello_world' // Default template dari Meta untuk testing awal
 };
 
 // ─── ENTRY POINT (WEB APP API) ───────────────────────────────
@@ -55,6 +60,14 @@ function doPost(e) {
       case 'saveUserAdmin':     result = handleSaveUserAdmin(data);     break;
       case 'deleteUserAdmin':   result = handleDeleteUserAdmin(data);   break;
       case 'toggleAdminRole':   result = handleToggleAdminRole(data);   break;
+      case 'broadcastPengingatWA':
+        if (!isAdminValid(data.adminToken)) {
+          result = { success: false, message: 'Token admin invalid.' };
+        } else {
+          kirimPengingatPresensiPagi();
+          result = { success: true, message: 'Broadcast pengingat WA berhasil diproses.' };
+        }
+        break;
       default: result = { success: false, message: 'Action tidak dikenal' };
     }
     return respond(result);
@@ -886,7 +899,7 @@ function handleGetStatusHariIni(data) {
   var sheet = getSheet('WEB Presensi');
   if (!sheet) return { success: true, data: { sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null } };
 
-  var rows = sheet.getDataRange().getDisplayValues();
+  var rows = sheet.getDataRange().getValues();
   for (var i = rows.length - 1; i >= 1; i--) {
     // Normalize kedua sisi agar format apapun bisa cocok
     if (normalizeTanggal(rows[i][0]) === normalizeTanggal(today) && rows[i][1] === data.idPeserta) {
@@ -934,7 +947,7 @@ function handleCheckIn(data) {
     dataSheet.appendRow(['TANGGAL', 'ID PESERTA', 'NAMA', 'LOKASI', 'JAM MASUK', 'FOTO MASUK', 'JAM PULANG', 'FOTO PULANG', 'TOTAL JAM', 'GPS MASUK', 'GPS PULANG', 'STATUS']);
   }
   
-  var dsRows = dataSheet.getDataRange().getDisplayValues();
+  var dsRows = dataSheet.getDataRange().getValues();
   var todayNorm = normalizeTanggal(today);
   for (var k = dsRows.length - 1; k >= 1; k--) {
     // Normalize tanggal di sheet agar cocok dengan format apapun
@@ -954,7 +967,7 @@ function handleCheckOut(data) {
   var dataSheet = getSheet('WEB Presensi');
   if (!dataSheet) return { success: false, message: 'Belum presensi masuk.' };
 
-  var rows = dataSheet.getDataRange().getDisplayValues();
+  var rows = dataSheet.getDataRange().getValues();
   var targetRow = -1;
   var todayNormCO = normalizeTanggal(today);
   for (var i = rows.length - 1; i >= 1; i--) {
@@ -1026,7 +1039,7 @@ function handleAjukanIzin(data) {
     dataSheet.appendRow(['TANGGAL', 'ID PESERTA', 'NAMA', 'LOKASI', 'JAM MASUK', 'FOTO MASUK', 'JAM PULANG', 'FOTO PULANG', 'TOTAL JAM', 'GPS MASUK', 'GPS PULANG', 'STATUS']);
   }
 
-  var dsRows = dataSheet.getDataRange().getDisplayValues();
+  var dsRows = dataSheet.getDataRange().getValues();
   for (var k = dsRows.length - 1; k >= 1; k--) {
     if (normalizeTanggal(dsRows[k][0]) === tglInputNorm && dsRows[k][1] === data.idPeserta) {
       var st = (dsRows[k][11] || '').toLowerCase();
@@ -1291,7 +1304,12 @@ function hitungJarak(lat1, lon1, lat2, lon2) {
 function uploadFoto(base64Data, filename) {
   try {
     var clean = base64Data.indexOf(',') > -1 ? base64Data.split(',')[1] : base64Data;
-    var folder; try { folder = DriveApp.getFolderById(CONFIG.FOLDER_FOTO_ID); } catch(e) { folder = DriveApp.getRootFolder(); }
+    var folder;
+    if (CONFIG.FOLDER_FOTO_ID && CONFIG.FOLDER_FOTO_ID !== 'ISI_ID_FOLDER_DRIVE_FOTO') {
+      try { folder = DriveApp.getFolderById(CONFIG.FOLDER_FOTO_ID); } catch(e) { folder = DriveApp.getRootFolder(); }
+    } else {
+      folder = DriveApp.getRootFolder();
+    }
     var file = folder.createFile(Utilities.newBlob(Utilities.base64Decode(clean), 'image/jpeg', filename));
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     return 'https://drive.google.com/uc?id=' + file.getId();
@@ -1308,9 +1326,15 @@ function formatTanggal(dateStr) {
 }
 
 // Normalisasi berbagai format tanggal ke DD/MM/YYYY
-// Handle: "DD/MM/YYYY" (lokal web app, selalu zero-padded), "M/D/YYYY" (Google Sheets US locale)
+// Handle: Date Object, "DD/MM/YYYY" (lokal web app), "M/D/YYYY" (Google Sheets US locale)
 function normalizeTanggal(tglStr) {
   if (!tglStr) return '';
+  if (tglStr instanceof Date) {
+    var dayObj = tglStr.getDate();
+    var monthObj = tglStr.getMonth() + 1;
+    var yearObj = tglStr.getFullYear();
+    return String(dayObj).padStart(2, '0') + '/' + String(monthObj).padStart(2, '0') + '/' + yearObj;
+  }
   var s = String(tglStr).trim();
   var parts = s.split('/');
   if (parts.length !== 3) return s;
@@ -1527,4 +1551,202 @@ function handleGetAllUsersAdmin(data) {
     }
   }
   return { success: true, data: list };
+}
+
+// ============================================================
+// INTEGRASI META WHATSAPP CLOUD API (PENGINGAT PRESENSI MASUK)
+// ============================================================
+
+/**
+ * Normalisasi format nomor WhatsApp ke standar internasional tanpa tanda '+'
+ * Contoh: 08123456789 -> 628123456789
+ */
+function formatNoHpWhatsApp(noHp) {
+  if (!noHp) return '';
+  var clean = String(noHp).replace(/\D/g, '');
+  if (clean.startsWith('0')) {
+    clean = '62' + clean.slice(1);
+  } else if (clean.startsWith('8')) {
+    clean = '62' + clean;
+  }
+  return clean;
+}
+
+/**
+ * Kirim pesan WhatsApp menggunakan Meta WhatsApp Cloud API Resmi
+ * @param {string} toPhoneNumber - Nomor tujuan (misal: '08123456789' atau '628123456789')
+ * @param {string} namaPeserta - Nama peserta magang untuk variabel template
+ * @param {string} [customMessage] - Pesan bebas (hanya bisa dikirim jika user telah chat dalam 24 jam terakhir)
+ */
+function kirimWhatsAppCloudAPI(toPhoneNumber, namaPeserta, customMessage) {
+  if (!CONFIG.WA_PHONE_NUMBER_ID || CONFIG.WA_PHONE_NUMBER_ID === 'ISI_PHONE_NUMBER_ID_META_DISINI') {
+    Logger.log('WA Cloud API Error: WA_PHONE_NUMBER_ID belum diisi di CONFIG.');
+    return { success: false, message: 'WA_PHONE_NUMBER_ID belum dikonfigurasi di CONFIG.' };
+  }
+
+  var phone = formatNoHpWhatsApp(toPhoneNumber);
+  if (!phone) {
+    return { success: false, message: 'Nomor HP tidak valid: ' + toPhoneNumber };
+  }
+
+  var url = 'https://graph.facebook.com/v20.0/' + CONFIG.WA_PHONE_NUMBER_ID + '/messages';
+  var payload;
+
+  if (customMessage) {
+    // Mode Text Message biasa (Customer Care Window 24 jam)
+    payload = {
+      messaging_product: 'whatsapp',
+      to: phone,
+      type: 'text',
+      text: { body: customMessage }
+    };
+  } else {
+    // Mode Template Resmi Meta (Outbound Reminder)
+    payload = {
+      messaging_product: 'whatsapp',
+      to: phone,
+      type: 'template',
+      template: {
+        name: CONFIG.WA_TEMPLATE_NAME || 'hello_world',
+        language: { code: 'id' }
+      }
+    };
+
+    // Jika menggunakan custom template (bukan template testing hello_world)
+    if (CONFIG.WA_TEMPLATE_NAME && CONFIG.WA_TEMPLATE_NAME !== 'hello_world') {
+      payload.template.components = [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: namaPeserta || 'Peserta Magang' }
+          ]
+        }
+      ];
+    }
+  }
+
+  var options = {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'Authorization': 'Bearer ' + CONFIG.WA_ACCESS_TOKEN
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    var response = UrlFetchApp.fetch(url, options);
+    var resCode  = response.getResponseCode();
+    var resBody  = response.getContentText();
+    Logger.log('Response Meta WA [' + resCode + '] untuk ' + phone + ': ' + resBody);
+
+    if (resCode === 200 || resCode === 201) {
+      return { success: true, message: 'Pesan WA berhasil dikirim ke ' + phone, response: JSON.parse(resBody) };
+    } else {
+      return { success: false, message: 'Gagal kirim WA (' + resCode + '): ' + resBody };
+    }
+  } catch (err) {
+    Logger.log('Exception kirim WA: ' + err.message);
+    return { success: false, message: 'Exception: ' + err.message };
+  }
+}
+
+/**
+ * Fungsi Pengingat Otomatis Presensi Pagi
+ * Dipanggil otomatis setiap hari via Trigger Google Apps Script
+ */
+function kirimPengingatPresensiPagi() {
+  Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI PAGI ===');
+  
+  // Skip jika hari Sabtu (6) atau Minggu (0)
+  var todayDate = new Date();
+  var dayOfWeek = todayDate.getDay();
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    Logger.log('Hari ini adalah akhir pekan (Sabtu/Minggu). Pengingat WA dilewati.');
+    return;
+  }
+
+  var todayStr = formatTanggal();
+  var todayNorm = normalizeTanggal(todayStr);
+
+  // 1. Ambil data peserta aktif dari WEB Register
+  var regSheet = getSheet('WEB Register');
+  if (!regSheet) {
+    Logger.log('ERROR: Sheet WEB Register tidak ditemukan.');
+    return;
+  }
+  var regRows = regSheet.getDataRange().getDisplayValues();
+
+  // 2. Ambil data presensi hari ini
+  var presSheet = getSheet('WEB Presensi');
+  var presRows = presSheet ? presSheet.getDataRange().getValues() : [];
+
+  var totalKirim = 0, totalLewati = 0;
+
+  for (var i = 1; i < regRows.length; i++) {
+    var statusAcc = regRows[i][11]; // active / pending
+    if (statusAcc !== 'active') continue; // Hanya ingatkan peserta aktif
+
+    var idPeserta = regRows[i][14];
+    var nama      = regRows[i][1];
+    var noHp      = regRows[i][4]; // Kolom No Handphone / WhatsApp
+
+    if (!noHp) {
+      Logger.log('Lewati ' + nama + ': Nomor HP belum diisi.');
+      continue;
+    }
+
+    // Cek apakah peserta sudah presensi masuk atau sudah izin hari ini
+    var sudahAbsen = false;
+    for (var j = presRows.length - 1; j >= 1; j--) {
+      if (normalizeTanggal(presRows[j][0]) === todayNorm && presRows[j][1] === idPeserta) {
+        sudahAbsen = true;
+        break;
+      }
+    }
+
+    if (sudahAbsen) {
+      Logger.log('Lewati ' + nama + ': Sudah presensi masuk / izin hari ini.');
+      totalLewati++;
+    } else {
+      Logger.log('Mengirim pengingat WA ke ' + nama + ' (' + noHp + ')...');
+      var res = kirimWhatsAppCloudAPI(noHp, nama);
+      if (res.success) totalKirim++;
+    }
+  }
+
+  Logger.log('=== SELESAI PENGINGAT WA. Berhasil Terkirim: ' + totalKirim + ', Dilewati: ' + totalLewati + ' ===');
+}
+
+/**
+ * Pasang Trigger Otomatis di Google Apps Script (Jam 07.15 WIB Setiap Hari)
+ * Jalankan fungsi ini 1 KALI saja di Apps Script Editor
+ */
+function setupTriggerPengingatWA() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'kirimPengingatPresensiPagi') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  ScriptApp.newTrigger('kirimPengingatPresensiPagi')
+    .timeBased()
+    .everyDays(1)
+    .atHour(7)
+    .nearMinute(15)
+    .create();
+  Logger.log('Trigger Pengingat WA Presensi Pagi berhasil dipasang (Otomatis jam 07.15 WIB)!');
+}
+
+/**
+ * Fungsi Uji Coba Pengiriman WA Langsung dari Editor Apps Script
+ * Ganti variabel noHpTest dengan nomor WA Anda, lalu klik tombol 'Run' pada fungsi ini.
+ */
+function testKirimWhatsApp() {
+  var noHpTest = '081234567890'; // GANTI DENGAN NOMOR WA ANDA UNTUK MENGETES
+  var namaTest = 'Peserta Uji Coba';
+  Logger.log('Memulai uji coba pengiriman WA Meta Cloud API ke ' + noHpTest);
+  var res = kirimWhatsAppCloudAPI(noHpTest, namaTest);
+  Logger.log('Hasil Uji Coba: ' + JSON.stringify(res));
 }

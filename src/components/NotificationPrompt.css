@@ -1,0 +1,128 @@
+.notif-prompt-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+}
+
+.notif-prompt-card.granted {
+  border-left: 4px solid #10b981;
+}
+
+.notif-prompt-card.denied {
+  border-left: 4px solid #f43f5e;
+}
+
+.notif-prompt-card.default {
+  border-left: 4px solid #3b82f6;
+}
+
+.notif-prompt-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notif-prompt-card.granted .notif-prompt-icon {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.notif-prompt-card.denied .notif-prompt-icon {
+  background: #fff1f2;
+  color: #f43f5e;
+}
+
+.notif-prompt-content {
+  flex: 1;
+}
+
+.notif-prompt-header {
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.notif-badge-active {
+  display: inline-block;
+  background: #d1fae5;
+  color: #047857;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+.notif-badge-denied {
+  display: inline-block;
+  background: #ffe4e6;
+  color: #be123c;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+.notif-prompt-desc {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.btn-enable-notif {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.btn-enable-notif:hover {
+  background: #2563eb;
+}
+
+.btn-enable-notif:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-test-notif {
+  background: white;
+  color: #10b981;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-test-notif:hover:not(:disabled) {
+  background: #ecfdf5;
+}
+
+.btn-test-notif:disabled {
+  color: #6b7280;
+  border-color: #d1d5db;
+  cursor: default;
+}

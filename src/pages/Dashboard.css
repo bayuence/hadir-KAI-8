@@ -80,15 +80,53 @@
   align-self: flex-start;
 }
 
-/* Realtime clock */
+/* Realtime clock & Bell */
+.dash-clock-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 .dash-clock {
   font-size: 42px;
   font-weight: 800;
   letter-spacing: -0.04em;
   color: var(--black);
   font-variant-numeric: tabular-nums;
-  margin-bottom: 16px;
   line-height: 1;
+}
+
+.dash-bell-btn {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  padding: 4px !important;
+  margin: 0 !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 !important;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dash-bell-btn:hover {
+  transform: scale(1.15);
+}
+
+.dash-bell-btn:active {
+  transform: scale(0.92);
+}
+
+.dash-bell-btn.bell-granted {
+  color: #10b981; /* Hijau saat diizinkan */
+}
+
+.dash-bell-btn.bell-denied {
+  color: #ef4444; /* Merah saat belum diizinkan */
 }
 
 /* Status card */
