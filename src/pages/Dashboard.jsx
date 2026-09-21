@@ -52,21 +52,52 @@ export default function Dashboard() {
     if (!status.sudahMasuk || !status.jamMasuk) return
 
     const hitungRuntime = () => {
+      // Parse waktu dari berbagai format backend Google Apps Script
       const parseJam = (str) => {
         if (!str) return null
-        // Format HH:MM:SS dari backend
-        if (typeof str === 'string' && str.includes(':') && str.length <= 8) {
-          const now = new Date()
-          const [h, m, s] = str.split(':').map(Number)
-          return new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s || 0)
+
+        // Format string HH:MM atau HH:MM:SS (paling umum dari GAS)
+        if (typeof str === 'string') {
+          const trimmed = str.trim()
+
+          if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+            const parts = trimmed.split(':').map(Number)
+            const now = new Date()
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+              parts[0], parts[1], parts[2] || 0)
+          }
+
+          // ISO string — cek apakah ini Google Sheets Serial Date (epoch 1899-12-30)
+          const d = new Date(trimmed)
+          if (!isNaN(d.getTime())) {
+            if (d.getFullYear() <= 1900) {
+              // GAS: waktu lokal WIB tersimpan sebagai UTC, getHours() otomatis konversi
+              const now = new Date()
+              return new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+                d.getHours(), d.getMinutes(), d.getSeconds())
+            }
+            return d
+          }
         }
-        return new Date(str)
+
+        // Number: bisa Unix timestamp detik atau ms
+        if (typeof str === 'number') {
+          const ms = str < 1e10 ? str * 1000 : str
+          const d = new Date(ms)
+          if (!isNaN(d.getTime())) {
+            const now = new Date()
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+              d.getHours(), d.getMinutes(), d.getSeconds())
+          }
+        }
+
+        return null
       }
 
       const masuk = parseJam(status.jamMasuk)
-      if (!masuk) return
+      if (!masuk || isNaN(masuk.getTime())) return
       const selesai = status.sudahPulang ? parseJam(status.jamPulang) : new Date()
-      if (!selesai) return
+      if (!selesai || isNaN(selesai.getTime())) return
 
       const diffMs = Math.max(0, selesai - masuk)
       const totalDetik = Math.floor(diffMs / 1000)

@@ -77,13 +77,24 @@ export default function Riwayat() {
   const totalDetik = riwayat.reduce((acc, item) => {
     if (item.status !== 'Hadir') return acc
     if (item.jamMasuk && item.jamPulang) {
+      // Parse waktu dari berbagai format GAS (termasuk Google Sheets Serial Date 1899-12-30)
       const parseSec = (t) => {
-        const parts = String(t).trim().split(':')
-        if (parts.length >= 2) {
-          const h = parseInt(parts[0], 10) || 0
-          const m = parseInt(parts[1], 10) || 0
-          const s = parseInt(parts[2], 10) || 0
-          return h * 3600 + m * 60 + s
+        if (!t) return null
+        if (typeof t === 'string') {
+          const trimmed = t.trim()
+          // Format HH:MM:SS atau HH:MM langsung
+          if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+            const parts = trimmed.split(':').map(Number)
+            return parts[0] * 3600 + parts[1] * 60 + (parts[2] || 0)
+          }
+          // ISO string — deteksi Google Sheets Serial Date (tahun <= 1900)
+          const d = new Date(trimmed)
+          if (!isNaN(d.getTime())) {
+            if (d.getFullYear() <= 1900) {
+              return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()
+            }
+            return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()
+          }
         }
         return null
       }
