@@ -90,6 +90,42 @@ function getSheet(name) {
   return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(name);
 }
 
+/**
+ * DEBUG: Jalankan manual di GAS Editor untuk cek mengapa peserta muncul Alfa
+ * Klik Run → debugIdMismatch → lihat Log (Ctrl+Enter)
+ */
+function debugIdMismatch() {
+  var today = new Date();
+  var tglNorm = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
+  Logger.log('=== DEBUG tanggal target: ' + tglNorm + ' ===');
+
+  var pSheet  = getSheet('WEB Presensi');
+  var regSheet = getSheet('WEB Register');
+
+  // Tampilkan semua ID & tanggal di WEB Presensi hari ini
+  Logger.log('\n--- WEB Presensi (baris hari ini) ---');
+  if (pSheet) {
+    var pRows = pSheet.getDataRange().getDisplayValues();
+    for (var i = 1; i < pRows.length; i++) {
+      var tglRaw = pRows[i][0];
+      Logger.log('Row ' + (i+1) + ': tgl="' + tglRaw + '" | norm="' + normalizeTanggal(tglRaw) + '" | id="' + pRows[i][1] + '" | nama="' + pRows[i][2] + '" | status="' + pRows[i][11] + '"');
+    }
+  }
+
+  // Tampilkan semua ID aktif di WEB Register
+  Logger.log('\n--- WEB Register (semua active) ---');
+  if (regSheet) {
+    var rRows = regSheet.getDataRange().getDisplayValues();
+    for (var r = 1; r < rRows.length; r++) {
+      if (String(rRows[r][11]).toLowerCase() === 'active') {
+        Logger.log('Row ' + (r+1) + ': id="' + rRows[r][14] + '" | nama="' + rRows[r][1] + '" | statusAkun="' + rRows[r][11] + '"');
+      }
+    }
+  }
+  Logger.log('=== SELESAI DEBUG ===');
+}
+
+
 function getOrCreateSheet(name) {
   var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   var sheet = ss.getSheetByName(name);
@@ -1128,6 +1164,142 @@ function handleGetIzinSaya(data) {
 }
 
 // ─── ADMIN ENDPOINTS (Dipendekkan) ───────────────────────────
+function handleGetAllPresensi(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  if (!data.tanggal) return { success: false, message: 'Parameter tanggal diperlukan.' };
+
+  var tglNorm   = normalizeTanggal(data.tanggal);
+  var regSheet  = getSheet('WEB Register');
+  var pSheet    = getSheet('WEB Presensi');
+  var penSheet  = getSheet('WEB Penugasan');
+
+  if (!regSheet) return { success: true, data: [] };
+
+  // ── 1. Bangun map lokasi: idLokasi → namaLengkap (dari WEB Penugasan) ───
+  // WEB Penugasan: [0]=ID, [1]=Tipe(unit_kerja/lokasi), [2]=ID_Induk, [3]=Nama, ...
+  var namaLokasiMap = {};  // idLokasi -> 'Unit Kerja - Nama Lokasi'
+  if (penSheet) {
+    var penRows = penSheet.getDataRange().getDisplayValues();
+    // Buat map unit kerja dulu: id -> nama
+    var unitKerjaMap = {};
+    for (var p = 1; p < penRows.length; p++) {
+      if (String(penRows[p][1]).trim() === 'unit_kerja') {
+        unitKerjaMap[String(penRows[p][0]).trim()] = String(penRows[p][3]).trim();
+      }
+    }
+    // Buat map lokasi: idLokasi -> nama lengkap
+    for (var q = 1; q < penRows.length; q++) {
+      if (String(penRows[q][1]).trim() === 'lokasi') {
+        var idLok   = String(penRows[q][0]).trim();
+        var namaLok = String(penRows[q][3]).trim();
+        var idUK    = String(penRows[q][2]).trim();
+        var namaUK  = unitKerjaMap[idUK] || '';
+        namaLokasiMap[idLok] = namaUK ? namaUK + ' - ' + namaLok : namaLok;
+      }
+    }
+  }
+
+  // ── 2. Bangun map presensi hari ini: idPeserta → row data ─────────────
+  var presensiMap = {};
+  if (pSheet) {
+    var pRows = pSheet.getDataRange().getDisplayValues();
+    for (var i = 1; i < pRows.length; i++) {
+      if (normalizeTanggal(pRows[i][0]) !== tglNorm) continue;
+      var pid = String(pRows[i][1]).trim();
+      if (!pid) continue;
+
+      var fotoMasuk  = pRows[i][5]  || '';
+      var fotoPulang = pRows[i][7]  || '';
+      if (fotoMasuk)  { var idM = extractDriveId(fotoMasuk);  if (idM)  fotoMasuk  = 'https://drive.google.com/thumbnail?id=' + idM  + '&sz=w200'; }
+      if (fotoPulang) { var idP = extractDriveId(fotoPulang); if (idP)  fotoPulang = 'https://drive.google.com/thumbnail?id=' + idP  + '&sz=w200'; }
+
+      var status = pRows[i][11] || 'Hadir';
+      presensiMap[pid] = {
+        jamMasuk:   pRows[i][4]  || null,
+        fotoMasuk:  fotoMasuk    || null,
+        jamPulang:  pRows[i][6]  || null,
+        fotoPulang: fotoPulang   || null,
+        totalJam:   pRows[i][8]  || '',
+        gpsMasuk:   pRows[i][9]  || '',
+        gpsPulang:  pRows[i][10] || '',
+        lokasiPresensi: pRows[i][3] || '',
+        status:     status
+      };
+    }
+  }
+
+  // ── 3. Iterasi SEMUA peserta aktif dari WEB Register ──────────────────
+  var regRows = regSheet.getDataRange().getDisplayValues();
+  var result  = [];
+
+  for (var r = 1; r < regRows.length; r++) {
+    var statusAkun = String(regRows[r][11]).trim().toLowerCase();
+    if (statusAkun !== 'active') continue; // Skip pending/rejected
+
+    var idPeserta   = String(regRows[r][14]).trim();
+    var namaPeserta = String(regRows[r][1]).trim();
+    var noHp        = String(regRows[r][4] || '').trim().replace(/^0/, '62'); // format internasional
+    var fotoProfil  = String(regRows[r][10] || '').trim();
+    // col[13] di WEB Register = ID Lokasi yang ditetapkan admin
+    var idLokasiPeserta = String(regRows[r][13] || '').trim();
+    var penempatan      = idLokasiPeserta ? (namaLokasiMap[idLokasiPeserta] || idLokasiPeserta) : '';
+
+    var pData = presensiMap[idPeserta];
+
+    if (pData) {
+      // Peserta punya data presensi hari ini
+      var lokasiTampil = pData.lokasiPresensi || penempatan || 'Kantor Daop 8';
+      result.push({
+        id:         idPeserta,
+        nama:       namaPeserta,
+        foto:       fotoProfil,
+        noHp:       noHp,
+        lokasi:     lokasiTampil,
+        penempatan: penempatan,
+        jamMasuk:   pData.jamMasuk,
+        fotoMasuk:  pData.fotoMasuk,
+        jamPulang:  pData.jamPulang,
+        fotoPulang: pData.fotoPulang,
+        totalJam:   pData.totalJam,
+        gpsMasuk:   pData.gpsMasuk,
+        gpsPulang:  pData.gpsPulang,
+        status:     pData.status
+      });
+    } else {
+      // Peserta tidak ada data presensi → Alfa
+      result.push({
+        id:         idPeserta,
+        nama:       namaPeserta,
+        foto:       fotoProfil,
+        noHp:       noHp,
+        lokasi:     penempatan || 'Kantor Daop 8',
+        penempatan: penempatan,
+        jamMasuk:   null,
+        fotoMasuk:  null,
+        jamPulang:  null,
+        fotoPulang: null,
+        totalJam:   '',
+        gpsMasuk:   '',
+        gpsPulang:  '',
+        status:     'Alfa'
+      });
+    }
+  }
+
+  // ── 4. Sort: BlmPulang → Hadir → Ijin → Alfa ────────────────────────
+  var order = function(p) {
+    if (p.status === 'Hadir' && p.jamMasuk && !p.jamPulang) return 0; // Blm Pulang duluan
+    if (p.status === 'Hadir') return 1;
+    if (p.status && p.status.indexOf('Ijin') === 0) return 2;
+    if (p.status === 'Alfa') return 3;
+    return 4;
+  };
+  result.sort(function(a, b) { return order(a) - order(b); });
+
+  return { success: true, data: result };
+}
+
+
 function handleGetDashboardAdmin(data) {
   if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
   var today = formatTanggal(), regSheet = getSheet('WEB Register'), pSheet = getSheet('WEB Presensi');
@@ -1336,6 +1508,13 @@ function normalizeTanggal(tglStr) {
     return String(dayObj).padStart(2, '0') + '/' + String(monthObj).padStart(2, '0') + '/' + yearObj;
   }
   var s = String(tglStr).trim();
+
+  // ── Handle format ISO: YYYY-MM-DD (dari HTML date input / frontend) ──
+  var isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    return isoMatch[3] + '/' + isoMatch[2] + '/' + isoMatch[1]; // → DD/MM/YYYY
+  }
+
   var parts = s.split('/');
   if (parts.length !== 3) return s;
 
@@ -1368,6 +1547,7 @@ function normalizeTanggal(tglStr) {
 
   return String(day).padStart(2, '0') + '/' + String(month).padStart(2, '0') + '/' + year;
 }
+
 
 
 
