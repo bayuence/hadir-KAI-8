@@ -1,50 +1,17 @@
 // Layanan Notifikasi PWA & Browser untuk HADIRKAI8
 
 /**
- * Memainkan suara lonceng stasiun KAI menggunakan Web Audio API.
- * Tidak membutuhkan file audio eksternal — disintesis langsung di browser.
- * Pola: DING — DONG — DING (lonceng stasiun kereta api)
+ * Memainkan suara notifikasi KAI dari file /soundkainotif.mp3 di folder public.
  */
-export const playKaiChime = (volume = 0.6) => {
+export const playKaiChime = (volume = 0.8) => {
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext
-    if (!AudioCtx) return
-    const ctx = new AudioCtx()
-
-    // Definisi nada lonceng stasiun: [frekuensi Hz, mulai detik, durasi detik, gain]
-    const notes = [
-      [880,  0.0,  0.8, volume],   // DING tinggi
-      [659,  0.5,  0.8, volume],   // DONG rendah
-      [880,  1.0,  1.0, volume],   // DING tinggi lagi (lebih panjang)
-    ]
-
-    notes.forEach(([freq, startTime, duration, gain]) => {
-      // Oscillator utama (nada dasar)
-      const osc = ctx.createOscillator()
-      const gainNode = ctx.createGain()
-
-      osc.connect(gainNode)
-      gainNode.connect(ctx.destination)
-
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime)
-      // Tambah sedikit harmonik agar terdengar seperti lonceng metal
-      osc.frequency.setValueAtTime(freq * 2.756, ctx.currentTime + startTime + 0.01)
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime + 0.02)
-
-      // Envelope: attack cepat, decay panjang (karakter lonceng)
-      gainNode.gain.setValueAtTime(0, ctx.currentTime + startTime)
-      gainNode.gain.linearRampToValueAtTime(gain, ctx.currentTime + startTime + 0.01)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startTime + duration)
-
-      osc.start(ctx.currentTime + startTime)
-      osc.stop(ctx.currentTime + startTime + duration)
+    const audio = new Audio('/soundkainotif.mp3')
+    audio.volume = volume
+    audio.play().catch(err => {
+      console.warn('[KAI Sound] Gagal memutar suara:', err)
     })
-
-    // Tutup konteks setelah semua nada selesai
-    setTimeout(() => ctx.close(), 2500)
   } catch (err) {
-    console.warn('[KAI Chime] Gagal memutar suara:', err)
+    console.warn('[KAI Sound] Error:', err)
   }
 }
 
