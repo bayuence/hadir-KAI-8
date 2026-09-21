@@ -3,7 +3,8 @@ import {
   getNotificationPermission,
   requestNotificationPermission,
   sendNotification,
-  isNotificationSupported
+  isNotificationSupported,
+  playKaiChime
 } from '../services/notificationService'
 import './NotificationPrompt.css'
 
@@ -75,13 +76,23 @@ export default function NotificationPrompt() {
               />
             </div>
 
-            <button
-              type="submit"
-              className="btn-send-notif"
-              disabled={testSent}
-            >
-              {testSent ? '✓ Terkirim' : 'Kirim Notifikasi'}
-            </button>
+            <div className="notif-btn-row">
+              <button
+                type="submit"
+                className="btn-send-notif"
+                disabled={testSent}
+              >
+                {testSent ? '✓ Terkirim' : 'Kirim Notifikasi'}
+              </button>
+              <button
+                type="button"
+                className="btn-preview-sound"
+                onClick={() => playKaiChime()}
+                title="Preview suara notifikasi"
+              >
+                🔔
+              </button>
+            </div>
           </form>
         ) : permission === 'denied' ? (
           <>

@@ -184,3 +184,35 @@
   border-color: #d1d5db;
   cursor: default;
 }
+
+/* Baris tombol kirim + preview suara */
+.notif-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-preview-sound {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #d1fae5;
+  background: #ecfdf5;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 1px 4px rgba(16,185,129,0.15);
+}
+
+.btn-preview-sound:hover {
+  background: #d1fae5;
+  transform: scale(1.1);
+}
+
+.btn-preview-sound:active {
+  transform: scale(0.95);
+}
