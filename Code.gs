@@ -20,7 +20,10 @@ var CONFIG = {
   GEOFENCE_RADIUS: 100,
   SESSION_EXPIRE:  24 * 60 * 60 * 1000,
   
-  // Konfigurasi Meta WhatsApp Cloud API
+  // Konfigurasi Fonnte WhatsApp Gateway API
+  FONNTE_TOKEN:       '3JNJWubZzxikGcyXDePx',
+
+  // Konfigurasi Meta WhatsApp Cloud API (Optional Legacy)
   WA_PHONE_NUMBER_ID: 'ISI_PHONE_NUMBER_ID_META_DISINI',
   WA_ACCESS_TOKEN:    'ISI_ACCESS_TOKEN_META_DISINI',
   WA_TEMPLATE_NAME:   'hello_world' // Default template dari Meta untuk testing awal
@@ -1567,13 +1570,23 @@ function formatJam(dateObj) {
 function hitungTotalJam(jamMasuk, jamPulang) {
   if (!jamMasuk || !jamPulang || jamMasuk === '' || jamPulang === '') return '';
   try {
-    var pm = String(jamMasuk).split(':').map(Number);
-    var pp = String(jamPulang).split(':').map(Number);
+    // Support format HH:MM dan HH:MM:SS
+    var pm = String(jamMasuk).trim().split(':').map(Number);
+    var pp = String(jamPulang).trim().split(':').map(Number);
     if (pm.length < 2 || pp.length < 2) return '';
-    
-    var selisih = (pp[0]*60 + pp[1]) - (pm[0]*60 + pm[1]);
-    if (selisih <= 0) return '0j 0m';
-    return Math.floor(selisih / 60) + 'j ' + (selisih % 60) + 'm';
+    // Validasi NaN — jika ada elemen NaN, kembalikan kosong
+    if (isNaN(pm[0]) || isNaN(pm[1]) || isNaN(pp[0]) || isNaN(pp[1])) return '';
+
+    // Hitung selisih dalam detik (inklusif detik jika format HH:MM:SS)
+    var detikMasuk  = pm[0] * 3600 + pm[1] * 60 + (pm[2] || 0);
+    var detikPulang = pp[0] * 3600 + pp[1] * 60 + (pp[2] || 0);
+    var selisihDetik = detikPulang - detikMasuk;
+    if (selisihDetik <= 0) return '0j 0m 0d';
+
+    var j = Math.floor(selisihDetik / 3600);
+    var m = Math.floor((selisihDetik % 3600) / 60);
+    var d = selisihDetik % 60;
+    return j + 'j ' + m + 'm ' + d + 'd';
   } catch(e) {
     return ''; // Jika format gagal, kembalikan kosong agar tidak error merah
   }
@@ -1753,15 +1766,15 @@ function formatNoHpWhatsApp(noHp) {
 }
 
 /**
- * Kirim pesan WhatsApp menggunakan Meta WhatsApp Cloud API Resmi
+ * Kirim pesan WhatsApp menggunakan Fonnte API
  * @param {string} toPhoneNumber - Nomor tujuan (misal: '08123456789' atau '628123456789')
- * @param {string} namaPeserta - Nama peserta magang untuk variabel template
- * @param {string} [customMessage] - Pesan bebas (hanya bisa dikirim jika user telah chat dalam 24 jam terakhir)
+ * @param {string} message - Pesan bebas yang ingin dikirimkan
  */
-function kirimWhatsAppCloudAPI(toPhoneNumber, namaPeserta, customMessage) {
-  if (!CONFIG.WA_PHONE_NUMBER_ID || CONFIG.WA_PHONE_NUMBER_ID === 'ISI_PHONE_NUMBER_ID_META_DISINI') {
-    Logger.log('WA Cloud API Error: WA_PHONE_NUMBER_ID belum diisi di CONFIG.');
-    return { success: false, message: 'WA_PHONE_NUMBER_ID belum dikonfigurasi di CONFIG.' };
+function kirimWhatsAppFonnte(toPhoneNumber, message) {
+  var token = CONFIG.FONNTE_TOKEN;
+  if (!token || token === 'ISI_FONNTE_TOKEN_DISINI') {
+    Logger.log('WA Error: FONNTE_TOKEN belum diisi di CONFIG.');
+    return { success: false, message: 'FONNTE_TOKEN belum dikonfigurasi di CONFIG.' };
   }
 
   var phone = formatNoHpWhatsApp(toPhoneNumber);
@@ -1769,75 +1782,41 @@ function kirimWhatsAppCloudAPI(toPhoneNumber, namaPeserta, customMessage) {
     return { success: false, message: 'Nomor HP tidak valid: ' + toPhoneNumber };
   }
 
-  var url = 'https://graph.facebook.com/v20.0/' + CONFIG.WA_PHONE_NUMBER_ID + '/messages';
-  var payload;
-
-  if (customMessage) {
-    // Mode Text Message biasa (Customer Care Window 24 jam)
-    payload = {
-      messaging_product: 'whatsapp',
-      to: phone,
-      type: 'text',
-      text: { body: customMessage }
-    };
-  } else {
-    // Mode Template Resmi Meta (Outbound Reminder)
-    payload = {
-      messaging_product: 'whatsapp',
-      to: phone,
-      type: 'template',
-      template: {
-        name: CONFIG.WA_TEMPLATE_NAME || 'hello_world',
-        language: { code: 'id' }
-      }
-    };
-
-    // Jika menggunakan custom template (bukan template testing hello_world)
-    if (CONFIG.WA_TEMPLATE_NAME && CONFIG.WA_TEMPLATE_NAME !== 'hello_world') {
-      payload.template.components = [
-        {
-          type: 'body',
-          parameters: [
-            { type: 'text', text: namaPeserta || 'Peserta Magang' }
-          ]
-        }
-      ];
-    }
-  }
-
   var options = {
     method: 'post',
-    contentType: 'application/json',
-    headers: {
-      'Authorization': 'Bearer ' + CONFIG.WA_ACCESS_TOKEN
+    headers: { 'Authorization': token },
+    payload: {
+      target: phone,
+      message: message,
+      countryCode: '62'
     },
-    payload: JSON.stringify(payload),
     muteHttpExceptions: true
   };
 
   try {
-    var response = UrlFetchApp.fetch(url, options);
+    var response = UrlFetchApp.fetch('https://api.fonnte.com/send', options);
     var resCode  = response.getResponseCode();
     var resBody  = response.getContentText();
-    Logger.log('Response Meta WA [' + resCode + '] untuk ' + phone + ': ' + resBody);
+    Logger.log('Response Fonnte WA [' + resCode + '] untuk ' + phone + ': ' + resBody);
 
-    if (resCode === 200 || resCode === 201) {
-      return { success: true, message: 'Pesan WA berhasil dikirim ke ' + phone, response: JSON.parse(resBody) };
+    var jsonRes = JSON.parse(resBody);
+    if (resCode === 200 && jsonRes.status === true) {
+      return { success: true, message: 'Pesan WA berhasil dikirim ke ' + phone, response: jsonRes };
     } else {
-      return { success: false, message: 'Gagal kirim WA (' + resCode + '): ' + resBody };
+      return { success: false, message: 'Gagal kirim WA Fonnte (' + resCode + '): ' + resBody };
     }
   } catch (err) {
-    Logger.log('Exception kirim WA: ' + err.message);
+    Logger.log('Exception kirim WA Fonnte: ' + err.message);
     return { success: false, message: 'Exception: ' + err.message };
   }
 }
 
 /**
- * Fungsi Pengingat Otomatis Presensi Pagi
- * Dipanggil otomatis setiap hari via Trigger Google Apps Script
+ * Fungsi Pengingat Otomatis Presensi Masuk Pagi
+ * Dipanggil otomatis setiap hari via Time-driven Trigger Google Apps Script (Misal jam 07.45)
  */
-function kirimPengingatPresensiPagi() {
-  Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI PAGI ===');
+function kirimPengingatPresensiMasuk() {
+  Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI MASUK ===');
   
   // Skip jika hari Sabtu (6) atau Minggu (0)
   var todayDate = new Date();
@@ -1850,34 +1829,28 @@ function kirimPengingatPresensiPagi() {
   var todayStr = formatTanggal();
   var todayNorm = normalizeTanggal(todayStr);
 
-  // 1. Ambil data peserta aktif dari WEB Register
   var regSheet = getSheet('WEB Register');
-  if (!regSheet) {
-    Logger.log('ERROR: Sheet WEB Register tidak ditemukan.');
-    return;
-  }
+  if (!regSheet) return;
   var regRows = regSheet.getDataRange().getDisplayValues();
 
-  // 2. Ambil data presensi hari ini
   var presSheet = getSheet('WEB Presensi');
   var presRows = presSheet ? presSheet.getDataRange().getValues() : [];
 
   var totalKirim = 0, totalLewati = 0;
 
   for (var i = 1; i < regRows.length; i++) {
-    var statusAcc = regRows[i][11]; // active / pending
-    if (statusAcc !== 'active') continue; // Hanya ingatkan peserta aktif
+    var statusAcc = String(regRows[i][11]).toLowerCase().trim(); // active / pending
+    if (statusAcc !== 'active') continue;
 
     var idPeserta = regRows[i][14];
     var nama      = regRows[i][1];
-    var noHp      = regRows[i][4]; // Kolom No Handphone / WhatsApp
+    var noHp      = regRows[i][4];
 
     if (!noHp) {
       Logger.log('Lewati ' + nama + ': Nomor HP belum diisi.');
       continue;
     }
 
-    // Cek apakah peserta sudah presensi masuk atau sudah izin hari ini
     var sudahAbsen = false;
     for (var j = presRows.length - 1; j >= 1; j--) {
       if (normalizeTanggal(presRows[j][0]) === todayNorm && presRows[j][1] === idPeserta) {
@@ -1890,43 +1863,121 @@ function kirimPengingatPresensiPagi() {
       Logger.log('Lewati ' + nama + ': Sudah presensi masuk / izin hari ini.');
       totalLewati++;
     } else {
-      Logger.log('Mengirim pengingat WA ke ' + nama + ' (' + noHp + ')...');
-      var res = kirimWhatsAppCloudAPI(noHp, nama);
+      Logger.log('Mengirim pengingat MASUK ke ' + nama + ' (' + noHp + ')...');
+      var pesan = "🔔 *PENGINGAT PRESENSI MASUK — HADIR KAI 8*\n\nHalo *" + nama + "*,\nSaat ini sudah memasuki waktu presensi masuk magang KAI Daop 8.\nMohon segera lakukan *Presensi Masuk* melalui aplikasi:\nhttps://presensimagangkaiDaop8.web.app\n\n_Pesan ini dikirim otomatis oleh Sistem Presensi KAI Daop 8_";
+      var res = kirimWhatsAppFonnte(noHp, pesan);
       if (res.success) totalKirim++;
     }
   }
-
-  Logger.log('=== SELESAI PENGINGAT WA. Berhasil Terkirim: ' + totalKirim + ', Dilewati: ' + totalLewati + ' ===');
+  Logger.log('=== SELESAI PENGINGAT MASUK. Terkirim: ' + totalKirim + ', Dilewati: ' + totalLewati + ' ===');
 }
 
 /**
- * Pasang Trigger Otomatis di Google Apps Script (Jam 07.15 WIB Setiap Hari)
- * Jalankan fungsi ini 1 KALI saja di Apps Script Editor
+ * Fungsi Pengingat Otomatis Presensi Pulang Sore
+ * Dipanggil otomatis setiap hari via Time-driven Trigger Google Apps Script (Misal jam 16.15)
+ */
+function kirimPengingatPresensiPulang() {
+  Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI PULANG ===');
+  
+  // Skip jika hari Sabtu (6) atau Minggu (0)
+  var todayDate = new Date();
+  var dayOfWeek = todayDate.getDay();
+  if (dayOfWeek === 0 || dayOfWeek === 6) return;
+
+  var todayStr = formatTanggal();
+  var todayNorm = normalizeTanggal(todayStr);
+
+  var regSheet = getSheet('WEB Register');
+  if (!regSheet) return;
+  var regRows = regSheet.getDataRange().getDisplayValues();
+
+  var presSheet = getSheet('WEB Presensi');
+  var presRows = presSheet ? presSheet.getDataRange().getValues() : [];
+
+  var totalKirim = 0, totalLewati = 0;
+
+  for (var i = 1; i < regRows.length; i++) {
+    var statusAcc = String(regRows[i][11]).toLowerCase().trim();
+    if (statusAcc !== 'active') continue;
+
+    var idPeserta = regRows[i][14];
+    var nama      = regRows[i][1];
+    var noHp      = regRows[i][4];
+
+    if (!noHp) continue;
+
+    var absenHariIni = null;
+    for (var j = presRows.length - 1; j >= 1; j--) {
+      if (normalizeTanggal(presRows[j][0]) === todayNorm && presRows[j][1] === idPeserta) {
+        absenHariIni = presRows[j];
+        break;
+      }
+    }
+
+    // Jika peserta HARI INI ADA DATA PRESENSI (sudah masuk), tapi KOLOM JAM PULANG (Kolom E / index 4) KOSONG
+    if (absenHariIni) {
+      var statusKehadiran = String(absenHariIni[3] || ''); // Kolom Status (Hadir/Ijin/Alfa)
+      var jamPulang       = String(absenHariIni[4] || '').trim(); // Kolom Jam Pulang
+
+      if (statusKehadiran === 'Hadir' && jamPulang === '') {
+        Logger.log('Mengirim pengingat PULANG ke ' + nama + ' (' + noHp + ')...');
+        var pesan = "🔔 *PENGINGAT PRESENSI PULANG — HADIR KAI 8*\n\nHalo *" + nama + "*,\nJam kerja magang hari ini telah selesai.\nJangan lupa untuk melakukan *Presensi Pulang* melalui aplikasi agar absensi Anda tercatat penuh:\nhttps://presensimagangkaiDaop8.web.app\n\nTerima kasih atas kerja keras Anda hari ini!\n_Pesan ini dikirim otomatis oleh Sistem Presensi KAI Daop 8_";
+        var res = kirimWhatsAppFonnte(noHp, pesan);
+        if (res.success) totalKirim++;
+      } else {
+        totalLewati++; // Sudah pulang atau Izin
+      }
+    } else {
+      // Tidak presensi masuk, tidak perlu diingatkan pulang
+      totalLewati++;
+    }
+  }
+  Logger.log('=== SELESAI PENGINGAT PULANG. Terkirim: ' + totalKirim + ', Dilewati: ' + totalLewati + ' ===');
+}
+
+/**
+ * PENTING: Pasang Trigger Otomatis di Google Apps Script
+ * Buka Apps Script -> Pilih fungsi ini (setupTriggerPengingatWA) di atas -> Klik "Run/Jalankan"
+ * Fungsi ini akan menjadwalkan Pengingat Masuk (07:45) & Pengingat Pulang (16:00) otomatis setiap hari.
  */
 function setupTriggerPengingatWA() {
+  // Hapus semua trigger lama (agar tidak double/spam)
   var triggers = ScriptApp.getProjectTriggers();
   for (var i = 0; i < triggers.length; i++) {
-    if (triggers[i].getHandlerFunction() === 'kirimPengingatPresensiPagi') {
+    var handler = triggers[i].getHandlerFunction();
+    if (handler === 'kirimPengingatPresensiMasuk' || handler === 'kirimPengingatPresensiPulang' || handler === 'kirimPengingatPresensiPagi') {
       ScriptApp.deleteTrigger(triggers[i]);
     }
   }
-  ScriptApp.newTrigger('kirimPengingatPresensiPagi')
+  
+  // Pasang trigger Masuk (Pagi 07:45 WIB)
+  ScriptApp.newTrigger('kirimPengingatPresensiMasuk')
     .timeBased()
     .everyDays(1)
     .atHour(7)
-    .nearMinute(15)
+    .nearMinute(45) // Note: Google akan jalankan acak di kisaran 07:45 - 08:00
     .create();
-  Logger.log('Trigger Pengingat WA Presensi Pagi berhasil dipasang (Otomatis jam 07.15 WIB)!');
+
+  // Pasang trigger Pulang (Sore 16:00 WIB)
+  ScriptApp.newTrigger('kirimPengingatPresensiPulang')
+    .timeBased()
+    .everyDays(1)
+    .atHour(16)
+    .nearMinute(0) // Note: Google akan jalankan di jam 16:00 WIB
+    .create();
+
+  Logger.log('✅ Trigger Pengingat WA Berhasil Dipasang: [Masuk: 07:45] & [Pulang: 16:00]');
 }
 
 /**
  * Fungsi Uji Coba Pengiriman WA Langsung dari Editor Apps Script
- * Ganti variabel noHpTest dengan nomor WA Anda, lalu klik tombol 'Run' pada fungsi ini.
+ * Ganti variabel noHpTest dengan nomor WA Anda, lalu klik tombol 'Run/Jalankan' pada fungsi ini.
  */
-function testKirimWhatsApp() {
+function testKirimWhatsAppFonnte() {
   var noHpTest = '081234567890'; // GANTI DENGAN NOMOR WA ANDA UNTUK MENGETES
-  var namaTest = 'Peserta Uji Coba';
-  Logger.log('Memulai uji coba pengiriman WA Meta Cloud API ke ' + noHpTest);
-  var res = kirimWhatsAppCloudAPI(noHpTest, namaTest);
+  var pesan = "Halo! Ini adalah pesan uji coba (Test) dari sistem Presensi KAI Daop 8 menggunakan Fonnte API 🎉. Apakah pesannya masuk?";
+  
+  Logger.log('Memulai uji coba pengiriman WA Fonnte ke ' + noHpTest);
+  var res = kirimWhatsAppFonnte(noHpTest, pesan);
   Logger.log('Hasil Uji Coba: ' + JSON.stringify(res));
 }

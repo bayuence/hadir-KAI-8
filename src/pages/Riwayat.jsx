@@ -71,44 +71,57 @@ export default function Riwayat() {
     return matchStatus && d.getMonth() === bulanMap[bulanFilter]
   })
 
+  // ── Helper: parse jam string ke total detik ─────────────────────────────
+  const parseJamToDetik = (t) => {
+    if (!t) return null
+    const trimmed = String(t).trim()
+    // Format HH:MM:SS atau HH:MM
+    if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+      const parts = trimmed.split(':').map(Number)
+      if (parts.some(isNaN)) return null
+      return parts[0] * 3600 + parts[1] * 60 + (parts[2] || 0)
+    }
+    // ISO string / Google Sheets Serial Date
+    const d = new Date(trimmed)
+    if (!isNaN(d.getTime())) {
+      return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()
+    }
+    return null
+  }
+
+  // ── Helper: hitung durasi per item (fallback ke jamMasuk-jamPulang) ──────
+  const getDurasiItem = (item) => {
+    if (item.status !== 'Hadir') return null
+    // Coba hitung dari jam masuk & pulang (lebih akurat)
+    if (item.jamMasuk && item.jamPulang) {
+      const s1 = parseJamToDetik(item.jamMasuk)
+      const s2 = parseJamToDetik(item.jamPulang)
+      if (s1 !== null && s2 !== null && s2 > s1) return s2 - s1
+    }
+    // Fallback: parse totalJam dari server jika valid (tidak NaN)
+    // Support format lama "Xj Ym" dan format baru "Xj Ym Zd"
+    if (item.totalJam) {
+      const m = item.totalJam.match(/^(\d+)j\s*(\d+)m(?:\s*(\d+)d)?$/)
+      if (m) return parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60 + (parseInt(m[3], 10) || 0)
+    }
+    return null
+  }
+
+  // ── Helper: format detik ke string "Xj Ym Zd" (inklusif detik) ───────────
+  const formatDurasi = (detik) => {
+    if (!detik || detik <= 0) return null
+    const j = Math.floor(detik / 3600)
+    const m = Math.floor((detik % 3600) / 60)
+    const d = detik % 60
+    return `${j}j ${m}m ${d}d`
+  }
+
   // ── Summary ──────────────────────────────────────────────────────────────
   const totalHari = riwayat.filter(i => i.status === 'Hadir').length
 
   const totalDetik = riwayat.reduce((acc, item) => {
-    if (item.status !== 'Hadir') return acc
-    if (item.jamMasuk && item.jamPulang) {
-      // Parse waktu dari berbagai format GAS (termasuk Google Sheets Serial Date 1899-12-30)
-      const parseSec = (t) => {
-        if (!t) return null
-        if (typeof t === 'string') {
-          const trimmed = t.trim()
-          // Format HH:MM:SS atau HH:MM langsung
-          if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(trimmed)) {
-            const parts = trimmed.split(':').map(Number)
-            return parts[0] * 3600 + parts[1] * 60 + (parts[2] || 0)
-          }
-          // ISO string — deteksi Google Sheets Serial Date (tahun <= 1900)
-          const d = new Date(trimmed)
-          if (!isNaN(d.getTime())) {
-            if (d.getFullYear() <= 1900) {
-              return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()
-            }
-            return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()
-          }
-        }
-        return null
-      }
-      const s1 = parseSec(item.jamMasuk)
-      const s2 = parseSec(item.jamPulang)
-      if (s1 !== null && s2 !== null && s2 >= s1) {
-        return acc + (s2 - s1)
-      }
-    }
-    if (item.totalJam) {
-      const m = item.totalJam.match(/(\d+)j\s*(\d+)m/)
-      if (m) return acc + (parseInt(m[1], 10) * 3600) + (parseInt(m[2], 10) * 60)
-    }
-    return acc
+    const d = getDurasiItem(item)
+    return d ? acc + d : acc
   }, 0)
 
   const totalJamStr = totalDetik > 0
@@ -298,17 +311,20 @@ export default function Riwayat() {
                     </div>
 
                     {/* Total Jam */}
-                    {item.totalJam && (
-                      <div className="rc-time-row mt-2">
-                        <svg viewBox="0 0 16 16" width="12" height="12" fill="none"
-                          stroke="currentColor"
-                          style={{ marginRight: 8, marginLeft: -2, color: 'var(--grey-400)' }}>
-                          <circle cx="8" cy="8" r="6" strokeWidth="1.5"/>
-                          <path d="M8 5v3l2 2" strokeWidth="1.5" strokeLinecap="round"/>
-                        </svg>
-                        <span className="rc-time-text text-black font-bold">{item.totalJam}</span>
-                      </div>
-                    )}
+                    {(() => {
+                      const durStr = formatDurasi(getDurasiItem(item))
+                      return durStr ? (
+                        <div className="rc-time-row mt-2">
+                          <svg viewBox="0 0 16 16" width="12" height="12" fill="none"
+                            stroke="currentColor"
+                            style={{ marginRight: 8, marginLeft: -2, color: 'var(--grey-400)' }}>
+                            <circle cx="8" cy="8" r="6" strokeWidth="1.5"/>
+                            <path d="M8 5v3l2 2" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                          <span className="rc-time-text text-black font-bold">{durStr}</span>
+                        </div>
+                      ) : null
+                    })()}
                   </div>
                 </div>
               </div>
