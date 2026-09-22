@@ -3,34 +3,61 @@ const ADMIN_TOKEN = 'KAI_DAOP8_ADMIN_2026'
 
 // Timeout default: 20 detik — cukup untuk GAS cold start, tidak bikin freeze
 const DEFAULT_TIMEOUT_MS = 20_000
+const MAX_RETRIES = 3
 
-async function fetchGAS(payload, timeoutMs = DEFAULT_TIMEOUT_MS) {
+// Helper delay dengan random jitter (mencegah Thundering Herd Problem)
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function fetchGAS(payload, timeoutMs = DEFAULT_TIMEOUT_MS, retries = MAX_RETRIES) {
   if (!GAS_URL) return { success: false, message: 'URL API belum dikonfigurasi' }
 
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
 
-  try {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    })
-    clearTimeout(timer)
-    return await res.json()
-  } catch (error) {
-    clearTimeout(timer)
-    if (error.name === 'AbortError') {
-      console.warn('GAS request timed out:', payload.action)
-      return {
-        success: false,
-        message: 'Server sedang sibuk / baru aktif. Coba lagi dalam beberapa detik.',
-        timeout: true,
+    try {
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      })
+      clearTimeout(timer)
+
+      const data = await res.json()
+
+      // Jika server mengembalikan isQueueBusy / antrean, coba lagi otomatis secara silent
+      if (data && data.isQueueBusy && attempt < retries) {
+        console.warn(`[GAS Queue] Attempt ${attempt} busy for action: ${payload.action}, retrying...`)
+        const jitter = Math.floor(Math.random() * 1500) + 1000 // Jeda acak 1.0 - 2.5 detik
+        await delay(jitter)
+        continue
       }
+
+      return data
+    } catch (error) {
+      clearTimeout(timer)
+
+      // Jika terjadi timeout atau gangguan jaringan, lakukan retry otomatis di background
+      if (attempt < retries) {
+        console.warn(`[GAS Fetch] Attempt ${attempt} failed (${error.name || error.message}) for action: ${payload.action}. Retrying...`)
+        const backoffJitter = (attempt * 1500) + Math.floor(Math.random() * 1000) // 1.5s, 3.0s + jitter
+        await delay(backoffJitter)
+        continue
+      }
+
+      if (error.name === 'AbortError') {
+        console.warn('GAS request timed out after retries:', payload.action)
+        return {
+          success: false,
+          message: 'Server sedang antre memproses presensi. Silakan coba tekan tombol sekali lagi.',
+          timeout: true,
+        }
+      }
+
+      console.error('API Error:', error)
+      return { success: false, message: 'Gagal menghubungi server. Periksa koneksi internet.' }
     }
-    console.error('API Error:', error)
-    return { success: false, message: 'Gagal menghubungi server. Periksa koneksi internet.' }
   }
 }
 

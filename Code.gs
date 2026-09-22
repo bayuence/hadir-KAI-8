@@ -30,11 +30,33 @@ var CONFIG = {
 };
 
 // ─── ENTRY POINT (WEB APP API) ───────────────────────────────
+// ─── ENTRY POINT (WEB APP API) ───────────────────────────────
 function doPost(e) {
+  var lock = LockService.getScriptLock();
+  var isLocked = false;
   try {
-    var data   = JSON.parse(e.postData.contents);
+    var data   = JSON.parse(e.postData.contents || '{}');
     var action = data.action;
     var result;
+
+    // Aksi yang mengubah/menulis data ke Google Sheets -> Butuh Lock antrean agar tidak bentrok
+    var needsLock = [
+      'checkIn', 'checkOut', 'daftar', 'ajukanIzin',
+      'approveUser', 'rejectUser', 'approveIzin', 'rejectIzin',
+      'savePenugasan', 'deletePenugasan', 'assignLokasi',
+      'saveUserAdmin', 'deleteUserAdmin', 'toggleAdminRole'
+    ].indexOf(action) !== -1;
+
+    if (needsLock) {
+      isLocked = lock.tryLock(20000); // Maksimal tunggu antrean 20 detik
+      if (!isLocked) {
+        return respond({ 
+          success: false, 
+          message: 'Server sedang memproses antrean presensi lain. Aplikasi akan mencoba lagi otomatis...', 
+          isQueueBusy: true 
+        });
+      }
+    }
 
     switch (action) {
       case 'getPesertaList':    result = handleGetPesertaList(data);    break;
@@ -76,6 +98,13 @@ function doPost(e) {
     return respond(result);
   } catch (err) {
     return respond({ success: false, message: 'Server error: ' + err.message });
+  } finally {
+    if (isLocked) {
+      try {
+        SpreadsheetApp.flush(); // Pastikan perubahan tersimpan ke Google Sheets sebelum kunci dilepas
+        lock.releaseLock();
+      } catch (eLock) {}
+    }
   }
 }
 
@@ -717,7 +746,18 @@ function createSession(idPeserta) {
 // IMPLEMENTASI ENDPOINT (WEB API)
 // ============================================================
 
-function handleGetPesertaList() {
+function handleGetPesertaList(data) {
+  var forceFresh = data && data.forceFresh;
+  var cache = CacheService.getScriptCache();
+  if (!forceFresh) {
+    var cached = cache.get('peserta_list_v1');
+    if (cached) {
+      try {
+        return { success: true, data: JSON.parse(cached), fromCache: true };
+      } catch (eCache) {}
+    }
+  }
+
   var sheet = getSheet('WEB Register');
   if (!sheet) return { success: true, data: [] };
 
@@ -739,6 +779,12 @@ function handleGetPesertaList() {
       });
     }
   }
+
+  // Simpan cache selama 5 menit (300 detik) untuk menghemat pembacaan Spreadsheet saat lonjakan user
+  try {
+    cache.put('peserta_list_v1', JSON.stringify(list), 300);
+  } catch (ePut) {}
+
   return { success: true, data: list };
 }
 
