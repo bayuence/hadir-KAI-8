@@ -83,6 +83,15 @@ export const api = {
   getProfile: (idPeserta, token) =>
     fetchGAS({ action: 'getProfile', idPeserta, token }),
 
+  // ─── LOKASI PENUGASAN (PESERTA) ───────────────────────────
+  // Ambil daftar unit kerja & lokasi yang bisa dipilih peserta (publik, tanpa token)
+  getPenugasanPublic: () =>
+    fetchGAS({ action: 'getPenugasanPublic' }),
+
+  // Peserta pindah ke lokasi penugasan lain secara mandiri
+  selfAssignLokasi: (idLokasi, token) =>
+    fetchGAS({ action: 'selfAssignLokasi', idLokasi, token }),
+
   // ─── IZIN ─────────────────────────────────────────────────
   ajukanIzin: (payload) => fetchGAS({ action: 'ajukanIzin', ...payload }),
 

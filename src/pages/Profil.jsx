@@ -61,11 +61,53 @@ const ADMIN_MENUS = [
 ]
 
 export default function Profil() {
-  const { user, token, logoutContext } = useAuth()
+  const { user, token, logoutContext, updateUserContext } = useAuth()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileData, setProfileData] = useState(null)
   const isAdmin = user?.role === 'admin'
+
+  // ─── State: Modal Ganti Lokasi ────────────────────────────────
+  const [showLokasiModal, setShowLokasiModal] = useState(false)
+  const [lokasiOptions, setLokasiOptions] = useState({ unitList: [], lokasiList: [] })
+  const [lokasiLoading, setLokasiLoading] = useState(false)
+  const [lokasiSaving, setLokasiSaving] = useState(false)
+  const [selectedLokasi, setSelectedLokasi] = useState('')
+  const [lokasiToast, setLokasiToast] = useState(null)
+
+  const showLokasiToast = (msg, type = 'success') => {
+    setLokasiToast({ msg, type })
+    setTimeout(() => setLokasiToast(null), 3000)
+  }
+
+  const openLokasiModal = () => {
+    const currentIdLokasi = (profileData?.idLokasi) || (user?.idLokasi) || ''
+    setShowLokasiModal(true)
+    setSelectedLokasi(currentIdLokasi)
+    // Jika belum ada data, fetch sekarang (jarang terjadi karena sudah prefetch)
+    if (lokasiOptions.lokasiList.length === 0 && !lokasiLoading) {
+      setLokasiLoading(true)
+      api.getPenugasanPublic().then(res => {
+        setLokasiLoading(false)
+        if (res.success && res.data) setLokasiOptions(res.data)
+      }).catch(() => setLokasiLoading(false))
+    }
+  }
+
+  const handleSimpanLokasi = async () => {
+    if (!selectedLokasi) return
+    setLokasiSaving(true)
+    const res = await api.selfAssignLokasi(selectedLokasi, token)
+    setLokasiSaving(false)
+    if (res.success && res.data) {
+      updateUserContext(res.data)           // update context & localStorage
+      setProfileData(prev => prev ? { ...prev, ...res.data } : res.data)
+      setShowLokasiModal(false)
+      showLokasiToast('Lokasi penugasan berhasil diperbarui ✅')
+    } else {
+      showLokasiToast(res.message || 'Gagal memperbarui lokasi', 'error')
+    }
+  }
 
   useEffect(() => {
     let isMounted = true
@@ -84,6 +126,18 @@ export default function Profil() {
       
     return () => { isMounted = false }
   }, [user?.id, token])
+
+  // Prefetch daftar lokasi di background saat halaman dimuat
+  // agar modal langsung muncul tanpa loading saat tombol "Ganti" diklik
+  useEffect(() => {
+    let isMounted = true
+    if (!user?.id) return
+    api.getPenugasanPublic().then(res => {
+      if (!isMounted) return
+      if (res.success && res.data) setLokasiOptions(res.data)
+    }).catch(() => {})
+    return () => { isMounted = false }
+  }, [user?.id])
 
   // Merge data: profileData override semua field dari user context
   // Biarkan Avatar component yang handle konversi URL foto
@@ -228,9 +282,22 @@ export default function Profil() {
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                 </svg>
               </span>
-              <div>
-                <p className="profil-info-label">Lokasi Magang</p>
-                <p className="profil-info-val">{profile?.lokasi || 'Belum ditetapkan'}</p>
+              <div className="profil-lokasi-row">
+                <div>
+                  <p className="profil-info-label">Lokasi Magang</p>
+                  <p className="profil-info-val">{profile?.lokasi || 'Belum ditetapkan'}</p>
+                </div>
+                <button
+                  className="profil-ganti-lokasi-btn"
+                  onClick={openLokasiModal}
+                  title="Ganti Lokasi Penugasan"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  Ganti
+                </button>
               </div>
             </div>
 
@@ -339,6 +406,95 @@ export default function Profil() {
           Keluar dari Akun
         </button>
       </div>
+
+      {/* ── Modal Ganti Lokasi Penugasan ─────────────────────── */}
+      {showLokasiModal && (
+        <div className="lok-modal-backdrop" onClick={() => setShowLokasiModal(false)}>
+          <div className="lok-bottom-sheet" onClick={e => e.stopPropagation()}>
+            <div className="lok-sheet-handle" />
+            <div className="lok-sheet-header">
+              <div>
+                <h3 className="lok-sheet-title">Pilih Lokasi Penugasan</h3>
+                <p className="lok-sheet-sub">Pilih lokasi tempat kamu bertugas sekarang</p>
+              </div>
+              <button className="lok-sheet-close" onClick={() => setShowLokasiModal(false)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="lok-sheet-body">
+              {lokasiLoading ? (
+                <div className="lok-sheet-loading">
+                  <div className="spinner" />
+                  <p>Memuat daftar lokasi...</p>
+                </div>
+              ) : lokasiOptions.lokasiList.length === 0 ? (
+                <div className="lok-sheet-empty">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <p>Belum ada lokasi yang tersedia.<br/>Hubungi admin untuk menambahkan lokasi.</p>
+                </div>
+              ) : (
+                lokasiOptions.unitList.map(unit => {
+                  const children = lokasiOptions.lokasiList.filter(l => l.idInduk === unit.id)
+                  if (children.length === 0) return null
+                  return (
+                    <div key={unit.id} className="lok-sheet-group">
+                      <p className="lok-sheet-group-label">{unit.nama}</p>
+                      {children.map(lok => {
+                        const isActive = selectedLokasi === lok.id
+                        return (
+                          <button
+                            key={lok.id}
+                            className={`lok-sheet-item ${isActive ? 'active' : ''}`}
+                            onClick={() => setSelectedLokasi(lok.id)}
+                          >
+                            <div className="lok-sheet-item-icon">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                              </svg>
+                            </div>
+                            <div className="lok-sheet-item-info">
+                              <p className="lok-sheet-item-name">{lok.nama}</p>
+                              {lok.alamat && <p className="lok-sheet-item-addr">{lok.alamat}</p>}
+                              <p className="lok-sheet-item-radius">Radius {lok.radius}m</p>
+                            </div>
+                            {isActive && (
+                              <svg className="lok-sheet-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            <div className="lok-sheet-footer">
+              <button className="lok-sheet-btn-cancel" onClick={() => setShowLokasiModal(false)}>Batal</button>
+              <button
+                className={`lok-sheet-btn-save ${lokasiSaving ? 'loading' : ''}`}
+                onClick={handleSimpanLokasi}
+                disabled={!selectedLokasi || lokasiSaving || selectedLokasi === ((profileData?.idLokasi) || (user?.idLokasi) || '')}
+              >
+                {lokasiSaving ? <span className="spinner" /> : 'Simpan Lokasi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {lokasiToast && (
+        <div className={`profil-toast ${lokasiToast.type === 'error' ? 'profil-toast-error' : 'profil-toast-success'}`}>
+          {lokasiToast.msg}
+        </div>
+      )}
 
       <BottomNav active="profil" />
     </div>

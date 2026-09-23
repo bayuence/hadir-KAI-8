@@ -84,8 +84,18 @@ export function AuthProvider({ children }) {
     } catch (_) {}
   }
 
+  // Update sebagian field user tanpa logout — digunakan setelah selfAssignLokasi
+  const updateUserContext = (partialData) => {
+    setUser(prev => {
+      if (!prev) return prev
+      const updated = { ...prev, ...partialData }
+      try { localStorage.setItem('kai_user', JSON.stringify(updated)) } catch (_) {}
+      return updated
+    })
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, loginContext, logoutContext, loading }}>
+    <AuthContext.Provider value={{ user, token, loginContext, logoutContext, updateUserContext, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   )
