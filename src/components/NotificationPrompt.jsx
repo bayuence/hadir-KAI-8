@@ -1,127 +1,129 @@
-import React, { useState, useEffect } from 'react'
-import {
-  getNotificationPermission,
-  requestNotificationPermission,
-  sendNotification,
-  isNotificationSupported,
-  playKaiChime
-} from '../services/notificationService'
+import React, { useState } from 'react'
+import { api } from '../services/api'
 import './NotificationPrompt.css'
 
 export default function NotificationPrompt() {
-  const [permission, setPermission] = useState('default')
-  const [loading, setLoading] = useState(false)
-  const [testSent, setTestSent] = useState(false)
-  const [pesan, setPesan] = useState('Halo! Jangan lupa presensi masuk magang hari ini.')
+  const [loadingType, setLoadingType] = useState(null)
+  const [feedback, setFeedback] = useState(null)
 
-  useEffect(() => {
-    setPermission(getNotificationPermission())
-  }, [])
+  const handleBroadcast = async (tipe) => {
+    if (loadingType) return
+    const label = tipe === 'pulang' ? 'Presensi Pulang' : 'Presensi Masuk'
+    
+    if (!window.confirm(`Kirim broadcast pengingat "${label}" ke seluruh peserta magang via WhatsApp?`)) {
+      return
+    }
 
-  if (!isNotificationSupported() || permission === 'unsupported') {
-    return null
-  }
+    setLoadingType(tipe)
+    setFeedback(null)
 
-  const handleEnable = async () => {
-    setLoading(true)
-    const res = await requestNotificationPermission()
-    setPermission(res.permission || getNotificationPermission())
-    setLoading(false)
-
-    if (res.success) {
-      sendNotification('HADIR KAI 8', {
-        body: 'Notifikasi pengingat presensi berhasil diaktifkan di perangkat ini!',
-        tag: 'kai-welcome-notif'
+    try {
+      const res = await api.admin.broadcastPengingatWA(tipe)
+      if (res && res.success) {
+        setFeedback({
+          type: 'success',
+          message: res.message || `Pengingat ${label} berhasil dikirim.`
+        })
+      } else {
+        setFeedback({
+          type: 'error',
+          message: res?.message || `Gagal mengirim pengingat ${label}.`
+        })
+      }
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Terjadi kesalahan saat memproses broadcast.'
       })
-      setTestSent(true)
-      setTimeout(() => setTestSent(false), 4000)
+    } finally {
+      setLoadingType(null)
+      setTimeout(() => setFeedback(null), 6000)
     }
   }
 
-  const handleKirimPesan = async (e) => {
-    if (e) e.preventDefault()
-    const isiPesan = pesan.trim() || 'Mengingatkan untuk segera melakukan presensi hari ini.'
-    setTestSent(true)
-    await sendNotification('HADIR KAI 8', {
-      body: isiPesan,
-      tag: 'kai-custom-msg'
-    })
-    setTimeout(() => setTestSent(false), 3000)
-  }
-
   return (
-    <div className={`notif-prompt-card ${permission}`}>
-      <div className="notif-prompt-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
+    <div className="wa-broadcast-card">
+      <div className="wa-broadcast-header">
+        <div className="wa-broadcast-title-group">
+          <div className="wa-broadcast-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h4 className="wa-broadcast-title">Broadcast Pengingat WA</h4>
+            <p className="wa-broadcast-subtitle">Kirim pesan WhatsApp otomatis ke semua peserta magang</p>
+          </div>
+        </div>
+        <span className="wa-broadcast-badge">Admin</span>
       </div>
 
-      <div className="notif-prompt-content">
-        {permission === 'granted' ? (
-          <form onSubmit={handleKirimPesan} className="notif-input-form">
-            <div className="notif-prompt-header">
-              <span className="notif-badge-active">Pengingat Presensi Aktif</span>
-            </div>
-            
-            <div className="notif-input-group">
-              <label className="notif-input-label">Pesan Notifikasi (Judul: <strong>HADIR KAI 8</strong>)</label>
-              <input
-                type="text"
-                className="notif-input-text"
-                placeholder="Tulis pesan notifikasi..."
-                value={pesan}
-                onChange={(e) => setPesan(e.target.value)}
-              />
-            </div>
+      <div className="wa-broadcast-btn-group">
+        <button
+          type="button"
+          className="wa-btn wa-btn-masuk"
+          onClick={() => handleBroadcast('masuk')}
+          disabled={loadingType !== null}
+        >
+          <div className="wa-btn-icon-wrapper">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2"/>
+              <path d="M12 20v2"/>
+              <path d="m4.93 4.93 1.41 1.41"/>
+              <path d="m17.66 17.66 1.41 1.41"/>
+              <path d="M2 12h2"/>
+              <path d="M20 12h2"/>
+              <path d="m6.34 17.66-1.41 1.41"/>
+              <path d="m19.07 4.93-1.41 1.41"/>
+            </svg>
+          </div>
+          <div className="wa-btn-content">
+            <span className="wa-btn-heading">Pengingat Masuk</span>
+            <span className="wa-btn-sub">Pesan presensi pagi</span>
+          </div>
+          {loadingType === 'masuk' && <span className="wa-btn-spinner" />}
+        </button>
 
-            <div className="notif-btn-row">
-              <button
-                type="submit"
-                className="btn-send-notif"
-                disabled={testSent}
-              >
-                {testSent ? '✓ Terkirim' : 'Kirim Notifikasi'}
-              </button>
-              <button
-                type="button"
-                className="btn-preview-sound"
-                onClick={() => playKaiChime()}
-                title="Preview suara notifikasi"
-              >
-                🔔
-              </button>
-            </div>
-          </form>
-        ) : permission === 'denied' ? (
-          <>
-            <div className="notif-prompt-header">
-              <span className="notif-badge-denied">Notifikasi Diblokir</span>
-            </div>
-            <p className="notif-prompt-desc">
-              Izin notifikasi dinonaktifkan di browser. Buka setelan browser untuk mengizinkan pengingat.
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="notif-prompt-header">
-              <strong>Aktifkan Pengingat Presensi</strong>
-            </div>
-            <p className="notif-prompt-desc">
-              Dapatkan notifikasi otomatis setiap pagi agar tidak lupa presensi masuk.
-            </p>
-            <button
-              type="button"
-              className="btn-enable-notif"
-              onClick={handleEnable}
-              disabled={loading}
-            >
-              {loading ? 'Memproses...' : 'Aktifkan Notifikasi'}
-            </button>
-          </>
-        )}
+        <button
+          type="button"
+          className="wa-btn wa-btn-pulang"
+          onClick={() => handleBroadcast('pulang')}
+          disabled={loadingType !== null}
+        >
+          <div className="wa-btn-icon-wrapper">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+            </svg>
+          </div>
+          <div className="wa-btn-content">
+            <span className="wa-btn-heading">Pengingat Pulang</span>
+            <span className="wa-btn-sub">Pesan presensi sore</span>
+          </div>
+          {loadingType === 'pulang' && <span className="wa-btn-spinner" />}
+        </button>
       </div>
+
+      {feedback && (
+        <div className={`wa-alert wa-alert-${feedback.type}`}>
+          <div className="wa-alert-icon">
+            {feedback.type === 'success' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            )}
+          </div>
+          <span className="wa-alert-text">{feedback.message}</span>
+        </div>
+      )}
     </div>
   )
 }
+
+

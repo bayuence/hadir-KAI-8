@@ -21,7 +21,7 @@ var CONFIG = {
   SESSION_EXPIRE:  24 * 60 * 60 * 1000,
   
   // Konfigurasi Fonnte WhatsApp Gateway API
-  FONNTE_TOKEN:       '3JNJWubZzxikGcyXDePx',
+  FONNTE_TOKEN:       'o3hz8NS85cFJxCSCzjPd',
 
   // Konfigurasi Meta WhatsApp Cloud API (Optional Legacy)
   WA_PHONE_NUMBER_ID: 'ISI_PHONE_NUMBER_ID_META_DISINI',
@@ -1869,7 +1869,7 @@ function kirimWhatsAppFonnte(toPhoneNumber, message) {
  * @param {boolean} isManual - jika true, abaikan cek weekend agar bisa dites atau dikirim manual kapan saja
  */
 function kirimPengingatPresensiMasuk(isManual) {
-  Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI MASUK (Bot Ence) ===');
+  Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI MASUK ===');
   
   // Skip jika hari Sabtu (6) atau Minggu (0), kecuali dijalankan manual oleh user
   if (!isManual) {
@@ -1921,12 +1921,12 @@ function kirimPengingatPresensiMasuk(isManual) {
       Logger.log('Mengirim pengingat MASUK ke ' + nama + ' (' + noHp + ')...');
       var pesan = "🔔 *PENGINGAT PRESENSI MASUK — KAI DAOP 8*\n\n" +
                   "Halo *" + nama + "*! 👋\n\n" +
-                  "Saya *Ence dari Daop 8* ingin mengingatkan bahwa saat ini sudah memasuki waktu presensi masuk magang KAI Daop 8.\n\n" +
+                  "Saya ence dari *Tim Magang Daop 8* ingin mengingatkan bahwa saat ini sudah memasuki waktu presensi masuk magang KAI Daop 8.\n\n" +
                   "Mohon segera lakukan *Presensi Masuk* melalui tautan aplikasi presensi berikut:\n" +
                   "👉 https://presensimagangkaiDaop8.web.app\n\n" +
                   "Selamat beraktivitas dan tetap semangat ya! 🚂✨\n" +
                   "━━━━━━━━━━━━━━━━━━━━\n" +
-                  "_Pesan resmi dikirim otomatis oleh Bot Ence - Unit Daop 8 Surabaya_";
+                  "_Pesan resmi dikirim otomatis oleh Sistem Presensi Daop 8 Surabaya_";
 
       var res = kirimWhatsAppFonnte(noHp, pesan);
       if (res.success) totalKirim++;
@@ -1943,7 +1943,7 @@ function kirimPengingatPresensiMasuk(isManual) {
  * @param {boolean} isManual - jika true, abaikan cek weekend agar bisa dites atau dikirim manual kapan saja
  */
 function kirimPengingatPresensiPulang(isManual) {
-  Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI PULANG (Bot Ence) ===');
+  Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI PULANG ===');
   
   // Skip jika hari Sabtu (6) atau Minggu (0), kecuali dijalankan manual oleh user
   if (!isManual) {
@@ -1996,12 +1996,12 @@ function kirimPengingatPresensiPulang(isManual) {
         Logger.log('Mengirim pengingat PULANG ke ' + nama + ' (' + noHp + ')...');
         var pesan = "🔔 *PENGINGAT PRESENSI PULANG — KAI DAOP 8*\n\n" +
                     "Halo *" + nama + "*! 👋\n\n" +
-                    "Saya *Ence dari Daop 8* ingin mengingatkan bahwa jam operasional magang hari ini telah selesai.\n\n" +
+                    "Saya ence dari *Tim Magang Daop 8* ingin mengingatkan bahwa jam operasional magang hari ini telah selesai.\n\n" +
                     "Jangan lupa untuk segera melakukan *Presensi Pulang* melalui aplikasi agar absensi dan jam kerja Anda tercatat lengkap:\n" +
                     "👉 https://presensimagangkaiDaop8.web.app\n\n" +
                     "Terima kasih atas kerja keras Anda hari ini! Hati-hati di perjalanan pulang. 🚂✨\n" +
                     "━━━━━━━━━━━━━━━━━━━━\n" +
-                    "_Pesan resmi dikirim otomatis oleh Bot Ence - Unit Daop 8 Surabaya_";
+                    "_Pesan resmi dikirim otomatis oleh Sistem Presensi Daop 8 Surabaya_";
 
         var res = kirimWhatsAppFonnte(noHp, pesan);
         if (res.success) totalKirim++;
@@ -2029,7 +2029,7 @@ function kirimPengingatPresensiPulang(isManual) {
  * 👉 PILIH FUNGSI INI DARI DROPDOWN & KLIK RUN UNTUK CHAT SEMUA ANAK MAGANG (PRESENSI MASUK)
  */
 function triggerPengingatMasukManual() {
-  Logger.log('>>> Memulai Eksekusi Manual: PENGINGAT MASUK (Bot Ence) <<<');
+  Logger.log('>>> Memulai Eksekusi Manual: PENGINGAT MASUK <<<');
   var hasil = kirimPengingatPresensiMasuk(true); // true = abaikan weekend / kirim sekarang juga
   Logger.log('>>> HASIL AKHIR: ' + JSON.stringify(hasil));
 }
@@ -2038,7 +2038,7 @@ function triggerPengingatMasukManual() {
  * 👉 PILIH FUNGSI INI DARI DROPDOWN & KLIK RUN UNTUK CHAT SEMUA ANAK MAGANG (PRESENSI PULANG)
  */
 function triggerPengingatPulangManual() {
-  Logger.log('>>> Memulai Eksekusi Manual: PENGINGAT PULANG (Bot Ence) <<<');
+  Logger.log('>>> Memulai Eksekusi Manual: PENGINGAT PULANG <<<');
   var hasil = kirimPengingatPresensiPulang(true); // true = abaikan weekend / kirim sekarang juga
   Logger.log('>>> HASIL AKHIR: ' + JSON.stringify(hasil));
 }
@@ -2082,8 +2082,8 @@ function setupTriggerPengingatWA() {
  * Ganti variabel noHpTest dengan nomor WA Anda, lalu klik tombol 'Run/Jalankan' pada fungsi ini.
  */
 function testKirimWhatsAppFonnte() {
-  var noHpTest = '082273952703'; // Nomor pengujian Anda
-  var pesan = "Halo! Saya *Ence dari Daop 8* 🚂✨\nIni adalah pesan uji coba Bot Pengingat Presensi KAI Daop 8 via Fonnte. Sistem siap digunakan!";
+  var noHpTest = '081535481447'; // Nomor pengujian Anda
+  var pesan = "Halo! Saya *ence dari Daop 8* 🚂\nIni adalah pesan uji coba Bot Pengingat Presensi KAI Daop 8 via Fonnte. Sistem siap digunakan!";
   
   Logger.log('Memulai uji coba pengiriman WA Fonnte ke ' + noHpTest);
   var res = kirimWhatsAppFonnte(noHpTest, pesan);
@@ -2188,3 +2188,6 @@ function handleSelfAssignLokasi(data) {
   return { success: false, message: 'Data peserta tidak ditemukan.' };
 }
 
+function mintaIzinWA() {
+  UrlFetchApp.fetch("https://api.fonnte.com/");
+}

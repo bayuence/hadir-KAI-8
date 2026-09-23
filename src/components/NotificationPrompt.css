@@ -1,218 +1,212 @@
-.notif-prompt-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  background: white;
-  border-radius: 16px;
+/* ============================================================
+   Broadcast Trigger Card - Clean Tailwind / Bootstrap Style
+   ============================================================ */
+
+.wa-broadcast-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-  border: 1px solid rgba(0,0,0,0.05);
-  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
 
-.notif-prompt-card.granted {
-  border-left: 4px solid #10b981;
+/* Header */
+.wa-broadcast-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
-.notif-prompt-card.denied {
-  border-left: 4px solid #f43f5e;
-}
-
-.notif-prompt-card.default {
-  border-left: 4px solid #3b82f6;
-}
-
-.notif-prompt-icon {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #eff6ff;
-  color: #3b82f6;
+.wa-broadcast-title-group {
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-.notif-prompt-card.granted .notif-prompt-icon {
-  background: #ecfdf5;
-  color: #10b981;
-}
-
-.notif-prompt-card.denied .notif-prompt-icon {
-  background: #fff1f2;
-  color: #f43f5e;
-}
-
-.notif-prompt-content {
-  flex: 1;
-}
-
-.notif-prompt-header {
-  margin-bottom: 6px;
-  font-size: 0.95rem;
-  color: #1f2937;
-}
-
-.notif-badge-active {
-  display: inline-block;
-  background: #d1fae5;
-  color: #047857;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 20px;
-}
-
-.notif-badge-denied {
-  display: inline-block;
-  background: #ffe4e6;
-  color: #be123c;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 20px;
-}
-
-.notif-prompt-desc {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin: 0 0 12px 0;
-  line-height: 1.4;
-}
-
-.btn-enable-notif {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
-}
-
-.btn-enable-notif:hover {
-  background: #2563eb;
-}
-
-.btn-enable-notif:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.notif-input-form {
-  display: flex;
-  flex-direction: column;
   gap: 10px;
 }
 
-.notif-input-group {
+.wa-broadcast-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wa-broadcast-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.wa-broadcast-subtitle {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin: 2px 0 0 0;
+  line-height: 1.3;
+}
+
+.wa-broadcast-badge {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Action Button Group */
+.wa-broadcast-btn-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
-.notif-input-label {
-  font-size: 0.78rem;
-  color: #4b5563;
+@media (min-width: 480px) {
+  .wa-broadcast-btn-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
 }
 
-.notif-input-text {
-  width: 100%;
-  padding: 8px 12px;
+.wa-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
-  font-size: 0.85rem;
-  color: #1f2937;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease-in-out;
+  background-color: #f8fafc;
+  width: 100%;
   box-sizing: border-box;
 }
 
-.notif-input-text:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+.wa-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.btn-send-notif {
-  align-self: flex-start;
-  background: #10b981;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
+/* Masuk (Green / Emerald Accent) */
+.wa-btn-masuk {
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.wa-btn-masuk:hover:not(:disabled) {
+  background-color: #dcfce7;
+  border-color: #86efac;
+}
+
+.wa-btn-masuk .wa-btn-icon-wrapper {
+  color: #15803d;
+}
+
+/* Pulang (Blue / Indigo Accent) */
+.wa-btn-pulang {
+  background-color: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.wa-btn-pulang:hover:not(:disabled) {
+  background-color: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+.wa-btn-pulang .wa-btn-icon-wrapper {
+  color: #0284c7;
+}
+
+.wa-btn-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wa-btn-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.wa-btn-heading {
   font-size: 0.85rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+  line-height: 1.25;
 }
 
-.btn-send-notif:hover:not(:disabled) {
-  background: #059669;
+.wa-btn-sub {
+  font-size: 0.72rem;
+  opacity: 0.8;
+  margin-top: 1px;
 }
 
-.btn-send-notif:disabled {
-  background: #9ca3af;
-  cursor: default;
-  box-shadow: none;
+/* Spinner */
+.wa-btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: wa-spin 0.75s linear infinite;
+  flex-shrink: 0;
 }
 
-.btn-test-notif {
-  background: white;
-  color: #10b981;
-  border: 1px solid #10b981;
+@keyframes wa-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Alert Bootstrap / Tailwind Style */
+.wa-alert {
+  margin-top: 12px;
+  padding: 10px 12px;
   border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-test-notif:hover:not(:disabled) {
-  background: #ecfdf5;
-}
-
-.btn-test-notif:disabled {
-  color: #6b7280;
-  border-color: #d1d5db;
-  cursor: default;
-}
-
-/* Baris tombol kirim + preview suara */
-.notif-btn-row {
+  font-size: 0.82rem;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.btn-preview-sound {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid #d1fae5;
-  background: #ecfdf5;
-  font-size: 1rem;
-  cursor: pointer;
+.wa-alert-success {
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.wa-alert-error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.wa-alert-icon {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  box-shadow: 0 1px 4px rgba(16,185,129,0.15);
+  flex-shrink: 0;
 }
 
-.btn-preview-sound:hover {
-  background: #d1fae5;
-  transform: scale(1.1);
+.wa-alert-text {
+  font-weight: 500;
+  line-height: 1.3;
 }
 
-.btn-preview-sound:active {
-  transform: scale(0.95);
-}
+

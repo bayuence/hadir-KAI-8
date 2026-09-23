@@ -147,5 +147,8 @@ export const api = {
       
     toggleAdminRole: (idPeserta, role) =>
       fetchGAS({ action: 'toggleAdminRole', idPeserta, role, adminToken: ADMIN_TOKEN }),
+
+    broadcastPengingatWA: (tipe = 'masuk') =>
+      fetchGAS({ action: 'broadcastPengingatWA', tipe, adminToken: ADMIN_TOKEN }),
   }
 }
