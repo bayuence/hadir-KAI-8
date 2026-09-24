@@ -4,66 +4,13 @@ import { useAuth } from '../context/AuthContext'
 import { api } from '../services/api'
 import BottomNav from '../components/BottomNav'
 import Avatar from '../components/Avatar'
+import AdminHeader from '../components/AdminHeader'
 import NotificationPrompt from '../components/NotificationPrompt'
 import './Profil.css'
-
-const ADMIN_MENUS = [
-  {
-    label: 'Dashboard Admin',
-    desc: 'Ringkasan & statistik',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>
-      </svg>
-    ),
-    to: '/admin'
-  },
-  {
-    label: 'Rekap Presensi Harian',
-    desc: 'Lihat absensi semua peserta',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-      </svg>
-    ),
-    to: '/admin/presensi'
-  },
-  {
-    label: 'Kelola Peserta',
-    desc: 'Setujui & kelola pendaftaran',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-3-3.87"/><path d="M9 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-      </svg>
-    ),
-    to: '/admin/peserta'
-  },
-  {
-    label: 'Kelola Izin',
-    desc: 'Tinjau pengajuan izin',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-      </svg>
-    ),
-    to: '/admin/izin'
-  },
-  {
-    label: 'Unit Kerja & Penempatan',
-    desc: 'Atur koordinat & radius lokasi',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-      </svg>
-    ),
-    to: '/admin/lokasi'
-  },
-]
 
 export default function Profil() {
   const { user, token, logoutContext, updateUserContext } = useAuth()
   const navigate = useNavigate()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileData, setProfileData] = useState(null)
   const isAdmin = user?.role === 'admin'
 
@@ -147,90 +94,9 @@ export default function Profil() {
 
   return (
     <div className="app-shell">
-      {/* ── Admin Sidebar Drawer ─────────────────────────────────── */}
-      {isAdmin && profile && (
-        <>
-          <div className={`sidebar-backdrop ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
-          <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
-            <button className="sidebar-close" onClick={() => setSidebarOpen(false)}>
-              <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
-                <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
-            <div className="sidebar-profile" onClick={() => { setSidebarOpen(false); navigate('/profil') }} style={{ cursor: 'pointer' }}>
-              <Avatar
-                src={profile.foto}
-                name={profile.nama}
-                size={52}
-                style={{ border: '2px solid rgba(255,255,255,0.3)', margin: '0 auto 12px' }}
-              />
-              <p className="sidebar-name">{profile.nama}</p>
-              <p className="sidebar-lokasi">{profile.lokasi || '—'}</p>
-              <span className="sidebar-role-badge">Administrator</span>
-            </div>
-            <div className="sidebar-divider" />
-
-            {/* Menu Halaman Profil (Sebelum tulisan MENU ADMIN) */}
-            <nav className="sidebar-menu" style={{ marginBottom: 12 }}>
-              <button className="sidebar-menu-item" onClick={() => { setSidebarOpen(false); navigate('/profil') }}>
-                <span className="sidebar-menu-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                  </svg>
-                </span>
-                <div className="sidebar-menu-text">
-                  <span className="sidebar-menu-label">Halaman Profil</span>
-                  <span className="sidebar-menu-desc">Lihat data profil & akun</span>
-                </div>
-                <svg viewBox="0 0 16 16" fill="none" width="14" height="14" className="sidebar-menu-arrow">
-                  <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </nav>
-
-            <p className="sidebar-section-title">MENU ADMIN</p>
-            <nav className="sidebar-menu">
-              {ADMIN_MENUS.map(m => (
-                <button key={m.to} className="sidebar-menu-item"
-                  onClick={() => { setSidebarOpen(false); navigate(m.to) }}>
-                  <span className="sidebar-menu-icon">{m.icon}</span>
-                  <div className="sidebar-menu-text">
-                    <span className="sidebar-menu-label">{m.label}</span>
-                    <span className="sidebar-menu-desc">{m.desc}</span>
-                  </div>
-                  <svg viewBox="0 0 16 16" fill="none" width="14" height="14" className="sidebar-menu-arrow">
-                    <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              ))}
-            </nav>
-            <div className="sidebar-divider" />
-            <button className="sidebar-logout" onClick={() => { logoutContext(); navigate('/login'); }}>
-              <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
-                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"
-                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Keluar dari Akun
-            </button>
-          </aside>
-        </>
-      )}
-
       {/* ── Page Content ──────────────────────────────────── */}
       <div className="profil-wrap">
-        <div className="profil-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {isAdmin && (
-              <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} title="Menu Admin">
-                <svg viewBox="0 0 22 22" fill="none" width="22" height="22">
-                  <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                <span className="hamburger-badge" />
-              </button>
-            )}
-            <h1 className="profil-title">Profil Akun</h1>
-          </div>
-        </div>
+        <AdminHeader title="Profil Akun" />
 
         {profile && (
           <div className="profil-card">
@@ -399,6 +265,27 @@ export default function Profil() {
 
         {/* Pengaturan Notifikasi (Sementara hanya admin) */}
         {isAdmin && <NotificationPrompt />}
+
+        <button
+          className="btn btn-outline"
+          style={{
+            borderColor: '#e2e8f0',
+            color: '#475569',
+            marginTop: 12,
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            background: '#f8fafc'
+          }}
+          onClick={() => navigate('/tentang')}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          Tentang Aplikasi
+        </button>
 
         <button className="btn btn-outline"
           style={{ color: 'var(--red)', borderColor: 'var(--red)', marginTop: 8, width: '100%' }}

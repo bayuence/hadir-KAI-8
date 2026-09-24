@@ -1923,7 +1923,7 @@ function kirimPengingatPresensiMasuk(isManual) {
                   "Halo *" + nama + "*! 👋\n\n" +
                   "Saya ence dari *Tim Magang Daop 8* ingin mengingatkan bahwa saat ini sudah memasuki waktu presensi masuk magang KAI Daop 8.\n\n" +
                   "Mohon segera lakukan *Presensi Masuk* melalui tautan aplikasi presensi berikut:\n" +
-                  "👉 https://presensimagangkaiDaop8.web.app\n\n" +
+                  "👉 https://hadirkai8.vercel.app/\n\n" +
                   "Selamat beraktivitas dan tetap semangat ya! 🚂✨\n" +
                   "━━━━━━━━━━━━━━━━━━━━\n" +
                   "_Pesan resmi dikirim otomatis oleh Sistem Presensi Daop 8 Surabaya_";
@@ -1998,7 +1998,7 @@ function kirimPengingatPresensiPulang(isManual) {
                     "Halo *" + nama + "*! 👋\n\n" +
                     "Saya ence dari *Tim Magang Daop 8* ingin mengingatkan bahwa jam operasional magang hari ini telah selesai.\n\n" +
                     "Jangan lupa untuk segera melakukan *Presensi Pulang* melalui aplikasi agar absensi dan jam kerja Anda tercatat lengkap:\n" +
-                    "👉 https://presensimagangkaiDaop8.web.app\n\n" +
+                    "👉 https://hadirkai8.vercel.app/\n\n" +
                     "Terima kasih atas kerja keras Anda hari ini! Hati-hati di perjalanan pulang. 🚂✨\n" +
                     "━━━━━━━━━━━━━━━━━━━━\n" +
                     "_Pesan resmi dikirim otomatis oleh Sistem Presensi Daop 8 Surabaya_";

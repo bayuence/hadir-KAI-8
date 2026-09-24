@@ -61,6 +61,7 @@ export default function AdminHeader({ title }) {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const profile = user || {}
+  const isAdmin = user?.role === 'admin'
 
   return (
     <>
@@ -81,11 +82,11 @@ export default function AdminHeader({ title }) {
           />
           <p className="sidebar-name">{profile.nama}</p>
           <p className="sidebar-lokasi">{profile.lokasi || '—'}</p>
-          <span className="sidebar-role-badge">Administrator</span>
+          <span className="sidebar-role-badge">{isAdmin ? 'Administrator' : (profile.role === 'intern' ? 'Peserta Magang' : 'Peserta Magang')}</span>
         </div>
         <div className="sidebar-divider" />
 
-        {/* ── Menu Profil (Sebelum label MENU ADMIN) ── */}
+        {/* ── Menu Profil & Tentang ── */}
         <nav className="sidebar-menu" style={{ marginBottom: 12 }}>
           <button className="sidebar-menu-item" onClick={() => { setSidebarOpen(false); navigate('/profil') }}>
             <span className="sidebar-menu-icon">
@@ -94,8 +95,23 @@ export default function AdminHeader({ title }) {
               </svg>
             </span>
             <div className="sidebar-menu-text">
-              <span className="sidebar-menu-label">Halaman Profil</span>
+              <span className="sidebar-menu-label">Profil</span>
               <span className="sidebar-menu-desc">Lihat data profil & akun</span>
+            </div>
+            <svg viewBox="0 0 16 16" fill="none" width="14" height="14" className="sidebar-menu-arrow">
+              <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          <button className="sidebar-menu-item" onClick={() => { setSidebarOpen(false); navigate('/tentang'); }}>
+            <span className="sidebar-menu-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </span>
+            <div className="sidebar-menu-text">
+              <span className="sidebar-menu-label">Tentang Aplikasi</span>
+              <span className="sidebar-menu-desc">Informasi sistem & versi</span>
             </div>
             <svg viewBox="0 0 16 16" fill="none" width="14" height="14" className="sidebar-menu-arrow">
               <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -103,22 +119,26 @@ export default function AdminHeader({ title }) {
           </button>
         </nav>
 
-        <p className="sidebar-section-title">MENU ADMIN</p>
-        <nav className="sidebar-menu">
-          {ADMIN_MENUS.map(m => (
-            <button key={m.to} className="sidebar-menu-item"
-              onClick={() => { setSidebarOpen(false); navigate(m.to) }}>
-              <span className="sidebar-menu-icon">{m.icon}</span>
-              <div className="sidebar-menu-text">
-                <span className="sidebar-menu-label">{m.label}</span>
-                <span className="sidebar-menu-desc">{m.desc}</span>
-              </div>
-              <svg viewBox="0 0 16 16" fill="none" width="14" height="14" className="sidebar-menu-arrow">
-                <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          ))}
-        </nav>
+        {isAdmin && (
+          <>
+            <p className="sidebar-section-title">MENU ADMIN</p>
+            <nav className="sidebar-menu">
+              {ADMIN_MENUS.map(m => (
+                <button key={m.to} className="sidebar-menu-item"
+                  onClick={() => { setSidebarOpen(false); navigate(m.to) }}>
+                  <span className="sidebar-menu-icon">{m.icon}</span>
+                  <div className="sidebar-menu-text">
+                    <span className="sidebar-menu-label">{m.label}</span>
+                    <span className="sidebar-menu-desc">{m.desc}</span>
+                  </div>
+                  <svg viewBox="0 0 16 16" fill="none" width="14" height="14" className="sidebar-menu-arrow">
+                    <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              ))}
+            </nav>
+          </>
+        )}
         <div className="sidebar-divider" />
         <button className="sidebar-logout" onClick={logoutContext}>
           <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
@@ -131,7 +151,7 @@ export default function AdminHeader({ title }) {
 
       {/* ── Page Header dengan Hamburger Button ────────────────── */}
       <div className="admin-page-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-        <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} title="Menu Admin">
+        <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} title="Buka Menu">
           <svg viewBox="0 0 22 22" fill="none" width="22" height="22">
             <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
           </svg>

@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import Riwayat from './pages/Riwayat'
 import Izin from './pages/Izin'
 import Profil from './pages/Profil'
+import Tentang from './pages/Tentang'
 import Presensi from './pages/Presensi'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminPeserta from './pages/admin/AdminPeserta'
@@ -89,6 +90,7 @@ export default function App() {
           <Route path="/riwayat" element={<PrivateRoute><Riwayat /></PrivateRoute>} />
           <Route path="/izin" element={<PrivateRoute><Izin /></PrivateRoute>} />
           <Route path="/profil" element={<PrivateRoute><Profil /></PrivateRoute>} />
+          <Route path="/tentang" element={<PrivateRoute><Tentang /></PrivateRoute>} />
           <Route path="/presensi/masuk" element={<PrivateRoute><Presensi type="masuk" /></PrivateRoute>} />
           <Route path="/presensi/pulang" element={<PrivateRoute><Presensi type="pulang" /></PrivateRoute>} />
 
