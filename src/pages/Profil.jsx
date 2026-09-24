@@ -269,9 +269,28 @@ export default function Profil() {
         <button
           className="btn btn-outline"
           style={{
+            borderColor: '#8b5cf6',
+            color: '#7c3aed',
+            background: 'rgba(139, 92, 246, 0.05)',
+            marginTop: 12,
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8
+          }}
+          onClick={() => navigate('/facetest')}
+        >
+          <span style={{ fontSize: 18 }}>🧠</span>
+          Uji Coba AI Face Recognition (Face ID)
+        </button>
+
+        <button
+          className="btn btn-outline"
+          style={{
             borderColor: '#e2e8f0',
             color: '#475569',
-            marginTop: 12,
+            marginTop: 8,
             width: '100%',
             display: 'flex',
             alignItems: 'center',

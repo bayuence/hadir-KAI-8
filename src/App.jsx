@@ -10,6 +10,7 @@ import Izin from './pages/Izin'
 import Profil from './pages/Profil'
 import Tentang from './pages/Tentang'
 import Presensi from './pages/Presensi'
+import FaceTest from './pages/FaceTest'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminPeserta from './pages/admin/AdminPeserta'
 import AdminPresensi from './pages/admin/AdminPresensi'
@@ -93,6 +94,7 @@ export default function App() {
           <Route path="/tentang" element={<PrivateRoute><Tentang /></PrivateRoute>} />
           <Route path="/presensi/masuk" element={<PrivateRoute><Presensi type="masuk" /></PrivateRoute>} />
           <Route path="/presensi/pulang" element={<PrivateRoute><Presensi type="pulang" /></PrivateRoute>} />
+          <Route path="/facetest" element={<PrivateRoute><FaceTest /></PrivateRoute>} />
 
           {/* Halaman admin (perlu login & role admin) */}
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

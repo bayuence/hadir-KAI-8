@@ -337,6 +337,25 @@ export default function Dashboard() {
             </svg>
             Ajukan Izin
           </button>
+          
+          <button 
+            type="button"
+            className="btn btn-outline" 
+            style={{ 
+              borderColor: '#8b5cf6', 
+              color: '#7c3aed', 
+              background: 'rgba(139, 92, 246, 0.05)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              marginTop: 4
+            }} 
+            onClick={() => navigate('/facetest')}
+          >
+            <span style={{ fontSize: 18 }}>🧠</span>
+            Uji Coba AI Face Recognition (Face ID)
+          </button>
         </div>
       </div>
       <BottomNav active="home" />

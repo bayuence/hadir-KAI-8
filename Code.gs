@@ -2048,16 +2048,36 @@ function triggerPengingatPulangManual() {
  * Buka Apps Script -> Pilih fungsi ini (setupTriggerPengingatWA) di dropdown atas -> Klik "Run/Jalankan"
  * Fungsi ini akan menjadwalkan Pengingat Masuk (07:45) & Pengingat Pulang (16:00) otomatis setiap hari.
  */
-function setupTriggerPengingatWA() {
-  // Hapus semua trigger lama (agar tidak double/spam)
+/**
+ * Hapus SEMUA trigger WA yang terlanjur duplikat.
+ * Jalankan fungsi ini SATU KALI dari GAS Editor jika WA sudah terlanjur spam.
+ */
+function hapusTriggerWADuplikat() {
+  var targetHandlers = [
+    'kirimPengingatPresensiMasuk',
+    'kirimPengingatPresensiPulang',
+    'kirimPengingatPresensiPagi',
+    'triggerPengingatMasukManual',
+    'triggerPengingatPulangManual'
+  ];
   var triggers = ScriptApp.getProjectTriggers();
+  var hapus = 0;
   for (var i = 0; i < triggers.length; i++) {
-    var handler = triggers[i].getHandlerFunction();
-    if (handler === 'kirimPengingatPresensiMasuk' || handler === 'kirimPengingatPresensiPulang' || handler === 'kirimPengingatPresensiPagi') {
+    if (targetHandlers.indexOf(triggers[i].getHandlerFunction()) !== -1) {
       ScriptApp.deleteTrigger(triggers[i]);
+      hapus++;
+      Logger.log('Trigger dihapus: ' + triggers[i].getHandlerFunction());
     }
   }
+  Logger.log('=== Total trigger WA dihapus: ' + hapus + ' ===');
+  if (hapus === 0) Logger.log('(Tidak ada trigger WA aktif yang ditemukan)');
+}
+
+function setupTriggerPengingatWA() {
+  // ── LANGKAH 1: Hapus SEMUA trigger WA lama terlebih dahulu ──
+  hapusTriggerWADuplikat();
   
+  // ── LANGKAH 2: Pasang trigger baru (1 saja per jadwal) ──
   // Pasang trigger Masuk (Pagi 07:45 WIB)
   ScriptApp.newTrigger('kirimPengingatPresensiMasuk')
     .timeBased()
@@ -2074,7 +2094,9 @@ function setupTriggerPengingatWA() {
     .nearMinute(0)
     .create();
 
-  Logger.log('✅ Trigger Pengingat WA Berhasil Dipasang: [Masuk: 07:45] & [Pulang: 16:00]');
+  Logger.log('✅ Trigger Pengingat WA Berhasil Dipasang (1 trigger per jadwal):');
+  Logger.log('   07:45 => Pengingat Masuk WA');
+  Logger.log('   16:00 => Pengingat Pulang WA');
 }
 
 /**
