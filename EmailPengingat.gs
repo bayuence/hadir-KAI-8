@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // MODUL EMAIL PENGINGAT PRESENSI — KAI Daop 8
 // Versi: 2.0  |  By: ence  |  2026
 //
@@ -30,10 +30,13 @@ function getPesertaAktif() {
   var sheet = getSheet('WEB Register');
   if (!sheet) return [];
   var rows = sheet.getDataRange().getDisplayValues();
+  var today = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy');
   var hasil = [];
   for (var i = 1; i < rows.length; i++) {
     var statusAkun = String(rows[i][11] || '').toLowerCase();
     if (statusAkun !== 'active') continue;
+    // Lewati peserta yang masa magangnya sudah selesai / belum mulai agar tidak dikirim email
+    if (statusMasaMagang(String(rows[i][8] || ''), String(rows[i][9] || ''), today) !== 'Aktif') continue;
     var email = String(rows[i][5] || '').trim();
     var nama  = String(rows[i][1] || '').trim();
     var id    = String(rows[i][14] || '').trim();

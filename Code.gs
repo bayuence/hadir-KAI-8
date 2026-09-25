@@ -1220,6 +1220,28 @@ function handleGetIzinSaya(data) {
 }
 
 // ─── ADMIN ENDPOINTS (Dipendekkan) ───────────────────────────
+// ── Util: konversi tanggal (DD/MM/YYYY) ke angka yg bisa dibandingkan ──
+function tglToKey(str) {
+  if (!str) return null;
+  var norm = normalizeTanggal(str); // -> 'DD/MM/YYYY'
+  var m = String(norm).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  var d = parseInt(m[1], 10), mo = parseInt(m[2], 10), y = parseInt(m[3], 10);
+  if (!d || !mo || !y) return null;
+  return y * 10000 + mo * 100 + d;
+}
+
+// Tentukan posisi tanggal target thd masa magang: 'Belum' | 'Selesai' | 'Aktif'
+function statusMasaMagang(mulaiStr, selesaiStr, tglNorm) {
+  var target  = tglToKey(tglNorm);
+  var mulai   = tglToKey(mulaiStr);
+  var selesai = tglToKey(selesaiStr);
+  if (target == null) return 'Aktif';
+  if (mulai   && target < mulai)   return 'Belum';   // tanggal sblm mulai magang
+  if (selesai && target > selesai) return 'Selesai'; // tanggal stlh selesai magang
+  return 'Aktif';
+}
+
 function handleGetAllPresensi(data) {
   if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
   if (!data.tanggal) return { success: false, message: 'Parameter tanggal diperlukan.' };
@@ -1301,6 +1323,8 @@ function handleGetAllPresensi(data) {
     var penempatan      = idLokasiPeserta ? (namaLokasiMap[idLokasiPeserta] || idLokasiPeserta) : '';
 
     var pData = presensiMap[idPeserta];
+    // Masa magang peserta (Aktif / Selesai / Belum) → untuk menandai kartu nonaktif
+    var masa = statusMasaMagang(String(regRows[r][8] || ''), String(regRows[r][9] || ''), tglNorm);
 
     if (pData) {
       // Peserta punya data presensi hari ini
@@ -1319,10 +1343,14 @@ function handleGetAllPresensi(data) {
         totalJam:   pData.totalJam,
         gpsMasuk:   pData.gpsMasuk,
         gpsPulang:  pData.gpsPulang,
-        status:     pData.status
+        status:     pData.status,
+        masaMagang: masa
       });
     } else {
-      // Peserta tidak ada data presensi → Alfa
+      // Tidak ada data presensi → status memakai hasil cek masa magang
+      var stNonPresensi = (masa === 'Selesai') ? 'Selesai'
+                        : (masa === 'Belum')    ? 'Belum'
+                        : 'Alfa';
       result.push({
         id:         idPeserta,
         nama:       namaPeserta,
@@ -1337,18 +1365,21 @@ function handleGetAllPresensi(data) {
         totalJam:   '',
         gpsMasuk:   '',
         gpsPulang:  '',
-        status:     'Alfa'
+        status:     stNonPresensi,
+        masaMagang: masa
       });
     }
   }
 
   // ── 4. Sort: BlmPulang → Hadir → Ijin → Alfa ────────────────────────
   var order = function(p) {
+    if (p.masaMagang && p.masaMagang !== 'Aktif') return 4; // nonaktif magang paling bawah
     if (p.status === 'Hadir' && p.jamMasuk && !p.jamPulang) return 0; // Blm Pulang duluan
     if (p.status === 'Hadir') return 1;
     if (p.status && p.status.indexOf('Ijin') === 0) return 2;
     if (p.status === 'Alfa') return 3;
-    return 4;
+    if (p.status === 'Selesai' || p.status === 'Belum') return 4;
+    return 5;
   };
   result.sort(function(a, b) { return order(a) - order(b); });
 
@@ -1366,13 +1397,16 @@ function handleGetDashboardAdmin(data) {
     for (var i = 1; i < rows.length; i++) {
       if (rows[i][11] === 'pending') { pending++; continue; }
       if (rows[i][11] !== 'active') continue;
+      // Lewati peserta di luar masa magang (sudah selesai / belum mulai) dari statistik kehadiran
+      if (statusMasaMagang(String(rows[i][8] || ''), String(rows[i][9] || ''), today) !== 'Aktif') continue;
       total++;
       var isHadir = false, isIzin = false;
       if (pSheet) {
         var pRows = pSheet.getDataRange().getDisplayValues();
         for (var j = pRows.length - 1; j >= 1; j--) {
           if (pRows[j][0] === today && pRows[j][1] === rows[i][14]) {
-            if (pRows[j][11] === 'Izin') isIzin = true; else isHadir = true;
+            var stPres = String(pRows[j][11] || 'Hadir').trim();
+            if (stPres.indexOf('Ijin') === 0 || stPres === 'Izin') isIzin = true; else isHadir = true;
             break;
           }
         }
@@ -1897,6 +1931,12 @@ function kirimPengingatPresensiMasuk(isManual) {
     var statusAcc = String(regRows[i][11]).toLowerCase().trim(); // active / pending
     if (statusAcc !== 'active') continue;
 
+    // Lewati peserta yang masa magangnya sudah selesai / belum mulai agar tidak dikirim WA
+    if (statusMasaMagang(String(regRows[i][8] || ''), String(regRows[i][9] || ''), todayNorm) !== 'Aktif') {
+      Logger.log('Lewati ' + regRows[i][1] + ': Masa magang sudah selesai / belum mulai.');
+      continue;
+    }
+
     var idPeserta = regRows[i][14];
     var nama      = regRows[i][1];
     var noHp      = regRows[i][4];
@@ -1970,6 +2010,12 @@ function kirimPengingatPresensiPulang(isManual) {
   for (var i = 1; i < regRows.length; i++) {
     var statusAcc = String(regRows[i][11]).toLowerCase().trim();
     if (statusAcc !== 'active') continue;
+
+    // Lewati peserta yang masa magangnya sudah selesai / belum mulai agar tidak dikirim WA
+    if (statusMasaMagang(String(regRows[i][8] || ''), String(regRows[i][9] || ''), todayNorm) !== 'Aktif') {
+      Logger.log('Lewati ' + regRows[i][1] + ': Masa magang sudah selesai / belum mulai.');
+      continue;
+    }
 
     var idPeserta = regRows[i][14];
     var nama      = regRows[i][1];

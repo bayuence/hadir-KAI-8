@@ -7,6 +7,11 @@ import { formatTime } from '../../utils/date'
 import './Admin.css'
 import './AdminPresensi.css'
 
+const aktif = (p) => {
+  if (p.masaMagang) return p.masaMagang === 'Aktif'
+  return p.status !== 'Selesai' && p.status !== 'Belum'
+}
+
 export default function AdminPresensi() {
   const getTodayIso = () => {
     const d = new Date()
@@ -43,22 +48,30 @@ export default function AdminPresensi() {
       const matchSearch = !search || p.nama?.toLowerCase().includes(search.toLowerCase())
       const matchStatus =
         filterStatus === 'Semua'       ||
-        (filterStatus === 'Hadir'      && p.status === 'Hadir')                               ||
-        (filterStatus === 'Blm Pulang' && p.status === 'Hadir' && p.jamMasuk && !p.jamPulang) ||
-        (filterStatus === 'Ijin'       && p.status?.startsWith('Ijin'))                     ||
-        (filterStatus === 'Alfa'       && p.status === 'Alfa')
+        (filterStatus === 'Hadir'      && p.status === 'Hadir' && aktif(p))                     ||
+        (filterStatus === 'Blm Pulang' && p.status === 'Hadir' && p.jamMasuk && !p.jamPulang && aktif(p)) ||
+        (filterStatus === 'Ijin'       && p.status?.startsWith('Ijin') && aktif(p))              ||
+        (filterStatus === 'Alfa'       && p.status === 'Alfa')                                   ||
+        (filterStatus === 'Selesai'    && p.masaMagang === 'Selesai')                             ||
+        (filterStatus === 'Belum'      && p.masaMagang === 'Belum')
       const matchLokasi = filterLokasi === 'Semua' || (p.penempatan || '') === filterLokasi
       return matchSearch && matchStatus && matchLokasi
     })
   }, [presensiList, search, filterStatus, filterLokasi])
 
-  const stats = useMemo(() => ({
-    total:     presensiList.length,
-    hadir:     presensiList.filter(p => p.status === 'Hadir').length,
-    blmPulang: presensiList.filter(p => p.status === 'Hadir' && p.jamMasuk && !p.jamPulang).length,
-    ijin:      presensiList.filter(p => p.status?.startsWith('Ijin')).length,
-    alfa:      presensiList.filter(p => p.status === 'Alfa').length,
-  }), [presensiList])
+  const stats = useMemo(() => {
+    // Peserta dihitung hanya jika masih dalam masa magang (masaMagang === 'Aktif')
+    const dalamMasa = presensiList.filter(aktif)
+    return {
+      total:     dalamMasa.length,
+      hadir:     dalamMasa.filter(p => p.status === 'Hadir').length,
+      blmPulang: dalamMasa.filter(p => p.status === 'Hadir' && p.jamMasuk && !p.jamPulang).length,
+      ijin:      dalamMasa.filter(p => p.status?.startsWith('Ijin')).length,
+      alfa:      dalamMasa.filter(p => p.status === 'Alfa').length,
+      selesai:   presensiList.filter(p => p.masaMagang === 'Selesai').length,
+      belum:     presensiList.filter(p => p.masaMagang === 'Belum').length,
+    }
+  }, [presensiList])
 
   const shiftDay = (n) => {
     const d = new Date(dateIso)
@@ -74,12 +87,15 @@ export default function AdminPresensi() {
   }
 
   const statusBadge = (p) => {
+    // Penanda utama: peserta di luar masa magang
+    if (p.masaMagang === 'Selesai') return { label: 'Selesai Magang', cls: 'badge-grey', subLabel: p.status === 'Hadir' ? 'Pernah Absen' : null, subCls: 'badge-grey' }
+    if (p.masaMagang === 'Belum')   return { label: 'Belum Mulai',    cls: 'badge-grey' }
     // Cek Ijin dan Alfa DULU sebelum cek jamMasuk/jamPulang
     if (p.status?.startsWith('Ijin')) return { label: p.status,      cls: 'badge-amber' }
     if (p.status === 'Alfa')          return { label: 'Alfa',        cls: 'badge-red'   }
     if (p.status === 'Hadir' && p.jamMasuk && !p.jamPulang)
-                                      return { label: 'Hadir ✓',     cls: 'badge-green', subLabel: 'Blm Pulang ⏳', subCls: 'badge-amber' }
-    if (p.status === 'Hadir')         return { label: 'Hadir ✓',    cls: 'badge-green' }
+                                      return { label: 'Hadir ✓',     cls: 'badge-green', subLabel: 'Blm Pulang', subCls: 'badge-amber' }
+    if (p.status === 'Hadir')         return { label: 'Hadir',    cls: 'badge-green' }
     return { label: p.status || '-', cls: 'badge-grey' }
   }
 
@@ -89,6 +105,7 @@ export default function AdminPresensi() {
     { key: 'Blm Pulang', val: stats.blmPulang, cls: 'warning', icon: 'TM' },
     { key: 'Ijin',       val: stats.ijin,      cls: 'info',    icon: 'IJ' },
     { key: 'Alfa',       val: stats.alfa,      cls: 'danger',  icon: 'AL' },
+    { key: 'Selesai',    val: stats.selesai,   cls: 'slate',   icon: 'SE' },
   ]
 
   return (
@@ -110,7 +127,7 @@ export default function AdminPresensi() {
           </button>
         </div>
 
-        <div className="ap-stats-grid ap-stats-5">
+        <div className="ap-stats-grid ap-stats-6">
           {STAT_CARDS.map(s => (
             <button
               key={s.key}
@@ -141,7 +158,7 @@ export default function AdminPresensi() {
               </select>
             )}
             <div className="ap-status-pills">
-              {['Semua','Hadir','Blm Pulang','Ijin','Alfa'].map(s => (
+              {['Semua','Hadir','Blm Pulang','Ijin','Alfa','Selesai'].map(s => (
                 <button key={s} className={`ap-pill ${filterStatus === s ? 'active' : ''}`} onClick={() => setFilterStatus(s)}>{s}</button>
               ))}
             </div>
@@ -150,7 +167,7 @@ export default function AdminPresensi() {
 
         {!loading && presensiList.length > 0 && (
           <div className="ap-result-count">
-            Menampilkan <strong>{filtered.length}</strong> dari <strong>{presensiList.length}</strong> peserta aktif
+            Menampilkan <strong>{filtered.length}</strong> dari <strong>{stats.total}</strong> peserta aktif
           </div>
         )}
 
@@ -171,8 +188,10 @@ export default function AdminPresensi() {
           <div className="ap-list">
             {filtered.map((p, i) => {
               const badge = statusBadge(p)
+              const nonaktif = p.masaMagang && p.masaMagang !== 'Aktif'
+              const clsKartu = nonaktif ? 'grey' : badge.cls.replace('badge-', '')
               return (
-                <div className={`ap-card ap-card-${badge.cls.replace('badge-','')}`} key={p.id || i}>
+                <div className={`ap-card ap-card-${clsKartu}`} key={p.id || i}>
                   <Avatar src={p.foto} name={p.nama} size={44} className="ap-card-avatar" />
                   <div className="ap-card-body">
                     <h4 className="ap-card-name" title={p.nama}>{p.nama}</h4>
@@ -187,7 +206,7 @@ export default function AdminPresensi() {
                       }
                     </p>
                   </div>
-                  <div className="ap-card-times">
+                  <div className={`ap-card-times${nonaktif ? ' is-nonaktif' : ''}`}>
                     {/* Tombol WA */}
                     {p.noHp && (
                       <div className="ap-wa-wrap">
@@ -207,6 +226,8 @@ export default function AdminPresensi() {
                     )}
                     {p.status === 'Alfa' ? (
                       <div className="ap-time-alfa">Tidak<br/>Hadir</div>
+                    ) : nonaktif && !p.jamMasuk ? (
+                      <div className="ap-time-selesai">{p.masaMagang === 'Selesai' ? 'Selesai' : 'Belum'}</div>
                     ) : p.status?.startsWith('Ijin') ? (
                       <div className="ap-time-ijin">
                         <span className="ap-time-ijin-lbl">Lapor</span>
@@ -224,6 +245,9 @@ export default function AdminPresensi() {
                         </div>
                         {p.totalJam && <div className="ap-total-jam">{p.totalJam}</div>}
                       </>
+                    )}
+                    {nonaktif && p.jamMasuk && (
+                      <span className="ap-time-nonaktif-lbl">Luar Masa</span>
                     )}
                   </div>
                 </div>

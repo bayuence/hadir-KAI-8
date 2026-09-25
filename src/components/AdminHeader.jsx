@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Avatar from './Avatar'
+import './AdminHeader.css'
 
 const ADMIN_MENUS = [
   {
