@@ -79,6 +79,13 @@
   transform: translateX(0);
 }
 
+/* Paksa semua anak sidebar mempertahankan tinggi aslinya.
+   Tanpa ini, flex-column + overflow-y membuat baris terakhir
+   (Tentang Aplikasi / Keluar dari Akun) tergencet & tak terjangkau scroll. */
+.admin-sidebar > * {
+  flex-shrink: 0;
+}
+
 .sidebar-close {
   align-self: flex-end;
   margin: 16px 16px 0;

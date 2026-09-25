@@ -1,16 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../services/api'
 import AdminHeader from '../../components/AdminHeader'
 import BottomNav from '../../components/BottomNav'
+import Avatar from '../../components/Avatar'
 import './Admin.css'
 import './AdminDashboard.css'
 
+const NAMA_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
+
 export default function AdminDashboard() {
   const { user } = useAuth()
-  const navigate = useNavigate()
   const [stats, setStats] = useState({ hadir: 0, izin: 0, tidakHadir: 0, pending: 0, total: 0 })
+  const [rekap, setRekap] = useState([])
+  const [periode, setPeriode] = useState('')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(null)
@@ -22,10 +25,14 @@ export default function AdminDashboard() {
   const load = useCallback((isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true)
     setError(null)
-    api.admin.getDashboard()
-      .then(d => {
+    Promise.all([api.admin.getDashboard(), api.admin.getRekapBulanan()])
+      .then(([d, r]) => {
         if (d && d.success) setStats(d.data)
         else setError(d?.message || 'Gagal memuat data dashboard.')
+        if (r && r.success) {
+          setRekap(r.data || [])
+          setPeriode(`${NAMA_BULAN[(r.bulan || 1) - 1]} ${r.tahun}`)
+        }
       })
       .catch(() => setError('Tidak dapat terhubung ke server.'))
       .finally(() => { setLoading(false); setRefreshing(false) })
@@ -35,26 +42,14 @@ export default function AdminDashboard() {
 
   const rate = stats.total > 0 ? Math.round((stats.hadir / stats.total) * 100) : 0
 
-  const STAT_CARDS = [
-    { key: 'hadir',       label: 'Hadir',       tone: 'green', value: stats.hadir,
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> },
-    { key: 'izin',        label: 'Izin',        tone: 'amber', value: stats.izin,
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> },
-    { key: 'tidakHadir',  label: 'Tidak Hadir', tone: 'red',   value: stats.tidakHadir,
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> },
-    { key: 'pending',     label: 'Menunggu',    tone: 'blue',  value: stats.pending,
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> },
-  ]
+  // Jumlah peserta yang punya catatan bulan ini (untuk footer tabel)
+  const totalTercatat = useMemo(() => rekap.filter(p => p.hadir + p.izin + p.alfa > 0).length, [rekap])
 
-  const MENUS = [
-    { label: 'Rekap Presensi', desc: 'Lihat absensi semua peserta', to: '/admin/presensi', tone: 'blue',
-      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
-    { label: 'Kelola Peserta', desc: 'Setujui & kelola pendaftaran', to: '/admin/peserta', tone: 'emerald', badge: stats.pending,
-      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
-    { label: 'Kelola Izin', desc: 'Tinjau pengajuan izin', to: '/admin/izin', tone: 'amber',
-      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg> },
-    { label: 'Unit Kerja & Lokasi', desc: 'Atur koordinat & radius lokasi', to: '/admin/lokasi', tone: 'violet',
-      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
+  const CHIPS = [
+    { key: 'hadir',      label: 'Hadir',       tone: 'green', value: stats.hadir },
+    { key: 'izin',       label: 'Izin',        tone: 'amber', value: stats.izin },
+    { key: 'tidakHadir', label: 'Tidak Hadir', tone: 'red',   value: stats.tidakHadir },
+    { key: 'pending',    label: 'Menunggu',    tone: 'blue',  value: stats.pending },
   ]
 
   return (
@@ -115,36 +110,63 @@ export default function AdminDashboard() {
 
         {!error && (
           <>
-            {/* ── Statistik ── */}
-            <div className="adb-section-label">Statistik Hari Ini</div>
-            <div className="adb-stat-grid">
-              {STAT_CARDS.map(s => (
-                <div className={`adb-stat adb-stat--${s.tone}`} key={s.key}>
-                  <span className="adb-stat-icon">{s.icon}</span>
-                  <span className="adb-stat-value">
-                    {loading ? <span className="adb-skeleton-line" /> : s.value}
+            {/* ── Statistik ringkas: satu baris kecil ── */}
+            <div className="adb-chip-row">
+              {CHIPS.map(c => (
+                <div className={`adb-chip adb-chip--${c.tone}`} key={c.key}>
+                  <span className="adb-chip-dot" />
+                  <span className="adb-chip-body">
+                    <span className="adb-chip-value">{loading ? <span className="adb-skeleton-line" /> : c.value}</span>
+                    <span className="adb-chip-label">{c.label}</span>
                   </span>
-                  <span className="adb-stat-label">{s.label}</span>
                 </div>
               ))}
             </div>
 
-            {/* ── Menu Admin ── */}
-            <div className="adb-section-label">Menu Admin</div>
-            <div className="adb-menu-grid">
-              {MENUS.map(m => (
-                <button className={`adb-menu adb-menu--${m.tone}`} key={m.to} onClick={() => navigate(m.to)}>
-                  <span className="adb-menu-icon">{m.icon}</span>
-                  <span className="adb-menu-body">
-                    <span className="adb-menu-label">{m.label}</span>
-                    <span className="adb-menu-desc">{m.desc}</span>
-                  </span>
-                  {m.badge > 0 && <span className="adb-menu-badge">{m.badge}</span>}
-                  <span className="adb-menu-chevron">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                  </span>
-                </button>
-              ))}
+            {/* ── Tabel Rekap Bulanan ── */}
+            <div className="adb-section-label">Rekap Kehadiran {periode ? `— ${periode}` : ''}</div>
+            <div className="adb-table-card">
+              {loading ? (
+                <div className="adb-table-loading">
+                  <div className="spinner" />
+                  <span>Memuat rekap...</span>
+                </div>
+              ) : rekap.length === 0 ? (
+                <div className="adb-table-empty">Belum ada data peserta aktif.</div>
+              ) : (
+                <>
+                  <div className="adb-table-wrap">
+                    <table className="adb-table">
+                      <thead>
+                        <tr>
+                          <th className="adb-th-name">Nama Peserta</th>
+                          <th className="adb-col-num">Hadir</th>
+                          <th className="adb-col-num">Izin</th>
+                          <th className="adb-col-num">Alfa</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rekap.map(p => (
+                          <tr key={p.id}>
+                            <td className="adb-td-name">
+                              <div className="adb-td-person">
+                                <Avatar src={p.foto} name={p.nama} size={28} />
+                                <span className="adb-td-nama">{p.nama}</span>
+                              </div>
+                            </td>
+                            <td className="adb-col-num"><span className="adb-num adb-num--green">{p.hadir}</span></td>
+                            <td className="adb-col-num"><span className="adb-num adb-num--amber">{p.izin}</span></td>
+                            <td className="adb-col-num"><span className={`adb-num ${p.alfa > 0 ? 'adb-num--red' : 'adb-num--muted'}`}>{p.alfa}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="adb-table-foot">
+                    <span>{totalTercatat} dari {rekap.length} peserta memiliki catatan</span>
+                  </div>
+                </>
+              )}
             </div>
           </>
         )}

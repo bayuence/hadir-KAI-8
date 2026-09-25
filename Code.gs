@@ -71,6 +71,7 @@ function doPost(e) {
       case 'ajukanIzin':        result = handleAjukanIzin(data);        break;
       case 'getIzinSaya':       result = handleGetIzinSaya(data);       break;
       case 'getDashboardAdmin': result = handleGetDashboardAdmin(data); break;
+      case 'getRekapBulanan':   result = handleGetRekapBulanan(data);   break;
       case 'getPendingUsers':   result = handleGetPendingUsers(data);   break;
       case 'approveUser':       result = handleApproveUser(data);       break;
       case 'rejectUser':        result = handleRejectUser(data);        break;
@@ -1415,6 +1416,61 @@ function handleGetDashboardAdmin(data) {
     }
   }
   return { success: true, data: { hadir: hadir, izin: izin, tidakHadir: tidakHadir, pending: pending, total: total } };
+}
+
+// ── Rekap per peserta selama bulan berjalan (untuk tabel Dashboard Admin) ──
+function handleGetRekapBulanan(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+
+  var today    = formatTanggal();                 // DD/MM/YYYY
+  var regSheet = getSheet('WEB Register');
+  var pSheet   = getSheet('WEB Presensi');
+  if (!regSheet) return { success: true, data: [] };
+
+  var tParts = today.split('/');
+  var bln    = Number(tParts[1]);
+  var thn    = Number(tParts[2]);
+
+  // Kumpulkan presensi bulan berjalan: id -> { hadir, izin, alfa }
+  var byId = {}, seenDates = {};
+  if (pSheet) {
+    var pRows = pSheet.getDataRange().getDisplayValues();
+    for (var i = 1; i < pRows.length; i++) {
+      var tgl = normalizeTanggal(pRows[i][0]);
+      var tp  = tgl.split('/');
+      if (Number(tp[1]) !== bln || Number(tp[2]) !== thn) continue;
+      var pid = String(pRows[i][1]).trim();
+      if (!pid) continue;
+      if (!seenDates[pid]) seenDates[pid] = {};
+      if (seenDates[pid][tgl]) continue;          // cukup 1 catatan per tanggal
+      seenDates[pid][tgl] = true;
+      var st  = String(pRows[i][11] || 'Hadir').trim();
+      var rec = byId[pid] || { hadir: 0, izin: 0, alfa: 0 };
+      if (st.indexOf('Ijin') === 0 || st.indexOf('Izin') === 0) rec.izin++;
+      else if (st === 'Alfa') rec.alfa++;
+      else rec.hadir++;
+      byId[pid] = rec;
+    }
+  }
+
+  var regRows = regSheet.getDataRange().getDisplayValues();
+  var result  = [];
+  for (var r = 1; r < regRows.length; r++) {
+    if (String(regRows[r][11]).trim() !== 'active') continue;
+    var mm = statusMasaMagang(String(regRows[r][8] || ''), String(regRows[r][9] || ''), today);
+    if (mm !== 'Aktif') continue;                 // hanya peserta dalam masa magang
+    var id  = String(regRows[r][14]).trim();
+    var c   = byId[id] || { hadir: 0, izin: 0, alfa: 0 };
+    result.push({
+      id: id,
+      nama: String(regRows[r][1] || '').trim(),
+      hadir: c.hadir, izin: c.izin, alfa: c.alfa
+    });
+  }
+  result.sort(function(a, b) {
+    return (b.hadir - a.hadir) || String(a.nama).localeCompare(String(b.nama));
+  });
+  return { success: true, data: result, bulan: bln, tahun: thn };
 }
 
 function handleGetPendingUsers(data) {

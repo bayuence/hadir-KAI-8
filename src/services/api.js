@@ -115,6 +115,9 @@ export const api = {
     getAllPresensi: (tanggal) =>
       fetchGAS({ action: 'getAllPresensi', tanggal, adminToken: ADMIN_TOKEN }),
 
+    getRekapBulanan: () =>
+      fetchGAS({ action: 'getRekapBulanan', adminToken: ADMIN_TOKEN }),
+
     getPendingIzin: () =>
       fetchGAS({ action: 'getPendingIzin', adminToken: ADMIN_TOKEN }),
 
