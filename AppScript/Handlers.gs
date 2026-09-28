@@ -1,756 +1,3 @@
-// ============================================================
-// SISTEM PRESENSI DIGITAL MAGANG — KAI Daop 8 Unit Operasi
-// Google Apps Script Backend — Code.gs
-// Versi: 3.2 (Single Sheet Presensi & Fix Error)
-// ============================================================
-//
-// CARA DEPLOY:
-// 1. Buka Spreadsheet -> Ekstensi -> Apps Script
-// 2. Copy-paste seluruh kode ini menimpa kode sebelumnya
-// 3. Pastikan SPREADSHEET_ID sudah benar
-// 4. Jalankan fungsi "setupPeralihanAwal" secara manual 1 KALI saja.
-//    (Pilih fungsi setupPeralihanAwal di atas -> Klik Run)
-// 5. Deploy -> New deployment -> Web App
-// ============================================================
-
-var CONFIG = {
-  SPREADSHEET_ID:  '1GrYg3gDKSdfc8i2mTcbDPpbvci7-IppdDm1M55O7hf8',
-  ADMIN_TOKEN:     'KAI_DAOP8_ADMIN_2026',
-  FOLDER_FOTO_ID:  'ISI_ID_FOLDER_DRIVE_FOTO', // GANTI INI NANTI JIKA MAU FOTO
-  GEOFENCE_RADIUS: 100,
-  SESSION_EXPIRE:  24 * 60 * 60 * 1000,
-  
-  // Konfigurasi Fonnte WhatsApp Gateway API
-  FONNTE_TOKEN:       'o3hz8NS85cFJxCSCzjPd',
-
-  // Konfigurasi Meta WhatsApp Cloud API (Optional Legacy)
-  WA_PHONE_NUMBER_ID: 'ISI_PHONE_NUMBER_ID_META_DISINI',
-  WA_ACCESS_TOKEN:    'ISI_ACCESS_TOKEN_META_DISINI',
-  WA_TEMPLATE_NAME:   'hello_world' // Default template dari Meta untuk testing awal
-};
-
-// ─── ENTRY POINT (WEB APP API) ───────────────────────────────
-// ─── ENTRY POINT (WEB APP API) ───────────────────────────────
-function doPost(e) {
-  var lock = LockService.getScriptLock();
-  var isLocked = false;
-  try {
-    var data   = JSON.parse(e.postData.contents || '{}');
-    var action = data.action;
-    var result;
-
-    // Aksi yang mengubah/menulis data ke Google Sheets -> Butuh Lock antrean agar tidak bentrok
-    var needsLock = [
-      'checkIn', 'checkOut', 'daftar', 'ajukanIzin',
-      'approveUser', 'rejectUser', 'approveIzin', 'rejectIzin',
-      'savePenugasan', 'deletePenugasan', 'assignLokasi',
-      'saveUserAdmin', 'deleteUserAdmin', 'toggleAdminRole',
-      'selfAssignLokasi'
-    ].indexOf(action) !== -1;
-
-    if (needsLock) {
-      isLocked = lock.tryLock(20000); // Maksimal tunggu antrean 20 detik
-      if (!isLocked) {
-        return respond({ 
-          success: false, 
-          message: 'Server sedang memproses antrean presensi lain. Aplikasi akan mencoba lagi otomatis...', 
-          isQueueBusy: true 
-        });
-      }
-    }
-
-    switch (action) {
-      case 'getPesertaList':    result = handleGetPesertaList(data);    break;
-      case 'login':             result = handleLogin(data);             break;
-      case 'daftar':            result = handleDaftar(data);            break;
-      case 'getStatusHariIni':  result = handleGetStatusHariIni(data);  break;
-      case 'checkIn':           result = handleCheckIn(data);           break;
-      case 'checkOut':          result = handleCheckOut(data);          break;
-      case 'getRiwayat':        result = handleGetRiwayat(data);        break;
-      case 'getProfile':         result = handleGetProfile(data);        break;
-      case 'ajukanIzin':        result = handleAjukanIzin(data);        break;
-      case 'getIzinSaya':       result = handleGetIzinSaya(data);       break;
-      case 'getDashboardAdmin': result = handleGetDashboardAdmin(data); break;
-      case 'getRekapBulanan':   result = handleGetRekapBulanan(data);   break;
-      case 'getPendingUsers':   result = handleGetPendingUsers(data);   break;
-      case 'approveUser':       result = handleApproveUser(data);       break;
-      case 'rejectUser':        result = handleRejectUser(data);        break;
-      case 'getAllPresensi':    result = handleGetAllPresensi(data);    break;
-      case 'getPendingIzin':    result = handleGetPendingIzin(data);    break;
-      case 'approveIzin':       result = handleApproveIzin(data);       break;
-      case 'rejectIzin':        result = handleRejectIzin(data);        break;
-      case 'getPenugasan':      result = handleGetPenugasan(data);      break;
-      case 'savePenugasan':     result = handleSavePenugasan(data);     break;
-      case 'deletePenugasan':   result = handleDeletePenugasan(data);   break;
-      case 'assignLokasi':         result = handleAssignLokasi(data);         break;
-      case 'getPenugasanPublic':    result = handleGetPenugasanPublic(data);    break;
-      case 'selfAssignLokasi':      result = handleSelfAssignLokasi(data);      break;
-      case 'getAllUsersAdmin':       result = handleGetAllUsersAdmin(data);       break;
-      case 'saveUserAdmin':          result = handleSaveUserAdmin(data);          break;
-      case 'deleteUserAdmin':        result = handleDeleteUserAdmin(data);        break;
-      case 'toggleAdminRole':        result = handleToggleAdminRole(data);        break;
-      case 'broadcastPengingatWA':
-        if (!isAdminValid(data.adminToken)) {
-          result = { success: false, message: 'Token admin invalid.' };
-        } else {
-          var tipeBroadcast = data.tipe || 'masuk';
-          if (tipeBroadcast === 'pulang') {
-            result = kirimPengingatPresensiPulang(true);
-          } else {
-            result = kirimPengingatPresensiMasuk(true);
-          }
-        }
-        break;
-      default: result = { success: false, message: 'Action tidak dikenal' };
-    }
-    return respond(result);
-  } catch (err) {
-    return respond({ success: false, message: 'Server error: ' + err.message });
-  } finally {
-    if (isLocked) {
-      try {
-        SpreadsheetApp.flush(); // Pastikan perubahan tersimpan ke Google Sheets sebelum kunci dilepas
-        lock.releaseLock();
-      } catch (eLock) {}
-    }
-  }
-}
-
-function doGet(e) {
-  if (e.parameter.action === 'getPesertaList') return respond(handleGetPesertaList({}));
-  return respond({ success: false, message: 'Method tidak didukung' });
-}
-
-function respond(data) {
-  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
-}
-
-// ─── HELPER MENDASAR ─────────────────────────────────────────
-function getSheet(name) {
-  return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID).getSheetByName(name);
-}
-
-/**
- * DEBUG: Jalankan manual di GAS Editor untuk cek mengapa peserta muncul Alfa
- * Klik Run → debugIdMismatch → lihat Log (Ctrl+Enter)
- */
-function debugIdMismatch() {
-  var today = new Date();
-  var tglNorm = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
-  Logger.log('=== DEBUG tanggal target: ' + tglNorm + ' ===');
-
-  var pSheet  = getSheet('WEB Presensi');
-  var regSheet = getSheet('WEB Register');
-
-  // Tampilkan semua ID & tanggal di WEB Presensi hari ini
-  Logger.log('\n--- WEB Presensi (baris hari ini) ---');
-  if (pSheet) {
-    var pRows = pSheet.getDataRange().getDisplayValues();
-    for (var i = 1; i < pRows.length; i++) {
-      var tglRaw = pRows[i][0];
-      Logger.log('Row ' + (i+1) + ': tgl="' + tglRaw + '" | norm="' + normalizeTanggal(tglRaw) + '" | id="' + pRows[i][1] + '" | nama="' + pRows[i][2] + '" | status="' + pRows[i][11] + '"');
-    }
-  }
-
-  // Tampilkan semua ID aktif di WEB Register
-  Logger.log('\n--- WEB Register (semua active) ---');
-  if (regSheet) {
-    var rRows = regSheet.getDataRange().getDisplayValues();
-    for (var r = 1; r < rRows.length; r++) {
-      if (String(rRows[r][11]).toLowerCase() === 'active') {
-        Logger.log('Row ' + (r+1) + ': id="' + rRows[r][14] + '" | nama="' + rRows[r][1] + '" | statusAkun="' + rRows[r][11] + '"');
-      }
-    }
-  }
-  Logger.log('=== SELESAI DEBUG ===');
-}
-
-
-function getOrCreateSheet(name) {
-  var ss    = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  var sheet = ss.getSheetByName(name);
-  if (!sheet) {
-    sheet = ss.insertSheet(name);
-  }
-  return sheet;
-}
-
-function generatePesertaId() {
-  var sheet = getOrCreateSheet('WEB Register');
-  var count = Math.max(sheet.getLastRow() - 1, 1);
-  return 'MGGNG-' + String(count).padStart(3, '0');
-}
-
-// ============================================================
-// FITUR BARU: MIGRASI & REALTIME SYNC (JALANKAN SEKALI SAJA)
-// ============================================================
-
-// ─── JALANKAN INI JIKA SEBELUMNYA SUDAH TERLANJUR BUAT BANYAK SHEET ──
-function bersihkanSheetLama() {
-  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  var sheets = ss.getSheets();
-  var deleted = 0;
-  for (var i = 0; i < sheets.length; i++) {
-    var name = sheets[i].getName();
-    // Hapus semua sheet yang namanya "WEB Data Sheet MGGNG-..."
-    if (name.indexOf('WEB Data Sheet MGGNG-') === 0) {
-      ss.deleteSheet(sheets[i]);
-      deleted++;
-    }
-  }
-  Logger.log('Berhasil hapus ' + deleted + ' sheet lama.');
-}
-
-// ─── JALANKAN INI SATU KALI UNTUK SETUP LENGKAP ──────────────
-function setupPeralihanAwal() {
-  bersihkanSheetLama();  // Hapus sheet per-orang yang lama
-  setupDropdownRole();
-  migrasiDataAwal();
-  setupRealtimeSync();
-  setupAutoSync();       // Pasang sinkronisasi harian otomatis
-  Logger.log("Semua setup selesai!");
-}
-
-function setupDropdownRole() {
-  var sheet = getOrCreateSheet('WEB Register');
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['Timestamp Submit','Nama Lengkap','Tanggal Lahir','Alamat','No HP','Email',
-      'Kampus','Jurusan','Tanggal Mulai','Tanggal Selesai','Foto Profil URL',
-      'Status Akun','Role','ID Lokasi','ID Unik']);
-  }
-  
-  // Dropdown untuk kolom M (Role)
-  var roleRule = SpreadsheetApp.newDataValidation().requireValueInList(['admin', 'intern'], true).build();
-  sheet.getRange('M2:M').setDataValidation(roleRule);
-  
-  // Format kolom C (Tanggal Lahir) sebagai teks @
-  // dan beri note cara mengisi
-  sheet.getRange('C1').setNote('Format: DD/MM/YYYY\nContoh: 01/08/2003');
-  sheet.getRange('C2:C').setNumberFormat('@'); // format teks agar tidak dikonversi otomatis oleh Sheets
-  
-  // Warna header kolom C agar mudah dikenali
-  sheet.getRange('C1').setBackground('#fef3c7').setFontWeight('bold');
-  
-  Logger.log("Dropdown Role & format Tanggal Lahir selesai dibuat.");
-}
-
-// ── Fungsi bantu: set tanggal lahir satu orang (jalankan manual jika perlu) ──
-// Ganti 'BAYU NURCAHYO' dan '10/08/2003' sesuai kebutuhan
-function setTanggalLahirManual() {
-  var nama = 'BAYU NURCAHYO'; // ganti nama
-  var tgl  = '10/08/2003';    // ganti tanggal lahir format DD/MM/YYYY
-  
-  var sheet = getSheet('WEB Register');
-  if (!sheet) { Logger.log('WEB Register tidak ditemukan'); return; }
-  
-  var rows = sheet.getDataRange().getDisplayValues();
-  for (var i = 1; i < rows.length; i++) {
-    if (rows[i][1].toLowerCase().trim() === nama.toLowerCase().trim()) {
-      sheet.getRange(i + 1, 3).setValue(tgl);
-      Logger.log('Tanggal lahir ' + nama + ' berhasil diset ke ' + tgl);
-      return;
-    }
-  }
-  Logger.log('Nama tidak ditemukan: ' + nama);
-}
-
-// ── Fungsi bantu: jadikan seseorang sebagai admin ──
-function jadikanAdmin() {
-  var nama = 'BAYU NURCAHYO'; // ganti nama
-  
-  var sheet = getSheet('WEB Register');
-  if (!sheet) { Logger.log('WEB Register tidak ditemukan'); return; }
-  
-  var rows = sheet.getDataRange().getDisplayValues();
-  for (var i = 1; i < rows.length; i++) {
-    if (rows[i][1].toLowerCase().trim() === nama.toLowerCase().trim()) {
-      sheet.getRange(i + 1, 13).setValue('admin');
-      Logger.log(nama + ' berhasil dijadikan admin!');
-      return;
-    }
-  }
-  Logger.log('Nama tidak ditemukan: ' + nama);
-}
-
-
-// ── EKSTRAK ID FILE DARI URL GOOGLE DRIVE ─────────────────────
-function extractDriveId(url) {
-  if (!url) return '';
-  // Format: https://drive.google.com/open?id=FILE_ID
-  var m1 = url.match(/[?&]id=([^&]+)/);
-  if (m1) return m1[1];
-  // Format: https://drive.google.com/file/d/FILE_ID/view
-  var m2 = url.match(/\/file\/d\/([^\/]+)/);
-  if (m2) return m2[1];
-  return '';
-}
-
-// ── JALANKAN SEKALI SETELAH migrasiDataAwal ───────────────────
-// Menambahkan kolom PREVIEW MASUK (M) & PREVIEW PULANG (N)
-// dengan formula =IMAGE() dari URL di kolom F dan H
-function tambahPreviewFoto() {
-  var pSheet = getSheet('WEB Presensi');
-  if (!pSheet) { Logger.log('WEB Presensi tidak ditemukan'); return; }
-  
-  var lastRow = pSheet.getLastRow();
-  if (lastRow < 2) { Logger.log('Tidak ada data'); return; }
-  
-  // Pastikan header ada di kolom M dan N
-  pSheet.getRange('M1').setValue('PREVIEW MASUK');
-  pSheet.getRange('N1').setValue('PREVIEW PULANG');
-  
-  // Set baris cukup tinggi untuk preview foto
-  pSheet.setRowHeightsForced(2, lastRow - 1, 80);
-  
-  var data = pSheet.getDataRange().getDisplayValues();
-  var fomulasMasuk = [];
-  var formulasPulang = [];
-  
-  for (var i = 1; i < data.length; i++) {
-    var fotoMasuk  = data[i][5] || ''; // Kolom F = FOTO MASUK
-    var fotoPulang = data[i][7] || ''; // Kolom H = FOTO PULANG
-    
-    var idM = extractDriveId(fotoMasuk);
-    var idP = extractDriveId(fotoPulang);
-    
-    fomulasMasuk.push([idM ? '=IMAGE("https://drive.google.com/thumbnail?id=' + idM + '&sz=w200")' : '']);
-    formulasPulang.push([idP ? '=IMAGE("https://drive.google.com/thumbnail?id=' + idP + '&sz=w200")' : '']);
-  }
-  
-  pSheet.getRange(2, 13, fomulasMasuk.length, 1).setFormulas(fomulasMasuk);
-  pSheet.getRange(2, 14, formulasPulang.length, 1).setFormulas(formulasPulang);
-  
-  Logger.log('Preview foto berhasil ditambahkan! Total baris: ' + (lastRow - 1));
-}
-
-
-// ── MIGRASI ULANG DATA REGISTRASI LENGKAP ──────────────────────
-function migrasiDataRegistrasiLengkap() {
-  var oldReg = getSheet('Data Registrasi');
-  var webReg = getSheet('WEB Register');
-  if (!oldReg || !webReg) {
-    Logger.log("Sheet tidak ditemukan.");
-    return;
-  }
-  
-  var oldData = oldReg.getDataRange().getDisplayValues();
-  var webData = webReg.getDataRange().getDisplayValues();
-  
-  if (oldData.length <= 1 || webData.length <= 1) return;
-  
-  var oldHeaders = oldData[0].map(function(h) { return String(h).toLowerCase().trim(); });
-  
-  // Deteksi index kolom di Data Registrasi lama (berdasarkan screenshot)
-  var idxAlamat  = oldHeaders.indexOf('alamat tempat tinggal');
-  var idxHp      = oldHeaders.indexOf('nomor handphone');
-  var idxEmail   = oldHeaders.indexOf('email');
-  var idxKampus  = oldHeaders.indexOf('nama universitas');
-  var idxJurusan = oldHeaders.indexOf('jurusan');
-  var idxMulai   = oldHeaders.indexOf('tanggal mulai magang');
-  var idxSelesai = oldHeaders.indexOf('tanggal selesai magang');
-  var idxFoto    = oldHeaders.indexOf('foto terbaru');
-  
-  var updateCount = 0;
-  
-  // Looping baris di WEB Register
-  for (var i = 1; i < webData.length; i++) {
-    var namaWeb = String(webData[i][1]).toLowerCase().trim();
-    if (!namaWeb) continue;
-    
-    // Cari nama yang sama di Data Registrasi
-    for (var j = 1; j < oldData.length; j++) {
-      var namaOld = String(oldData[j][1]).toLowerCase().trim();
-      if (namaWeb === namaOld) {
-        
-        // Update data di WEB Register 
-        if (idxAlamat > -1)  webReg.getRange(i + 1, 4).setValue(oldData[j][idxAlamat]); // Alamat
-        if (idxHp > -1)      webReg.getRange(i + 1, 5).setValue(oldData[j][idxHp]);     // No HP
-        if (idxEmail > -1)   webReg.getRange(i + 1, 6).setValue(oldData[j][idxEmail]);  // Email
-        if (idxKampus > -1)  webReg.getRange(i + 1, 7).setValue(oldData[j][idxKampus]); // Kampus
-        if (idxJurusan > -1) webReg.getRange(i + 1, 8).setValue(oldData[j][idxJurusan]); // Jurusan
-        if (idxMulai > -1)   webReg.getRange(i + 1, 9).setValue(oldData[j][idxMulai]);  // Tgl Mulai
-        if (idxSelesai > -1) webReg.getRange(i + 1, 10).setValue(oldData[j][idxSelesai]);// Tgl Selesai
-        
-        // Ekstrak URL foto Drive jika ada
-        if (idxFoto > -1 && oldData[j][idxFoto]) {
-          var idFoto = extractDriveId(oldData[j][idxFoto]);
-          if (idFoto) {
-            webReg.getRange(i + 1, 11).setValue("https://drive.google.com/uc?id=" + idFoto); // Foto URL khusus render
-          }
-        }
-        
-        updateCount++;
-        break; // Lanjut ke peserta berikutnya di WEB Register
-      }
-    }
-  }
-  
-  Logger.log("Berhasil melengkapi " + updateCount + " data peserta dari Data Registrasi lama.");
-}
-
-function migrasiDataAwal() {
-  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  var webReg = getOrCreateSheet('WEB Register');
-  var pSheet = getOrCreateSheet('WEB Presensi');
-  
-  if (pSheet.getLastRow() === 0) {
-    pSheet.appendRow(['TANGGAL', 'ID PESERTA', 'NAMA', 'LOKASI', 'JAM MASUK', 'FOTO MASUK', 'JAM PULANG', 'FOTO PULANG', 'TOTAL JAM', 'GPS MASUK', 'GPS PULANG', 'STATUS']);
-  }
-
-  // 1. Migrasi Register (Versi Awal - dilewati jika sudah ada data)
-  var oldReg = ss.getSheetByName('Data Registrasi');
-  if (oldReg && webReg.getLastRow() <= 1) { 
-    // Hanya basic id generation
-    var rows = oldReg.getDataRange().getDisplayValues();
-    for (var i = 1; i < rows.length; i++) {
-      var nama = rows[i][1];
-      if (!nama) continue;
-      var newId = 'MGGNG-' + String(i).padStart(3, '0');
-      webReg.appendRow([rows[i][0] || new Date().toISOString(), nama, '', rows[i][2] || '', '', '', '', '', '', '', '', 'active', 'intern', '', newId]);
-    }
-    Logger.log("Migrasi peserta selesai.");
-  }
-
-  // 2. Migrasi Presensi Lama -> ke SATU sheet 'WEB Presensi'
-  // Hanya migrasi jika WEB Presensi masih kosong (cuma header)
-  var oldRes = ss.getSheetByName('Form Responses 1');
-  if (oldRes && pSheet.getLastRow() <= 1) {
-    // Gunakan helper sinkron agar logik ijin sudah benar sejak awal
-    _prosesFormResponsesToPresensi(oldRes, webReg, pSheet, true);
-    Logger.log("Migrasi riwayat presensi selesai.");
-  }
-}
-
-// ============================================================
-// SINKRONISASI OTOMATIS: Form Responses 1 -> WEB Presensi
-// ============================================================
-// Fungsi ini aman dijalankan berulang kali — tidak akan duplikat.
-// Bisa dijalankan manual kapan saja dari Apps Script Editor.
-// Juga dipanggil otomatis setiap hari (trigger harian).
-function sinkronFormResponses() {
-  var oldRes = getSheet('Form Responses 1');
-  var webReg = getSheet('WEB Register');
-  var pSheet = getOrCreateSheet('WEB Presensi');
-  
-  if (!oldRes) { Logger.log('Sheet Form Responses 1 tidak ditemukan.'); return; }
-  if (!webReg) { Logger.log('Sheet WEB Register tidak ditemukan.'); return; }
-  
-  if (pSheet.getLastRow() === 0) {
-    pSheet.appendRow(['TANGGAL', 'ID PESERTA', 'NAMA', 'LOKASI', 'JAM MASUK', 'FOTO MASUK', 'JAM PULANG', 'FOTO PULANG', 'TOTAL JAM', 'GPS MASUK', 'GPS PULANG', 'STATUS']);
-  }
-  
-  var added = _prosesFormResponsesToPresensi(oldRes, webReg, pSheet, false);
-  Logger.log('sinkronFormResponses selesai. Baris baru/diupdate: ' + added);
-}
-
-// ─── Helper inti: proses Form Responses 1 -> WEB Presensi ────
-// forceOverwrite=true  : tulis ulang semua (migrasi pertama kali, WEB Presensi kosong)
-// forceOverwrite=false : incremental — hanya tambah/update yang belum ada
-function _prosesFormResponsesToPresensi(oldRes, webReg, pSheet, forceOverwrite) {
-  var respRows = oldRes.getDataRange().getDisplayValues();
-  var allRegRows = webReg.getDataRange().getDisplayValues();
-  
-  // Buat map peserta: nama_lowercase -> { id, nama }
-  var mapPeserta = {};
-  for (var k = 1; k < allRegRows.length; k++) {
-    var kNama = String(allRegRows[k][1]).toLowerCase().trim();
-    if (kNama) mapPeserta[kNama] = { id: allRegRows[k][14], nama: allRegRows[k][1] };
-  }
-  
-  // Baca data WEB Presensi yang sudah ada: map "ID_TANGGALNORM" -> baris (1-indexed)
-  var existingRows = pSheet.getDataRange().getDisplayValues();
-  var existingMap = {}; // key -> row index (1-indexed, for getRange)
-  if (!forceOverwrite) {
-    for (var e = 1; e < existingRows.length; e++) {
-      var eKey = existingRows[e][1] + '_' + normalizeTanggal(existingRows[e][0]);
-      existingMap[eKey] = e + 1; // row number in sheet
-    }
-  }
-  
-  // Proses semua baris Form Responses 1 ke dalam presensiMap di memori
-  // Key: "ID_TANGGALNORM" -> rowData array [12 kolom]
-  var presensiMap = {};
-  
-  for (var r = 1; r < respRows.length; r++) {
-    var rNama  = String(respRows[r][1]).toLowerCase().trim();
-    var pData  = mapPeserta[rNama];
-    if (!pData || !pData.id) continue;
-    
-    var tanggal = respRows[r][5];
-    var tglNorm = normalizeTanggal(tanggal);
-    if (!tglNorm) continue;
-    
-    var konfirmasi = String(respRows[r][6]).toLowerCase().trim();
-    var jam        = formatJam(respRows[r][0]);
-    var lokasi     = respRows[r][4] || '';
-    var fotoUrl    = respRows[r][7] || '';
-    
-    var key = pData.id + '_' + tglNorm;
-    
-    // Tentukan status
-    var isIjin = (konfirmasi === 'ijin sakit' ||
-                  konfirmasi === 'ijin acara kampus' ||
-                  konfirmasi === 'ijin keperluan lain');
-    var statusLabel = konfirmasi === 'ijin sakit'          ? 'Ijin Sakit'
-                    : konfirmasi === 'ijin acara kampus'   ? 'Ijin Kampus'
-                    : konfirmasi === 'ijin keperluan lain' ? 'Ijin Lain'
-                    : 'Hadir';
-    
-    if (!presensiMap[key]) {
-      // [Tgl, ID, Nama, Lokasi, JamMasuk, FotoM, JamPulang, FotoP, TotalJam, GPS_M, GPS_P, Status]
-      presensiMap[key] = [tglNorm, pData.id, pData.nama, lokasi, '', '', '', '', '', '', '', isIjin ? statusLabel : 'Hadir'];
-    }
-    
-    if (konfirmasi === 'datang') {
-      if (!presensiMap[key][4]) {
-        presensiMap[key][4] = jam;
-        if (lokasi) presensiMap[key][3] = lokasi;
-        if (fotoUrl) presensiMap[key][5] = fotoUrl;
-      }
-    } else if (konfirmasi === 'pulang') {
-      if (!presensiMap[key][6]) {
-        presensiMap[key][6] = jam;
-        if (fotoUrl) presensiMap[key][7] = fotoUrl;
-        presensiMap[key][8] = hitungTotalJam(presensiMap[key][4] || jam, jam);
-      }
-    } else if (isIjin) {
-      // Ijin: 1x isi sudah cukup.
-      // Jam submit = jam lapor ijin (JAM MASUK), foto = bukti ijin (FOTO MASUK).
-      // Duplikat ijin di tanggal sama -> diabaikan (first-write-wins).
-      presensiMap[key][11] = statusLabel;
-      if (lokasi) presensiMap[key][3] = lokasi;
-      if (!presensiMap[key][4]) presensiMap[key][4] = jam;      // jam lapor ijin
-      if (!presensiMap[key][5] && fotoUrl) presensiMap[key][5] = fotoUrl; // bukti foto
-    }
-  }
-  
-  // Tulis ke WEB Presensi
-  var newRows = [];
-  var updatedCount = 0;
-  
-  for (var key in presensiMap) {
-    var row = presensiMap[key];
-    var existingRowIdx = existingMap[key];
-    
-    if (forceOverwrite || !existingRowIdx) {
-      // Data belum ada di WEB Presensi — tambahkan
-      newRows.push(row);
-    } else {
-      // Data sudah ada — update kolom yang kosong saja (non-destructive)
-      var cur = existingRows[existingRowIdx - 1]; // 0-indexed
-      var needUpdate = false;
-      
-      // Update jam masuk & foto masuk jika belum ada
-      if (!cur[4] && row[4]) { pSheet.getRange(existingRowIdx, 5).setValue(row[4]); needUpdate = true; }
-      if (!cur[5] && row[5]) { pSheet.getRange(existingRowIdx, 6).setValue(row[5]); needUpdate = true; } // foto masuk / bukti ijin
-      // Update jam pulang jika belum ada
-      if (!cur[6] && row[6]) {
-        pSheet.getRange(existingRowIdx, 7).setValue(row[6]);
-        if (row[7]) pSheet.getRange(existingRowIdx, 8).setValue(row[7]); // foto pulang
-        if (row[8]) pSheet.getRange(existingRowIdx, 9).setValue(row[8]); // total jam
-        needUpdate = true;
-      }
-      // Update lokasi jika kosong
-      if (!cur[3] && row[3]) { pSheet.getRange(existingRowIdx, 4).setValue(row[3]); needUpdate = true; }
-      // Update status: Hadir -> Ijin jika seharusnya ijin
-      if (cur[11] === 'Hadir' && row[11] !== 'Hadir') {
-        pSheet.getRange(existingRowIdx, 12).setValue(row[11]);
-        needUpdate = true;
-      }
-      if (needUpdate) updatedCount++;
-    }
-  }
-  
-  // Tulis semua baris baru sekaligus (batch — lebih cepat)
-  if (newRows.length > 0) {
-    var startRow = pSheet.getLastRow() + 1;
-    pSheet.getRange(startRow, 1, newRows.length, 12).setValues(newRows);
-  }
-  
-  return newRows.length + updatedCount;
-}
-
-// ─── Setup trigger harian otomatis (sinkronisasi jam 02.00 dini hari) ────
-// Panggil ini 1x dari setupPeralihanAwal atau jalankan manual jika belum aktif.
-function setupAutoSync() {
-  // Hapus trigger sinkron lama jika ada (hindari duplikat)
-  var triggers = ScriptApp.getProjectTriggers();
-  for (var i = 0; i < triggers.length; i++) {
-    if (triggers[i].getHandlerFunction() === 'sinkronFormResponses') {
-      ScriptApp.deleteTrigger(triggers[i]);
-    }
-  }
-  // Buat trigger baru: sinkronisasi otomatis setiap hari jam 02.00–03.00
-  ScriptApp.newTrigger('sinkronFormResponses')
-    .timeBased()
-    .everyDays(1)
-    .atHour(2)
-    .create();
-  Logger.log('Trigger sinkronisasi harian berhasil dipasang (02.00 setiap hari).');
-}
-
-function setupRealtimeSync() {
-  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  var triggers = ScriptApp.getProjectTriggers();
-  for (var i = 0; i < triggers.length; i++) {
-    if (triggers[i].getHandlerFunction() === 'onOldFormSubmit') {
-      ScriptApp.deleteTrigger(triggers[i]);
-    }
-  }
-  ScriptApp.newTrigger('onOldFormSubmit').forSpreadsheet(ss).onFormSubmit().create();
-  Logger.log("Sensor Realtime (Trigger onFormSubmit) berhasil dipasang!");
-}
-
-// ─── HANDLER REAL-TIME DARI FORM LAMA ────────────────────────
-function onOldFormSubmit(e) {
-  var sheet = e.range.getSheet();
-  var sheetName = sheet.getName();
-  
-  // 1. Jika ada yang mendaftar dari Google Form lama (Data Registrasi)
-  if (sheetName === 'Data Registrasi') {
-    var v = e.values;
-    var jamSubmit = v[0], nama = v[1], alamat = v[2], hp = v[3], email = v[4];
-    var kampus = v[5], jurusan = v[6], tglMulai = v[7], tglSelesai = v[8];
-    var fotoUrl = v[10] || ''; // FOTO TERBARU ada di index 10 (kolom K)
-    
-    var webReg = getOrCreateSheet('WEB Register');
-    var rows = webReg.getDataRange().getDisplayValues();
-    
-    // Cek apakah sudah terdaftar
-    for (var i = 1; i < rows.length; i++) {
-      if (String(rows[i][1]).toLowerCase().trim() === String(nama).toLowerCase().trim()) {
-        return; // Sudah ada, tidak perlu insert
-      }
-    }
-    
-    var newId = 'MGGNG-' + String(rows.length).padStart(3, '0');
-    var fotoRender = '';
-    if (fotoUrl) {
-      var idFoto = extractDriveId(fotoUrl);
-      if (idFoto) fotoRender = "https://drive.google.com/uc?id=" + idFoto;
-    }
-    
-    // Insert ke WEB Register
-    webReg.appendRow([
-      jamSubmit || new Date().toISOString(), nama, '', alamat, hp, email, 
-      kampus, jurusan, tglMulai, tglSelesai, fotoRender, 'active', 'intern', '', newId
-    ]);
-    return;
-  }
-  
-  // 2. Jika ada yang absen dari Google Form lama (Form Responses 1)
-  if (sheetName !== 'Form Responses 1') return;
-  
-  var values = e.values; // string array
-  var jamSubmit = formatJam(values[0]);
-  var nama = String(values[1]).toLowerCase().trim();
-  var lokasi = values[4];
-  var tanggal = values[5];
-  var konfirmasi = String(values[6]).toLowerCase().trim();
-  var fotoUrl = values[7] || ''; // Kolom H: DOKUMENTASI (URL foto)
-  
-  var webReg = getSheet('WEB Register');
-  if (!webReg) return;
-  var regRows = webReg.getDataRange().getDisplayValues();
-  var pId = null, pNamaAsli = nama;
-  for (var i = 1; i < regRows.length; i++) {
-    if (String(regRows[i][1]).toLowerCase().trim() === nama) {
-      pId = regRows[i][14];
-      pNamaAsli = regRows[i][1];
-      break;
-    }
-  }
-  if (!pId) return; 
-  
-  var pSheet = getOrCreateSheet('WEB Presensi');
-  if (pSheet.getLastRow() === 0) {
-    pSheet.appendRow(['TANGGAL', 'ID PESERTA', 'NAMA', 'LOKASI', 'JAM MASUK', 'FOTO MASUK', 'JAM PULANG', 'FOTO PULANG', 'TOTAL JAM', 'GPS MASUK', 'GPS PULANG', 'STATUS']);
-  }
-  
-  var tanggalNorm = normalizeTanggal(tanggal);
-  var pRows = pSheet.getDataRange().getDisplayValues();
-  var foundRow = -1;
-  for (var x = 1; x < pRows.length; x++) {
-    // Normalize kedua sisi agar berbagai format tanggal bisa cocok
-    if (normalizeTanggal(pRows[x][0]) === tanggalNorm && pRows[x][1] === pId) {
-      foundRow = x + 1; break;
-    }
-  }
-  
-  // Tentukan apakah ini entri ijin dan label statusnya
-  var isIjin = (konfirmasi === 'ijin sakit' ||
-                konfirmasi === 'ijin acara kampus' ||
-                konfirmasi === 'ijin keperluan lain');
-  var statusLabel = konfirmasi === 'ijin sakit'          ? 'Ijin Sakit'
-                  : konfirmasi === 'ijin acara kampus'   ? 'Ijin Kampus'
-                  : konfirmasi === 'ijin keperluan lain' ? 'Ijin Lain'
-                  : 'Hadir';
-  
-  if (foundRow > -1) {
-    // Row sudah ada untuk tanggal ini
-    if (konfirmasi === 'datang' && !pRows[foundRow-1][4]) {
-       pSheet.getRange(foundRow, 5).setValue(jamSubmit);
-       pSheet.getRange(foundRow, 4).setValue(lokasi);
-       if (fotoUrl) pSheet.getRange(foundRow, 6).setValue(fotoUrl);
-    } else if (konfirmasi === 'pulang' && !pRows[foundRow-1][6]) {
-       pSheet.getRange(foundRow, 7).setValue(jamSubmit);
-       if (fotoUrl) pSheet.getRange(foundRow, 8).setValue(fotoUrl);
-       var jamM = pRows[foundRow-1][4] || jamSubmit;
-       pSheet.getRange(foundRow, 9).setValue(hitungTotalJam(String(jamM), String(jamSubmit)));
-    } else if (isIjin && pRows[foundRow-1][11] !== statusLabel) {
-      // Update status & lokasi jika belum sesuai
-      pSheet.getRange(foundRow, 12).setValue(statusLabel);
-      if (lokasi) pSheet.getRange(foundRow, 4).setValue(lokasi);
-      // Simpan jam & foto ijin jika belum ada (1x isi form sudah cukup)
-      if (!pRows[foundRow-1][4] && jamSubmit) pSheet.getRange(foundRow, 5).setValue(jamSubmit);
-      if (!pRows[foundRow-1][5] && fotoUrl)   pSheet.getRange(foundRow, 6).setValue(fotoUrl);
-    }
-    // Ijin duplikat (status sudah sama) -> abaikan (first-write-wins)
-  } else {
-    // Belum ada row untuk tanggal ini -> buat baru
-    if (konfirmasi === 'datang') {
-      pSheet.appendRow([tanggalNorm, pId, pNamaAsli, lokasi, jamSubmit, fotoUrl, '', '', '', '', '', 'Hadir']);
-    } else if (konfirmasi === 'pulang') {
-      pSheet.appendRow([tanggalNorm, pId, pNamaAsli, lokasi, '', '', jamSubmit, fotoUrl, '', '', '', 'Hadir']);
-    } else if (isIjin) {
-      // Ijin: 1x isi form sudah cukup.
-      // JAM MASUK = jam submit (jam lapor ijin), FOTO MASUK = bukti foto ijin.
-      pSheet.appendRow([tanggalNorm, pId, pNamaAsli, lokasi, jamSubmit, fotoUrl, '', '', '', '', '', statusLabel]);
-    }
-  }
-}
-
-// ============================================================
-// FUNGSI AUTH & SESSION
-// ============================================================
-
-function isAdminValid(token) { return token === CONFIG.ADMIN_TOKEN; }
-
-function validateSession(token) {
-  if (!token) return null;
-  var sheet = getOrCreateSheet('WEB Sessions');
-  var data  = sheet.getDataRange().getDisplayValues();
-  var now   = Date.now();
-  for (var i = 1; i < data.length; i++) {
-    if (data[i][0] === token) {
-      if (now < Number(data[i][2])) return data[i][1];
-      sheet.deleteRow(i + 1);
-      return null;
-    }
-  }
-  return null;
-}
-
-function createSession(idPeserta) {
-  var token  = Utilities.getUuid();
-  var expire = Date.now() + CONFIG.SESSION_EXPIRE;
-  var sheet  = getOrCreateSheet('WEB Sessions');
-  if (sheet.getLastRow() === 0) sheet.appendRow(['token', 'idPeserta', 'expired']);
-  sheet.appendRow([token, idPeserta, expire]);
-  return token;
-}
-
-// ============================================================
 // IMPLEMENTASI ENDPOINT (WEB API)
 // ============================================================
 
@@ -1961,17 +1208,24 @@ function kirimWhatsAppFonnte(toPhoneNumber, message) {
 function kirimPengingatPresensiMasuk(isManual) {
   Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI MASUK ===');
   
-  // Skip jika hari Sabtu (6) atau Minggu (0), kecuali dijalankan manual oleh user
+  var todayDate = new Date();
+  var dayOfWeek = todayDate.getDay(); // 0=Minggu, 1=Sen, ..., 5=Jum, 6=Sabtu
+
+  // Skip jika hari Sabtu (6) atau Minggu (0), kecuali dijalankan manual
   if (!isManual) {
-    var todayDate = new Date();
-    var dayOfWeek = todayDate.getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       Logger.log('Hari ini adalah akhir pekan (Sabtu/Minggu). Pengingat WA otomatis dilewati.');
       return { success: false, message: 'Hari libur akhir pekan (Sabtu/Minggu).' };
     }
   }
 
-  var todayStr = formatTanggal();
+  // Tentukan jam kerja sesuai jadwal resmi
+  var isJumat    = (dayOfWeek === 5);
+  var jamMasuk   = isJumat ? '07.30' : '08.00';
+  var jamPulang  = isJumat ? '15.00' : '16.00';
+  var namaHari   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][dayOfWeek];
+
+  var todayStr  = formatTanggal();
   var todayNorm = normalizeTanggal(todayStr);
 
   var regSheet = getSheet('WEB Register');
@@ -1984,10 +1238,10 @@ function kirimPengingatPresensiMasuk(isManual) {
   var totalKirim = 0, totalLewati = 0;
 
   for (var i = 1; i < regRows.length; i++) {
-    var statusAcc = String(regRows[i][11]).toLowerCase().trim(); // active / pending
+    var statusAcc = String(regRows[i][11]).toLowerCase().trim();
     if (statusAcc !== 'active') continue;
 
-    // Lewati peserta yang masa magangnya sudah selesai / belum mulai agar tidak dikirim WA
+    // Lewati peserta yang masa magangnya sudah selesai / belum mulai
     if (statusMasaMagang(String(regRows[i][8] || ''), String(regRows[i][9] || ''), todayNorm) !== 'Aktif') {
       Logger.log('Lewati ' + regRows[i][1] + ': Masa magang sudah selesai / belum mulai.');
       continue;
@@ -2017,8 +1271,8 @@ function kirimPengingatPresensiMasuk(isManual) {
       Logger.log('Mengirim pengingat MASUK ke ' + nama + ' (' + noHp + ')...');
       var pesan = "🔔 *PENGINGAT PRESENSI MASUK — KAI DAOP 8*\n\n" +
                   "Halo *" + nama + "*! 👋\n\n" +
-                  "Saya ence dari *Tim Magang Daop 8* ingin mengingatkan bahwa saat ini sudah memasuki waktu presensi masuk magang KAI Daop 8.\n\n" +
-                  "Mohon segera lakukan *Presensi Masuk* melalui tautan aplikasi presensi berikut:\n" +
+                  "Saya ence dari *Tim Magang Daop 8* ingin mengingatkan bahwa hari *" + namaHari + "* ini jam masuk magang adalah pukul *" + jamMasuk + " WIB* s.d *" + jamPulang + " WIB*.\n\n" +
+                  "Mohon segera lakukan *Presensi Masuk* melalui aplikasi berikut:\n" +
                   "👉 https://hadirkai8.vercel.app/\n\n" +
                   "Selamat beraktivitas dan tetap semangat ya! 🚂✨\n" +
                   "━━━━━━━━━━━━━━━━━━━━\n" +
@@ -2040,18 +1294,25 @@ function kirimPengingatPresensiMasuk(isManual) {
  */
 function kirimPengingatPresensiPulang(isManual) {
   Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI PULANG ===');
-  
-  // Skip jika hari Sabtu (6) atau Minggu (0), kecuali dijalankan manual oleh user
+
+  var todayDate = new Date();
+  var dayOfWeek = todayDate.getDay();
+
+  // Skip jika hari Sabtu (6) atau Minggu (0), kecuali dijalankan manual
   if (!isManual) {
-    var todayDate = new Date();
-    var dayOfWeek = todayDate.getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       Logger.log('Hari ini adalah akhir pekan (Sabtu/Minggu). Pengingat WA otomatis dilewati.');
       return { success: false, message: 'Hari libur akhir pekan (Sabtu/Minggu).' };
     }
   }
 
-  var todayStr = formatTanggal();
+  // Tentukan jam kerja sesuai jadwal resmi
+  var isJumat   = (dayOfWeek === 5);
+  var jamMasuk  = isJumat ? '07.30' : '08.00';
+  var jamPulang = isJumat ? '15.00' : '16.00';
+  var namaHari  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][dayOfWeek];
+
+  var todayStr  = formatTanggal();
   var todayNorm = normalizeTanggal(todayStr);
 
   var regSheet = getSheet('WEB Register');
@@ -2067,7 +1328,7 @@ function kirimPengingatPresensiPulang(isManual) {
     var statusAcc = String(regRows[i][11]).toLowerCase().trim();
     if (statusAcc !== 'active') continue;
 
-    // Lewati peserta yang masa magangnya sudah selesai / belum mulai agar tidak dikirim WA
+    // Lewati peserta yang masa magangnya sudah selesai / belum mulai
     if (statusMasaMagang(String(regRows[i][8] || ''), String(regRows[i][9] || ''), todayNorm) !== 'Aktif') {
       Logger.log('Lewati ' + regRows[i][1] + ': Masa magang sudah selesai / belum mulai.');
       continue;
@@ -2087,19 +1348,17 @@ function kirimPengingatPresensiPulang(isManual) {
       }
     }
 
-    // Jika peserta HARI INI ADA DATA PRESENSI MASUK, tapi JAM PULANG (Kolom G / index 6) masih KOSONG
     if (absenHariIni) {
-      var jamMasuk        = String(absenHariIni[4] || '').trim();  // Kolom E (index 4)
-      var jamPulang       = String(absenHariIni[6] || '').trim();  // Kolom G (index 6)
-      var statusKehadiran = String(absenHariIni[11] || '').trim(); // Kolom L (index 11)
+      var jamMasukData    = String(absenHariIni[4] || '').trim();
+      var jamPulangData   = String(absenHariIni[6] || '').trim();
+      var statusKehadiran = String(absenHariIni[11] || '').trim();
 
-      // Cek: Pernah absen masuk atau status Hadir, tapi belum absen pulang
-      if ((statusKehadiran === 'Hadir' || jamMasuk !== '') && jamPulang === '') {
+      if ((statusKehadiran === 'Hadir' || jamMasukData !== '') && jamPulangData === '') {
         Logger.log('Mengirim pengingat PULANG ke ' + nama + ' (' + noHp + ')...');
         var pesan = "🔔 *PENGINGAT PRESENSI PULANG — KAI DAOP 8*\n\n" +
                     "Halo *" + nama + "*! 👋\n\n" +
-                    "Saya ence dari *Tim Magang Daop 8* ingin mengingatkan bahwa jam operasional magang hari ini telah selesai.\n\n" +
-                    "Jangan lupa untuk segera melakukan *Presensi Pulang* melalui aplikasi agar absensi dan jam kerja Anda tercatat lengkap:\n" +
+                    "Jam operasional magang hari *" + namaHari + "* ini berakhir pukul *" + jamPulang + " WIB*.\n\n" +
+                    "Jangan lupa segera lakukan *Presensi Pulang* agar jam kerja Anda tercatat lengkap:\n" +
                     "👉 https://hadirkai8.vercel.app/\n\n" +
                     "Terima kasih atas kerja keras Anda hari ini! Hati-hati di perjalanan pulang. 🚂✨\n" +
                     "━━━━━━━━━━━━━━━━━━━━\n" +
@@ -2108,10 +1367,9 @@ function kirimPengingatPresensiPulang(isManual) {
         var res = kirimWhatsAppFonnte(noHp, pesan);
         if (res.success) totalKirim++;
       } else {
-        totalLewati++; // Sudah pulang atau Izin/Sakit
+        totalLewati++;
       }
     } else {
-      // Tidak presensi masuk, tidak perlu diingatkan pulang
       totalLewati++;
     }
   }
@@ -2146,6 +1404,40 @@ function triggerPengingatPulangManual() {
 }
 
 /**
+ * Wrapper OTOMATIS untuk trigger — memanggil pengingat masuk dengan isManual=false
+ * sehingga cek Sabtu/Minggu SELALU aktif.
+ * PENTING: Trigger harus diarahkan ke fungsi INI, bukan langsung ke kirimPengingatPresensiMasuk.
+ */
+function kirimPengingatMasukAuto() {
+  kirimPengingatPresensiMasuk(false); // Senin-Kamis: trigger jam 07:45
+}
+
+/**
+ * Wrapper khusus Jumat — dipanggil trigger jam 07:15
+ * Masuk Jumat: 07.30 WIB
+ */
+function kirimPengingatMasukJumatAuto() {
+  kirimPengingatPresensiMasuk(false); // fungsi sudah deteksi isJumat sendiri
+}
+
+/**
+ * Wrapper OTOMATIS untuk trigger — memanggil pengingat pulang dengan isManual=false
+ * sehingga cek Sabtu/Minggu SELALU aktif.
+ * PENTING: Trigger harus diarahkan ke fungsi INI, bukan langsung ke kirimPengingatPresensiPulang.
+ */
+function kirimPengingatPulangAuto() {
+  kirimPengingatPresensiPulang(false); // Senin-Kamis: trigger jam 15:50
+}
+
+/**
+ * Wrapper khusus Jumat — dipanggil trigger jam 14:45
+ * Pulang Jumat: 15.00 WIB
+ */
+function kirimPengingatPulangJumatAuto() {
+  kirimPengingatPresensiPulang(false); // fungsi sudah deteksi isJumat sendiri
+}
+
+/**
  * PENTING: Pasang Trigger Otomatis Harian di Google Apps Script
  * Buka Apps Script -> Pilih fungsi ini (setupTriggerPengingatWA) di dropdown atas -> Klik "Run/Jalankan"
  * Fungsi ini akan menjadwalkan Pengingat Masuk (07:45) & Pengingat Pulang (16:00) otomatis setiap hari.
@@ -2159,6 +1451,10 @@ function hapusTriggerWADuplikat() {
     'kirimPengingatPresensiMasuk',
     'kirimPengingatPresensiPulang',
     'kirimPengingatPresensiPagi',
+    'kirimPengingatMasukAuto',
+    'kirimPengingatMasukJumatAuto',
+    'kirimPengingatPulangAuto',
+    'kirimPengingatPulangJumatAuto',
     'triggerPengingatMasukManual',
     'triggerPengingatPulangManual'
   ];
@@ -2176,29 +1472,53 @@ function hapusTriggerWADuplikat() {
 }
 
 function setupTriggerPengingatWA() {
-  // ── LANGKAH 1: Hapus SEMUA trigger WA lama terlebih dahulu ──
+  // ── LANGKAH 1: Hapus SEMUA trigger WA lama ──
   hapusTriggerWADuplikat();
-  
-  // ── LANGKAH 2: Pasang trigger baru (1 saja per jadwal) ──
-  // Pasang trigger Masuk (Pagi 07:45 WIB)
-  ScriptApp.newTrigger('kirimPengingatPresensiMasuk')
+
+  // ── LANGKAH 2: Pasang 4 trigger sesuai jadwal resmi magang ──
+  // Jadwal: Senin-Kamis 08.00-16.00 | Jumat 07.30-15.00 | Sabtu-Minggu Libur
+  // Trigger diarahkan ke wrapper agar isManual=false dan cek weekend selalu aktif.
+
+  // [1] Pengingat Masuk Senin-Kamis (jam 07:45 WIB -> ~15 menit sebelum 08.00)
+  ScriptApp.newTrigger('kirimPengingatMasukAuto')
     .timeBased()
     .everyDays(1)
     .atHour(7)
     .nearMinute(45)
     .create();
 
-  // Pasang trigger Pulang (Sore 16:00 WIB)
-  ScriptApp.newTrigger('kirimPengingatPresensiPulang')
+  // [2] Pengingat Masuk Jumat (jam 07:15 WIB -> ~15 menit sebelum 07.30)
+  //     Fungsi ini juga akan berjalan Senin-Kamis, tapi hari itu sudah dicover [1].
+  //     Karena GAS tidak bisa set trigger per-hari-tertentu, fungsi sendiri cek isJumat
+  //     dan hanya mengirim WA berbeda (jam 07.30) jika hari Jumat.
+  ScriptApp.newTrigger('kirimPengingatMasukJumatAuto')
     .timeBased()
     .everyDays(1)
-    .atHour(16)
-    .nearMinute(0)
+    .atHour(7)
+    .nearMinute(15)
     .create();
 
-  Logger.log('✅ Trigger Pengingat WA Berhasil Dipasang (1 trigger per jadwal):');
-  Logger.log('   07:45 => Pengingat Masuk WA');
-  Logger.log('   16:00 => Pengingat Pulang WA');
+  // [3] Pengingat Pulang Senin-Kamis (jam 15:50 WIB -> ~10 menit sebelum 16.00)
+  ScriptApp.newTrigger('kirimPengingatPulangAuto')
+    .timeBased()
+    .everyDays(1)
+    .atHour(15)
+    .nearMinute(50)
+    .create();
+
+  // [4] Pengingat Pulang Jumat (jam 14:45 WIB -> ~15 menit sebelum 15.00)
+  ScriptApp.newTrigger('kirimPengingatPulangJumatAuto')
+    .timeBased()
+    .everyDays(1)
+    .atHour(14)
+    .nearMinute(45)
+    .create();
+
+  Logger.log('✅ Trigger Pengingat WA Berhasil Dipasang (4 trigger sesuai jadwal resmi):');
+  Logger.log('   07:15 => kirimPengingatMasukJumatAuto  (Jumat masuk 07.30)');
+  Logger.log('   07:45 => kirimPengingatMasukAuto       (Sen-Kam masuk 08.00)');
+  Logger.log('   14:45 => kirimPengingatPulangJumatAuto (Jumat pulang 15.00)');
+  Logger.log('   15:50 => kirimPengingatPulangAuto      (Sen-Kam pulang 16.00)');
 }
 
 /**
@@ -2315,3 +1635,4 @@ function handleSelfAssignLokasi(data) {
 function mintaIzinWA() {
   UrlFetchApp.fetch("https://api.fonnte.com/");
 }
+
