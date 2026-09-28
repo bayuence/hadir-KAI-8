@@ -54,10 +54,32 @@ export default function Riwayat() {
   }, [user?.id, token])
 
   // ── Filter tampilan ──────────────────────────────────────────────────────
-  const bulanMap = {
-    'Juli': 6, 'Agustus': 7, 'September': 8,
-    'Oktober': 9, 'November': 10, 'Desember': 11,
-  }
+  const NAMA_BULAN = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  ]
+
+  // Kumpulkan bulan unik yang ada di data (format: "Bulan YYYY")
+  const bulanTersedia = (() => {
+    const seen = new Map()
+    riwayat.forEach(item => {
+      const d = parseTanggal(item.tanggal)
+      if (!d) return
+      const key = `${d.getFullYear()}-${d.getMonth()}` // sortable key
+      if (!seen.has(key)) {
+        seen.set(key, {
+          key,
+          label: `${NAMA_BULAN[d.getMonth()]} ${d.getFullYear()}`,
+          month: d.getMonth(),
+          year: d.getFullYear(),
+        })
+      }
+    })
+    // Urutkan kronologis
+    return Array.from(seen.values()).sort((a, b) =>
+      a.year !== b.year ? a.year - b.year : a.month - b.month
+    )
+  })()
 
   const filtered = riwayat.filter(item => {
     const isIjin = item.status && item.status.toLowerCase().startsWith('ijin')
@@ -68,7 +90,9 @@ export default function Riwayat() {
     if (bulanFilter === 'Semua') return matchStatus
     const d = parseTanggal(item.tanggal)
     if (!d) return false
-    return matchStatus && d.getMonth() === bulanMap[bulanFilter]
+    const selected = bulanTersedia.find(b => b.label === bulanFilter)
+    if (!selected) return false
+    return matchStatus && d.getMonth() === selected.month && d.getFullYear() === selected.year
   })
 
   // ── Helper: parse jam string ke total detik ─────────────────────────────
@@ -116,10 +140,10 @@ export default function Riwayat() {
     return `${j}j ${m}m ${d}d`
   }
 
-  // ── Summary ──────────────────────────────────────────────────────────────
-  const totalHari = riwayat.filter(i => i.status === 'Hadir').length
+  // ── Summary tampilan (mengikuti filter yang aktif) ──────────────────────
+  const totalHari = filtered.filter(i => i.status === 'Hadir').length
 
-  const totalDetik = riwayat.reduce((acc, item) => {
+  const totalDetik = filtered.reduce((acc, item) => {
     const d = getDurasiItem(item)
     return d ? acc + d : acc
   }, 0)
@@ -132,11 +156,27 @@ export default function Riwayat() {
     ? `${Math.floor(totalDetik / 3600)} Jam ${Math.floor((totalDetik % 3600) / 60)} Menit ${totalDetik % 60} Detik`
     : '0 Jam 0 Menit 0 Detik'
 
-  // ── Handler download PDF ─────────────────────────────────────────────────
+  // ── Summary PDF (SELALU semua data, tanpa filter) ─────────────────────
+  const totalHariAll = riwayat.filter(i => i.status === 'Hadir').length
+  const totalDetikAll = riwayat.reduce((acc, item) => {
+    const d = getDurasiItem(item)
+    return d ? acc + d : acc
+  }, 0)
+  const totalJamStrAll = totalDetikAll > 0
+    ? `${Math.floor(totalDetikAll / 3600)}j ${Math.floor((totalDetikAll % 3600) / 60)}m`
+    : ''
+
+  // ── Handler download PDF (selalu rekap SEMUA bulan) ─────────────────────
   const handleDownloadPDF = async () => {
     setPdfLoading(true)
     try {
-      await generateRekapPDF({ user, token, riwayat, totalHari, totalJamStr })
+      await generateRekapPDF({
+        user,
+        token,
+        riwayat,           // semua data tanpa filter
+        totalHari: totalHariAll,
+        totalJamStr: totalJamStrAll,
+      })
     } catch (err) {
       console.error('PDF error:', err)
       alert('Gagal membuat PDF. Silakan coba lagi.')
@@ -201,12 +241,9 @@ export default function Riwayat() {
             onChange={e => setBulanFilter(e.target.value)}
           >
             <option value="Semua">Semua Bulan</option>
-            <option value="Juli">Juli 2026</option>
-            <option value="Agustus">Agustus 2026</option>
-            <option value="September">September 2026</option>
-            <option value="Oktober">Oktober 2026</option>
-            <option value="November">November 2026</option>
-            <option value="Desember">Desember 2026</option>
+            {bulanTersedia.map(b => (
+              <option key={b.key} value={b.label}>{b.label}</option>
+            ))}
           </select>
           <select
             className="filter-select"
