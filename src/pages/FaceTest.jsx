@@ -17,7 +17,7 @@ import Avatar from '../components/Avatar'
 export default function FaceTest() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { loadingModel, modelError, loadModels, serializeDescriptor, deserializeDescriptor } = useFaceRecognition()
+  const { modelReady, loadingModel, modelError, loadModels, serializeDescriptor, deserializeDescriptor } = useFaceRecognition()
 
   // Step: 'idle' | 'register' | 'verifying' | 'result'
   const [step, setStep] = useState('idle')
@@ -173,13 +173,20 @@ export default function FaceTest() {
 
       {/* Kamera Scanner di atas */}
       <div style={{ position: 'relative' }}>
-        <FaceScanner
-          mode="verify"
-          referenceDescriptor={savedDescriptor}
-          onCapture={handleVerifyCapture}
-          onFail={() => {}}
-          userName={user?.nama}
-        />
+        {modelReady ? (
+          <FaceScanner
+            mode="verify"
+            referenceDescriptor={savedDescriptor}
+            onCapture={handleVerifyCapture}
+            onFail={() => {}}
+            userName={user?.nama}
+          />
+        ) : (
+          <div style={{ height: '300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', color: '#fff', gap: '10px' }}>
+            <div style={{ width: '36px', height: '36px', border: '3px solid #fff', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Menyiapkan kamera...</p>
+          </div>
+        )}
         <div style={{ position: 'absolute', top: 12, left: 12, backgroundColor: 'rgba(0,0,0,0.55)', color: '#fff', padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: '600' }}>
           📹 Kamera Langsung
         </div>

@@ -1,4 +1,4 @@
-﻿import React, { useRef, useState, useEffect, useCallback } from 'react'
+import React, { useRef, useState, useEffect, useCallback } from 'react'
 import Webcam from 'react-webcam'
 import * as faceapi from 'face-api.js'
 import './FaceScanner.css'
@@ -34,12 +34,15 @@ export default function FaceScanner({ mode = 'verify', referenceDescriptor, onCa
     const canvas = canvasRef.current
     if (!video || !canvas || video.readyState < 2) return
 
+    // Cek model sudah benar-benar siap
+    if (!faceapi.nets.tinyFaceDetector.isLoaded) return
+
     try {
       const displaySize = { width: video.videoWidth, height: video.videoHeight }
       faceapi.matchDimensions(canvas, displaySize)
 
       const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.45, inputSize: 320 }))
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.3, inputSize: 320 }))
         .withFaceLandmarks()
         .withFaceDescriptor()
 
@@ -75,8 +78,14 @@ export default function FaceScanner({ mode = 'verify', referenceDescriptor, onCa
   }, [mode, referenceDescriptor])
 
   useEffect(() => {
-    intervalRef.current = setInterval(scan, 200)
-    return () => clearInterval(intervalRef.current)
+    // Delay sedikit agar model pastikan sudah siap sebelum mulai scan
+    const timeout = setTimeout(() => {
+      intervalRef.current = setInterval(scan, 300)
+    }, 500)
+    return () => {
+      clearTimeout(timeout)
+      clearInterval(intervalRef.current)
+    }
   }, [scan])
 
   const handleCapture = useCallback(async () => {
