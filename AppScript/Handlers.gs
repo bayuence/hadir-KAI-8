@@ -1541,6 +1541,14 @@ function testKirimWhatsAppFonnte() {
 // Tidak butuh token karena data ini hanya read-only & tidak sensitif.
 // ============================================================
 function handleGetPenugasanPublic(data) {
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get('penugasan_public_v1');
+  if (cached) {
+    try {
+      return { success: true, data: JSON.parse(cached) };
+    } catch (e) {}
+  }
+
   var sheet = getOrCreatePenugasanSheet();
   var rows = sheet.getDataRange().getValues();
   var unitList = [], lokasiList = [];
@@ -1562,7 +1570,9 @@ function handleGetPenugasanPublic(data) {
     }
   }
 
-  return { success: true, data: { unitList: unitList, lokasiList: lokasiList } };
+  var resData = { unitList: unitList, lokasiList: lokasiList };
+  try { cache.put('penugasan_public_v1', JSON.stringify(resData), 300); } catch(e) {}
+  return { success: true, data: resData };
 }
 
 // ============================================================
