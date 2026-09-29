@@ -16,7 +16,7 @@ function handleGetPesertaList(data) {
   var sheet = getSheet('WEB Register');
   if (!sheet) return { success: true, data: [] };
 
-  var rows = sheet.getDataRange().getDisplayValues();
+  var rows = sheet.getDataRange().getValues();
   var list = [];
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][1] && rows[i][12] === 'active') {
