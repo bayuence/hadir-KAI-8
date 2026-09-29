@@ -65,7 +65,7 @@ export const api = {
   // ─── AUTH ─────────────────────────────────────────────────
   getPesertaList: () => fetchGAS({ action: 'getPesertaList' }),
 
-  login: (nama, tanggalLahir) => fetchGAS({ action: 'login', nama, tanggalLahir }),
+  login: (nama, nim) => fetchGAS({ action: 'login', nama, nim }),
 
   daftar: (payload) => fetchGAS({ action: 'daftar', ...payload }),
 

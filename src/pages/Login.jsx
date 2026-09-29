@@ -39,8 +39,8 @@ export default function Login() {
   const [namaSelected, setNamaSelected] = useState(null)   // { id, nama } | null
   const [showDropdown, setShowDropdown] = useState(false)
   const [tanggal, setTanggal]           = useState('')
-  const [bulan, setBulan]               = useState('')
-  const [tahun, setTahun]               = useState('')
+  const [nim, setNim]                   = useState('')
+  const [showNim, setShowNim]           = useState(false)
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState('')
 
@@ -182,25 +182,18 @@ export default function Login() {
       return setError('Nama tidak ditemukan. Pilih nama dari dropdown.')
     }
 
-    // Validasi tanggal lahir
-    const tgl = parseInt(tanggal, 10)
-    const thn = parseInt(tahun, 10)
-    if (!tanggal || !bulan || !tahun) return setError('Lengkapi tanggal lahir kamu.')
-    if (isNaN(tgl) || tgl < 1 || tgl > 31) return setError('Tanggal tidak valid (1–31).')
-    if (String(tahun).length !== 4 || isNaN(thn)) return setError('Tahun harus 4 digit.')
-    if (thn < 1990 || thn > 2015) return setError('Tahun lahir di luar rentang yang wajar.')
-
-    const tglLahir = `${String(tgl).padStart(2,'0')}/${String(bulan).padStart(2,'0')}/${tahun}`
+    // Validasi NIM
+    if (!nim.trim()) return setError('NIM harus diisi.')
 
     setLoading(true)
     try {
-      const data = await api.login(targetPeserta.nama, tglLahir)
+      const data = await api.login(targetPeserta.nama, nim)
       if (!isMounted.current) return
       if (data.success) {
         loginContext(data.user, data.token)
         // Redirect otomatis via PublicRoute di App.jsx
       } else {
-        setError(data.message || 'Nama atau tanggal lahir tidak cocok. Periksa kembali.')
+        setError(data.message || 'Nama atau NIM tidak cocok. Periksa kembali.')
       }
     } catch {
       if (!isMounted.current) return
@@ -229,7 +222,7 @@ export default function Login() {
 
         <form className="login-form animate-fade-up" onSubmit={handleLogin} noValidate>
 
-          {/* ── Input Nama ── */}
+          {/* ── Input Nama / NIM ── */}
           <div className="input-group" ref={dropdownRef}>
             <div className="input-label-row">
               <label className="input-label">Nama Kamu</label>
@@ -263,6 +256,12 @@ export default function Login() {
                   value={namaCari}
                   onChange={handleNamaChange}
                   onFocus={() => setShowDropdown(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (filtered.length > 0) pilihNama(filtered[0])
+                    }
+                  }}
                   autoComplete="off"
                   autoCorrect="off"
                   spellCheck={false}
@@ -302,47 +301,48 @@ export default function Login() {
             </div>
           </div>
 
-          {/* ── Tanggal Lahir ── */}
+          {/* ── NIM ── */}
           <div className="input-group">
-            <label className="input-label">Tanggal Lahir</label>
-            <div className="dob-row">
-              <div className="dob-field">
-                <input
-                  className="input dob-input"
-                  type="number"
-                  placeholder="DD"
-                  min="1"
-                  max="31"
-                  value={tanggal}
-                  onChange={e => { setTanggal(e.target.value); setError('') }}
-                  inputMode="numeric"
-                />
-                <span className="dob-label">Tanggal</span>
-              </div>
-              <div className="dob-field">
-                <select
-                  className="input dob-input"
-                  value={bulan}
-                  onChange={e => { setBulan(e.target.value); setError('') }}
-                >
-                  <option value="">MM</option>
-                  {BULAN.map((b, i) => <option key={i} value={i + 1}>{b}</option>)}
-                </select>
-                <span className="dob-label">Bulan</span>
-              </div>
-              <div className="dob-field">
-                <input
-                  className="input dob-input"
-                  type="number"
-                  placeholder="YYYY"
-                  min="1990"
-                  max="2015"
-                  value={tahun}
-                  onChange={e => { setTahun(e.target.value); setError('') }}
-                  inputMode="numeric"
-                />
-                <span className="dob-label">Tahun</span>
-              </div>
+            <label className="input-label">NIM (Nomor Induk Mahasiswa / Siswa)</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                className="input"
+                type={showNim ? "text" : "password"}
+                placeholder="Masukkan NIM kamu..."
+                value={nim}
+                onChange={e => { setNim(e.target.value); setError('') }}
+                style={{ paddingRight: '2.5rem' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNim(!showNim)}
+                style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  color: '#9ca3af',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title={showNim ? "Sembunyikan NIM" : "Tampilkan NIM"}
+              >
+                {showNim ? (
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
 

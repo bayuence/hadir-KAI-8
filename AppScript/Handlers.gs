@@ -28,8 +28,7 @@ function handleGetPesertaList(data) {
       }
       list.push({
         id:       rows[i][15],
-        nim:      rows[i][5] || '',
-        nama:     rows[i][1],
+                nama:     rows[i][1],
         idLokasi: rows[i][14] || '',
         foto:     fotoUrl
       });
@@ -64,22 +63,20 @@ function normalizeTanggalLahir(str) {
 }
 
 function handleLogin(data) {
-  var nama = data.nama, tglLahir = data.tanggalLahir;
-  if (!nama || !tglLahir) return { success: false, message: 'Nama dan tanggal lahir harus diisi' };
+  var nama = data.nama, nim = data.nim;
+  if (!nama || !nim) return { success: false, message: 'Nama dan NIM harus diisi' };
 
   var sheet = getSheet('WEB Register');
   if (!sheet) return { success: false, message: 'Database WEB Register tidak ditemukan.' };
 
   var rows = sheet.getDataRange().getDisplayValues();
-  var inputTglNorm = normalizeTanggalLahir(tglLahir);
+  
 
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][1]).toLowerCase().trim() === String(nama).toLowerCase().trim()) {
-      var rowTgl = rows[i][2].trim();
-      if (rowTgl === '') return { success: false, message: 'Tanggal lahir belum diatur oleh admin. Minta admin untuk mengaturnya di WEB Register.'};
-      
-      var rowTglNorm = normalizeTanggalLahir(rowTgl);
-      if (rowTglNorm === inputTglNorm) {
+      var rowNim = String(rows[i][5] || '').trim();
+        if (rowNim === '') return { success: false, message: 'NIM belum diatur oleh admin. Minta admin untuk mengaturnya di WEB Register.'};
+        if (rowNim.toLowerCase() === String(nim).toLowerCase().trim()) {
         if (rows[i][12] === 'pending')  return { success: false, message: 'Akun Anda menunggu persetujuan admin.' };
         if (rows[i][12] === 'rejected') return { success: false, message: 'Akun Anda ditolak.' };
         if (rows[i][12] !== 'active')   return { success: false, message: 'Status akun tidak valid.' };
