@@ -246,7 +246,7 @@ function handleGetStatusHariIni(data) {
   for (var i = rows.length - 1; i >= 1; i--) {
     // Normalize kedua sisi agar format apapun bisa cocok
     if (normalizeTanggal(rows[i][0]) === normalizeTanggal(today) && rows[i][1] === data.idPeserta) {
-      return { success: true, data: { sudahMasuk: !!rows[i][4], sudahPulang: !!rows[i][7], jamMasuk: rows[i][4] || null, jamPulang: rows[i][7] || null }};
+      return { success: true, data: { sudahMasuk: !!rows[i][4], sudahPulang: !!rows[i][6], jamMasuk: rows[i][4] || null, jamPulang: rows[i][6] || null }};
     }
   }
   return { success: true, data: { sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null } };
@@ -315,7 +315,7 @@ function handleCheckOut(data) {
   var todayNormCO = normalizeTanggal(today);
   for (var i = rows.length - 1; i >= 1; i--) {
     // Normalize tanggal di kedua sisi agar berbagai format bisa cocok (DD/MM/YYYY vs M/D/YYYY)
-    if (normalizeTanggal(rows[i][0]) === todayNormCO && rows[i][1] === data.idPeserta && rows[i][4] && !rows[i][7]) { targetRow = i + 1; break; }
+    if (normalizeTanggal(rows[i][0]) === todayNormCO && rows[i][1] === data.idPeserta && rows[i][4] && !rows[i][6]) { targetRow = i + 1; break; }
   }
   if (targetRow === -1) return { success: false, message: 'Belum presensi masuk atau sudah pulang.' };
 
@@ -323,10 +323,10 @@ function handleCheckOut(data) {
   var totalJam  = hitungTotalJam(String(rows[targetRow - 1][4]), jamPulang);
   var fotoUrl   = data.foto64 ? uploadFoto(data.foto64, 'pulang_' + data.idPeserta + '_' + today.replace(/\//g,'-') + '.jpg') : '';
 
-  dataSheet.getRange(targetRow, 8).setValue(jamPulang);
-  dataSheet.getRange(targetRow, 9).setValue(fotoUrl);
-  dataSheet.getRange(targetRow, 10).setValue(totalJam);
-  dataSheet.getRange(targetRow, 12).setValue(data.latitude + ',' + data.longitude);
+  dataSheet.getRange(targetRow, 7).setValue(jamPulang);
+  dataSheet.getRange(targetRow, 8).setValue(fotoUrl);
+  dataSheet.getRange(targetRow, 9).setValue(totalJam);
+  dataSheet.getRange(targetRow, 11).setValue(data.latitude + ',' + data.longitude);
   return { success: true, jamPulang: jamPulang, totalJam: totalJam };
 }
 
@@ -341,7 +341,7 @@ function handleGetRiwayat(data) {
     if (rows[i][1] === data.idPeserta) {
       // Normalisasi format tanggal agar konsisten (handle M/D/YYYY dari form lama)
       var tglNormal = normalizeTanggal(rows[i][0]);
-      result.push({ no: no++, tanggal: tglNormal, lokasi: rows[i][3], jamMasuk: rows[i][4], fotoMasuk: rows[i][6], jamPulang: rows[i][7], fotoPulang: rows[i][8], totalJam: rows[i][9], gpsMasuk: rows[i][10], gpsPulang: rows[i][11], status: rows[i][12] });
+      result.push({ no: no++, tanggal: tglNormal, lokasi: rows[i][3], jamMasuk: rows[i][4], fotoMasuk: rows[i][5], jamPulang: rows[i][6], fotoPulang: rows[i][7], totalJam: rows[i][8], gpsMasuk: rows[i][9], gpsPulang: rows[i][10], status: rows[i][11] });
     }
   }
   return { success: true, data: result.reverse() };
