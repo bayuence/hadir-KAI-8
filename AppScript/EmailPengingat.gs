@@ -92,8 +92,8 @@ function kirimNotifikasiTerpadu(p, subjekEmail, pesan) {
 // 1. PENGINGAT PRA-MASUK — 07:45
 // ─────────────────────────────────────────────────────────────
 function emailPengingatPreMasuk() {
-  var dayOfWeek = new Date().getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) return; // Skip weekend
+  var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
+  if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
 
   var peserta = getPesertaAktif();
   peserta.forEach(function(p) {
@@ -115,8 +115,8 @@ function emailPengingatPreMasuk() {
 // 2. CEK TOLERANSI MASUK — 08:30
 // ─────────────────────────────────────────────────────────────
 function emailCekToleransiMasuk() {
-  var dayOfWeek = new Date().getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) return; // Skip weekend
+  var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
+  if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
 
   var peserta = getPesertaAktif();
   peserta.forEach(function(p) {
@@ -138,8 +138,8 @@ function emailCekToleransiMasuk() {
 // 3. PENGINGAT MENJELANG ISTIRAHAT — 11:50
 // ─────────────────────────────────────────────────────────────
 function emailPengingatIstirahat() {
-  var dayOfWeek = new Date().getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) return; // Skip weekend
+  var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
+  if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
 
   var peserta = getPesertaAktif();
   peserta.forEach(function(p) {
@@ -158,8 +158,8 @@ function emailPengingatIstirahat() {
 // 4. PENGINGAT KEMBALI KERJA — 13:00
 // ─────────────────────────────────────────────────────────────
 function emailPengingatKembaliKerja() {
-  var dayOfWeek = new Date().getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) return; // Skip weekend
+  var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
+  if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
 
   var peserta = getPesertaAktif();
   peserta.forEach(function(p) {
@@ -178,8 +178,8 @@ function emailPengingatKembaliKerja() {
 // 5. CEK TOLERANSI KEMBALI ISTIRAHAT — 13:15
 // ─────────────────────────────────────────────────────────────
 function emailCekToleransiKembaliIstirahat() {
-  var dayOfWeek = new Date().getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) return; // Skip weekend
+  var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
+  if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
   // Note: Hanya berlaku pengingat tanpa logic spesifik check kembali
 }
 
@@ -187,8 +187,8 @@ function emailCekToleransiKembaliIstirahat() {
 // 6. PENGINGAT MENJELANG PULANG — 16:30
 // ─────────────────────────────────────────────────────────────
 function emailPengingatPrePulang() {
-  var dayOfWeek = new Date().getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) return; // Skip weekend
+  var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
+  if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
 
   var peserta = getPesertaAktif();
   peserta.forEach(function(p) {
@@ -209,8 +209,8 @@ function emailPengingatPrePulang() {
 // 7. CEK PRESENSI PULANG — 17:15
 // ─────────────────────────────────────────────────────────────
 function emailCekPresensiPulang() {
-  var dayOfWeek = new Date().getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) return; // Skip weekend
+  var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
+  if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
 
   var peserta = getPesertaAktif();
   peserta.forEach(function(p) {

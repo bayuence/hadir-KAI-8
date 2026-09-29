@@ -69,9 +69,7 @@ function handleLogin(data) {
   var sheet = getSheet('WEB Register');
   if (!sheet) return { success: false, message: 'Database WEB Register tidak ditemukan.' };
 
-  var rows = sheet.getDataRange().getDisplayValues();
-  
-
+  var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][1]).toLowerCase().trim() === String(nama).toLowerCase().trim()) {
       var rowNim = String(rows[i][5] || '').trim();
@@ -120,7 +118,8 @@ function handleLogin(data) {
         return {
           success: true, token: token,
           user: { 
-            id: rows[i][15], 
+            id: rows[i][15],
+        nim: rows[i][5] || '', 
             nim: rows[i][5] || '',
             nama: rows[i][1], 
             tanggalLahir: rows[i][2],
@@ -166,7 +165,7 @@ function handleGetProfile(data) {
   var sheet = getSheet('WEB Register');
   if (!sheet) return { success: false, message: 'Sheet tidak ditemukan.' };
   
-  var rows = sheet.getDataRange().getDisplayValues();
+  var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][15] === idPeserta) {
       // Konversi URL foto ke format lh3 CDN Google
@@ -236,17 +235,23 @@ function handleGetProfile(data) {
 function handleGetStatusHariIni(data) {
   if (!validateSession(data.token)) return { success: false, message: 'Sesi tidak valid.' };
   var today = formatTanggal();
+  var cacheKey = 'status_' + data.idPeserta + '_' + normalizeTanggal(today);
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get(cacheKey);
+  if (cached) { try { return { success: true, data: JSON.parse(cached) }; } catch(e){} }
+  
   var sheet = getSheet('WEB Presensi');
   if (!sheet) return { success: true, data: { sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null } };
-
   var rows = sheet.getDataRange().getValues();
+  var statusData = { sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null };
   for (var i = rows.length - 1; i >= 1; i--) {
-    // Normalize kedua sisi agar format apapun bisa cocok
     if (normalizeTanggal(rows[i][0]) === normalizeTanggal(today) && rows[i][1] === data.idPeserta) {
-      return { success: true, data: { sudahMasuk: !!rows[i][4], sudahPulang: !!rows[i][6], jamMasuk: rows[i][4] || null, jamPulang: rows[i][6] || null }};
+      statusData = { sudahMasuk: !!rows[i][4], sudahPulang: !!rows[i][6], jamMasuk: rows[i][4] || null, jamPulang: rows[i][6] || null };
+      break;
     }
   }
-  return { success: true, data: { sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null } };
+  try { cache.put(cacheKey, JSON.stringify(statusData), 21600); } catch(e){}
+  return { success: true, data: statusData };
 }
 
 function handleCheckIn(data) {
@@ -328,20 +333,32 @@ function handleCheckOut(data) {
 }
 
 function handleGetRiwayat(data) {
-  if (!validateSession(data.token)) return { success: false, message: 'Sesi invalid.' };
+  if (!validateSession(data.token)) return { success: false, message: 'Sesi tidak valid.' };
+  var cacheKey = 'riwayat_' + data.idPeserta;
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get(cacheKey);
+  if (cached) { try { return { success: true, data: JSON.parse(cached) }; } catch(e){} }
+  
   var sheet = getSheet('WEB Presensi');
   if (!sheet) return { success: true, data: [] };
-  
-  var rows = sheet.getDataRange().getDisplayValues(), result = [];
-  var no = 1;
-  for (var i = 1; i < rows.length; i++) {
+  var rows = sheet.getDataRange().getValues();
+  var result = [];
+  for (var i = rows.length - 1; i >= 1; i--) {
     if (rows[i][1] === data.idPeserta) {
-      // Normalisasi format tanggal agar konsisten (handle M/D/YYYY dari form lama)
-      var tglNormal = normalizeTanggal(rows[i][0]);
-      result.push({ no: no++, tanggal: tglNormal, lokasi: rows[i][3], jamMasuk: rows[i][4], fotoMasuk: rows[i][5], jamPulang: rows[i][6], fotoPulang: rows[i][7], totalJam: rows[i][8], gpsMasuk: rows[i][9], gpsPulang: rows[i][10], status: rows[i][11] });
+      var dStr = String(rows[i][0] || '');
+      result.push({
+        tanggal: normalizeTanggal(dStr),
+        jamMasuk: rows[i][4] || null,
+        jamPulang: rows[i][6] || null,
+        lokasiMasuk: rows[i][5] || null,
+        lokasiPulang: rows[i][7] || null,
+        status: (rows[i][6]) ? 'Hadir' : 'Belum Pulang'
+      });
+      if (result.length >= 31) break;
     }
   }
-  return { success: true, data: result.reverse() };
+  try { cache.put(cacheKey, JSON.stringify(result), 21600); } catch(e){}
+  return { success: true, data: result };
 }
 
 // ─── HANDLER IZIN ────────────────────────────────────────────
@@ -734,7 +751,7 @@ function handleGetPendingUsers(data) {
 function handleApproveUser(data) {
   if (!isAdminValid(data.adminToken)) return { success: false };
   var sheet = getSheet('WEB Register');
-  var rows = sheet.getDataRange().getDisplayValues();
+  var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][15] === data.idPeserta) {
       sheet.getRange(i + 1, 14).setValue('active');
@@ -749,365 +766,16 @@ function handleRejectUser(data) {
   return handleDeleteUserAdmin(data);
 }
 
-function handleGetAllUsersAdmin(data) {
-  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
-  var sheet = getSheet('WEB Register');
-  if (!sheet) return { success: true, data: [] };
-  var rows = sheet.getDataRange().getDisplayValues(), result = [];
-  for (var i = 1; i < rows.length; i++) {
-    if (!rows[i][1]) continue; // skip empty rows
-    var fotoUrl = rows[i][11] || '';
-    if (fotoUrl) {
-      var idFoto = extractDriveId(fotoUrl);
-      if (idFoto) fotoUrl = 'https://drive.google.com/thumbnail?id=' + idFoto + '&sz=w200';
-    }
-    result.push({
-      id: rows[i][15],
-      nim: rows[i][5] || '',
-      nama: rows[i][1],
-      tanggalLahir: rows[i][2],
-      alamat: rows[i][3],
-      noHp: rows[i][4],
-      email: rows[i][6],
-      kampus: rows[i][7],
-      jurusan: rows[i][8],
-      mulaiMagang: rows[i][9],
-      selesaiMagang: rows[i][10],
-      foto: fotoUrl,
-      status: rows[i][12] || 'active',
-      role: rows[i][13] || 'intern',
-      idLokasi: rows[i][14] || ''
-    });
-  }
-  return { success: true, data: result };
-}
-
-function handleSaveUserAdmin(data) {
-  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
-  var sheet = getSheet('WEB Register');
-  if (!sheet) return { success: false, message: 'Sheet tidak ditemukan.' };
-  var rows = sheet.getDataRange().getDisplayValues();
-  
-  if (data.id) {
-    for (var i = 1; i < rows.length; i++) {
-      if (rows[i][15] === data.id) {
-        if (data.nama !== undefined) sheet.getRange(i + 1, 2).setValue(data.nama.trim());
-        if (data.tanggalLahir !== undefined) sheet.getRange(i + 1, 3).setValue(data.tanggalLahir.trim());
-        if (data.alamat !== undefined) sheet.getRange(i + 1, 4).setValue(data.alamat);
-        if (data.noHp !== undefined) sheet.getRange(i + 1, 10).setValue(data.noHp);
-        if (data.email !== undefined) sheet.getRange(i + 1, 10).setValue(data.email);
-        if (data.kampus !== undefined) sheet.getRange(i + 1, 10).setValue(data.kampus);
-        if (data.jurusan !== undefined) sheet.getRange(i + 1, 10).setValue(data.jurusan);
-        if (data.mulaiMagang !== undefined) sheet.getRange(i + 1, 10).setValue(data.mulaiMagang);
-        if (data.selesaiMagang !== undefined) sheet.getRange(i + 1, 11).setValue(data.selesaiMagang);
-        if (data.status !== undefined) sheet.getRange(i + 1, 14).setValue(data.status);
-        if (data.role !== undefined) sheet.getRange(i + 1, 15).setValue(data.role);
-        if (data.idLokasi !== undefined) sheet.getRange(i + 1, 15).setValue(data.idLokasi);
-        return { success: true, message: 'Data peserta berhasil diperbarui.' };
-      }
-    }
-    return { success: false, message: 'Peserta tidak ditemukan.' };
-  } else {
-    var newId = generatePesertaId();
-    sheet.appendRow([
-      new Date().toISOString(),
-      data.nama.trim(),
-      data.tanggalLahir.trim(),
-      data.alamat || '',
-      data.noHp || '',
-      data.email || '',
-      data.kampus || '',
-      data.jurusan || '',
-      data.mulaiMagang || '',
-      data.selesaiMagang || '',
-      '', // fotoUrl kosong dulu dari admin
-      data.status || 'active',
-      data.role || 'intern',
-      data.idLokasi || '',
-      newId
-    ]);
-    return { success: true, message: 'Peserta baru berhasil ditambahkan.' };
-  }
-}
-
-function handleDeleteUserAdmin(data) {
-  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
-  var sheet = getSheet('WEB Register');
-  if (!sheet) return { success: false, message: 'Sheet tidak ditemukan.' };
-  var rows = sheet.getDataRange().getDisplayValues();
-  for (var i = 1; i < rows.length; i++) {
-    if (rows[i][15] === data.idPeserta) {
-      sheet.deleteRow(i + 1);
-      return { success: true, message: 'Peserta berhasil dihapus.' };
-    }
-  }
-  return { success: false, message: 'Peserta tidak ditemukan.' };
-}
-
-function handleToggleAdminRole(data) {
-  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
-  var sheet = getSheet('WEB Register');
-  if (!sheet) return { success: false, message: 'Sheet tidak ditemukan.' };
-  var rows = sheet.getDataRange().getDisplayValues();
-  for (var i = 1; i < rows.length; i++) {
-    if (rows[i][15] === data.idPeserta) {
-      var newRole = data.role === 'admin' ? 'admin' : 'intern';
-      sheet.getRange(i + 1, 15).setValue(newRole);
-      return { success: true, message: 'Role berhasil diubah menjadi ' + newRole + '.' };
-    }
-  }
-  return { success: false, message: 'Peserta tidak ditemukan.' };
-}
-
-// ─── UTILITIES KECIL ─────────────────────────────────────────
-function hitungJarak(lat1, lon1, lat2, lon2) {
-  var R = 6371000, rad = Math.PI / 180;
-  var dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
-  var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon/2) * Math.sin(dLon/2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function uploadFoto(base64Data, filename) {
-  try {
-    var clean = base64Data.indexOf(',') > -1 ? base64Data.split(',')[1] : base64Data;
-    var folder;
-    if (CONFIG.FOLDER_FOTO_ID && CONFIG.FOLDER_FOTO_ID !== 'ISI_ID_FOLDER_DRIVE_FOTO') {
-      try { folder = DriveApp.getFolderById(CONFIG.FOLDER_FOTO_ID); } catch(e) { folder = DriveApp.getRootFolder(); }
-    } else {
-      folder = DriveApp.getRootFolder();
-    }
-    var file = folder.createFile(Utilities.newBlob(Utilities.base64Decode(clean), 'image/jpeg', filename));
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return 'https://drive.google.com/uc?id=' + file.getId();
-  } catch(err) { return ''; }
-}
-
-function formatTanggal(dateStr) {
-  var d = dateStr ? new Date(dateStr) : new Date();
-  if (isNaN(d.getTime())) { // Jika bukan format date valid, kembalikan string aslinya
-    if (typeof dateStr === 'string' && dateStr.includes('/')) return dateStr;
-    d = new Date();
-  }
-  return [String(d.getDate()).padStart(2, '0'), String(d.getMonth() + 1).padStart(2, '0'), d.getFullYear()].join('/');
-}
-
-// Normalisasi berbagai format tanggal ke DD/MM/YYYY
-// Handle: Date Object, "DD/MM/YYYY" (lokal web app), "M/D/YYYY" (Google Sheets US locale)
-function normalizeTanggal(tglStr) {
-  if (!tglStr) return '';
-  if (tglStr instanceof Date) {
-    var dayObj = tglStr.getDate();
-    var monthObj = tglStr.getMonth() + 1;
-    var yearObj = tglStr.getFullYear();
-    return String(dayObj).padStart(2, '0') + '/' + String(monthObj).padStart(2, '0') + '/' + yearObj;
-  }
-  var s = String(tglStr).trim();
-
-  // ── Handle format ISO: YYYY-MM-DD (dari HTML date input / frontend) ──
-  var isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (isoMatch) {
-    return isoMatch[3] + '/' + isoMatch[2] + '/' + isoMatch[1]; // → DD/MM/YYYY
-  }
-
-  var parts = s.split('/');
-  if (parts.length !== 3) return s;
-
-  var p0 = parts[0], p1 = parts[1], p2 = parts[2];
-  var n0 = parseInt(p0), n1 = parseInt(p1), n2 = parseInt(p2);
-
-  var day, month, year;
-
-  if (n0 > 12) {
-    // Pasti DD/MM/YYYY (hari tidak mungkin bulan)
-    day = n0; month = n1; year = n2;
-  } else if (n1 > 12) {
-    // Pasti M/D/YYYY format AS (hari di tengah, bulan di depan)
-    month = n0; day = n1; year = n2;
-  } else if (p0.length === 2 && p0.charAt(0) === '0') {
-    // Zero-padded "01" → pasti dari web app → DD/MM/YYYY
-    day = n0; month = n1; year = n2;
-  } else if (p1.length === 2 && p1.charAt(0) === '0') {
-    // "9/01/..." → hari-nya zero-padded → M/DD? Tetap default DD/MM
-    day = n0; month = n1; year = n2;
-  } else {
-    // Ambiguous (e.g. "9/1/2026"): 
-    // Data dari Google Form lama biasanya tidak zero-padded → asumsi M/D/YYYY
-    // Data dari web app baru selalu zero-padded sehingga sudah tertangani di atas
-    month = n0; day = n1; year = n2;
-  }
-
-  // Validasi hasil: jika hari atau bulan tidak masuk akal, kembalikan aslinya
-  if (day < 1 || day > 31 || month < 1 || month > 12) return s;
-
-  return String(day).padStart(2, '0') + '/' + String(month).padStart(2, '0') + '/' + year;
-}
 
 
-
-
-function formatJam(dateObj) {
-  if (!dateObj) return '';
-  // Jika sudah berbentuk string HH:MM:SS, langsung kembalikan
-  if (typeof dateObj === 'string' && dateObj.includes(':')) {
-    var parts = dateObj.split(' ');
-    var timePart = parts[parts.length - 1]; // Mengambil "08:01:54" dari "25/06/2026 08:01:54"
-    return timePart;
-  }
-  var d = new Date(dateObj);
-  if (isNaN(d.getTime())) return '';
-  return [String(d.getHours()).padStart(2, '0'), String(d.getMinutes()).padStart(2, '0'), String(d.getSeconds()).padStart(2, '0')].join(':');
-}
-
-function hitungTotalJam(jamMasuk, jamPulang) {
-  if (!jamMasuk || !jamPulang || jamMasuk === '' || jamPulang === '') return '';
-  try {
-    // Support format HH:MM dan HH:MM:SS
-    var pm = String(jamMasuk).trim().split(':').map(Number);
-    var pp = String(jamPulang).trim().split(':').map(Number);
-    if (pm.length < 2 || pp.length < 2) return '';
-    // Validasi NaN — jika ada elemen NaN, kembalikan kosong
-    if (isNaN(pm[0]) || isNaN(pm[1]) || isNaN(pp[0]) || isNaN(pp[1])) return '';
-
-    // Hitung selisih dalam detik (inklusif detik jika format HH:MM:SS)
-    var detikMasuk  = pm[0] * 3600 + pm[1] * 60 + (pm[2] || 0);
-    var detikPulang = pp[0] * 3600 + pp[1] * 60 + (pp[2] || 0);
-    var selisihDetik = detikPulang - detikMasuk;
-    if (selisihDetik <= 0) return '0j 0m 0d';
-
-    var j = Math.floor(selisihDetik / 3600);
-    var m = Math.floor((selisihDetik % 3600) / 60);
-    var d = selisihDetik % 60;
-    return j + 'j ' + m + 'm ' + d + 'd';
-  } catch(e) {
-    return ''; // Jika format gagal, kembalikan kosong agar tidak error merah
-  }
-}
-
-// ─── MANAJEMEN UNIT KERJA & LOKASI (HIERARKI 1 SHEET) ────────
-// Sheet: WEB Penugasan
-// Kolom: A=ID, B=Tipe(unit_kerja/lokasi), C=ID Induk, D=Nama, E=Alamat, F=Latitude, G=Longitude, H=Radius
-
-function getOrCreatePenugasanSheet() {
-  var sheet = getOrCreateSheet('WEB Penugasan');
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['ID', 'Tipe', 'ID Induk', 'Nama', 'Alamat', 'Latitude', 'Longitude', 'Radius (Meter)']);
-    // Seed data contoh KAI Daop 8
-    sheet.appendRow(['UK-001', 'unit_kerja', '', 'Unit Operasi', '', '', '', '']);
-    sheet.appendRow(['UK-002', 'unit_kerja', '', 'Unit Sinyal & Telekomunikasi', '', '', '', '']);
-    sheet.appendRow(['UK-003', 'unit_kerja', '', 'Unit Traksi', '', '', '', '']);
-    sheet.appendRow(['LOK-001', 'lokasi', 'UK-001', 'Kantor Daop 8 Surabaya', 'Jl. Pasarturi No.1, Surabaya', '-7.2484', '112.7360', 100]);
-    sheet.appendRow(['LOK-002', 'lokasi', 'UK-001', 'Stasiun Surabaya Gubeng', 'Jl. Stasiun Gubeng, Surabaya', '-7.2654', '112.7523', 250]);
-    sheet.appendRow(['LOK-003', 'lokasi', 'UK-001', 'Dipo Lokomotif Sidotopo', 'Sidotopo, Surabaya', '-7.2351', '112.7612', 500]);
-  }
-  return sheet;
-}
-
-function handleGetPenugasan(data) {
-  var sheet = getOrCreatePenugasanSheet();
-  var rows = sheet.getDataRange().getValues(); // Gunakan getValues() agar angka koordinat tidak dibulatkan jadi 4 desimal
-  var unitList = [], lokasiList = [];
-  for (var i = 1; i < rows.length; i++) {
-    if (!rows[i][0]) continue;
-    if (rows[i][1] === 'unit_kerja') {
-      unitList.push({ id: rows[i][0], tipe: 'unit_kerja', nama: rows[i][3] });
-    } else if (rows[i][1] === 'lokasi') {
-      lokasiList.push({
-        id: rows[i][0], tipe: 'lokasi', idInduk: rows[i][2], nama: rows[i][3],
-        alamat: rows[i][4],
-        lat: parseFloat(rows[i][6]) || null,
-        lng: parseFloat(rows[i][7]) || null,
-        radius: parseInt(rows[i][8]) || 100
-      });
-    }
-  }
-  return { success: true, data: { unitList: unitList, lokasiList: lokasiList } };
-}
-
-function handleSavePenugasan(data) {
-  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
-  if (!data.nama) return { success: false, message: 'Nama harus diisi.' };
-  if (!data.tipe) return { success: false, message: 'Tipe harus diisi (unit_kerja / lokasi).' };
-
-  var sheet = getOrCreatePenugasanSheet();
-  var rows = sheet.getDataRange().getDisplayValues();
-
-  // UPDATE jika ID sudah ada
-  if (data.id) {
-    for (var i = 1; i < rows.length; i++) {
-      if (rows[i][0] === data.id) {
-        sheet.getRange(i + 1, 4).setValue(data.nama);
-        sheet.getRange(i + 1, 10).setValue(data.alamat || '');
-        // Tambahkan petik (') agar Sheets menyimpannya sebagai teks murni (Plain Text)
-        // Ini mencegah bug locale Indonesia yang mengubah titik menjadi pemisah ribuan
-        sheet.getRange(i + 1, 10).setValue(data.lat ? "'" + data.lat : '');
-        sheet.getRange(i + 1, 10).setValue(data.lng ? "'" + data.lng : '');
-        sheet.getRange(i + 1, 10).setValue(data.radius || '');
-        return { success: true, message: 'Data berhasil diperbarui.' };
-      }
-    }
-  }
-
-  // INSERT baru
-  var prefix = data.tipe === 'unit_kerja' ? 'UK' : 'LOK';
-  var newId = prefix + '-' + String(sheet.getLastRow()).padStart(3, '0');
-  sheet.appendRow([
-    newId, data.tipe, data.idInduk || '', data.nama,
-    data.alamat || '', 
-    data.lat ? "'" + data.lat : '', 
-    data.lng ? "'" + data.lng : '', 
-    data.radius || ''
-  ]);
-  return { success: true, message: 'Data berhasil ditambahkan.', id: newId };
-}
-
-function handleDeletePenugasan(data) {
-  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
-  if (!data.id) return { success: false, message: 'ID tidak valid.' };
-
-  var sheet = getOrCreatePenugasanSheet();
-  var rows = sheet.getDataRange().getDisplayValues();
-  for (var i = 1; i < rows.length; i++) {
-    if (rows[i][0] === data.id) {
-      // Jika menghapus unit_kerja, hapus juga semua lokasi anaknya
-      if (rows[i][1] === 'unit_kerja') {
-        for (var j = rows.length - 1; j >= 1; j--) {
-          if (rows[j][2] === data.id) sheet.deleteRow(j + 1);
-        }
-      }
-      // Cari ulang baris yang dihapus setelah loop di atas mungkin mengubah index
-      var freshRows = sheet.getDataRange().getDisplayValues();
-      for (var k = 1; k < freshRows.length; k++) {
-        if (freshRows[k][0] === data.id) { sheet.deleteRow(k + 1); break; }
-      }
-      return { success: true, message: 'Data berhasil dihapus.' };
-    }
-  }
-  return { success: false, message: 'Data tidak ditemukan.' };
-}
-
-function handleAssignLokasi(data) {
-  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
-  if (!data.idPeserta || !data.idLokasi) return { success: false, message: 'Peserta dan Lokasi harus dipilih.' };
-
-  var sheet = getSheet('WEB Register');
-  if (!sheet) return { success: false, message: 'Sheet WEB Register tidak ditemukan.' };
-
-  var rows = sheet.getDataRange().getDisplayValues();
-  for (var i = 1; i < rows.length; i++) {
-    if (rows[i][15] === data.idPeserta) {
-      sheet.getRange(i + 1, 15).setValue(data.idLokasi);
-      return { success: true, message: 'Penempatan lokasi peserta berhasil diperbarui.' };
-    }
-  }
-  return { success: false, message: 'Peserta tidak ditemukan.' };
-}
+// ============================================================
 
 function handleGetAllUsersAdmin(data) {
   if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
   var sheet = getSheet('WEB Register');
   if (!sheet) return { success: true, data: [] };
 
-  var rows = sheet.getDataRange().getDisplayValues();
+  var rows = sheet.getDataRange().getValues();
   var list = [];
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][1]) {
@@ -1118,6 +786,7 @@ function handleGetAllUsersAdmin(data) {
       }
       list.push({
         id:            rows[i][15],
+        nim:           rows[i][5] || '',
         nama:          rows[i][1],
         tanggalLahir:  rows[i][2],
         alamat:        rows[i][3],
@@ -1137,7 +806,6 @@ function handleGetAllUsersAdmin(data) {
   return { success: true, data: list };
 }
 
-// ============================================================
 // INTEGRASI META WHATSAPP CLOUD API (PENGINGAT PRESENSI MASUK)
 // ============================================================
 
@@ -1543,36 +1211,27 @@ function testKirimWhatsAppFonnte() {
 function handleGetPenugasanPublic(data) {
   var cache = CacheService.getScriptCache();
   var cached = cache.get('penugasan_public_v1');
-  if (cached) {
-    try {
-      return { success: true, data: JSON.parse(cached) };
-    } catch (e) {}
-  }
-
-  var sheet = getOrCreatePenugasanSheet();
+  if (cached) { try { return { success: true, data: JSON.parse(cached) }; } catch(e){} }
+  
+  var sheet = getSheet('WEB Penugasan');
+  if (!sheet) return { success: true, data: [] };
   var rows = sheet.getDataRange().getValues();
-  var unitList = [], lokasiList = [];
-
+  var lokasiList = [];
   for (var i = 1; i < rows.length; i++) {
     if (!rows[i][0]) continue;
-    if (rows[i][1] === 'unit_kerja') {
-      unitList.push({ id: rows[i][0], nama: rows[i][3] });
-    } else if (rows[i][1] === 'lokasi') {
+    if (rows[i][1] === 'lokasi') {
       lokasiList.push({
-        id:      rows[i][0],
+        id: rows[i][0],
         idInduk: rows[i][2],
-        nama:    rows[i][3],
-        alamat:  rows[i][4] || '',
-        lat:     parseFloat(rows[i][6]) || null,
-        lng:     parseFloat(rows[i][7]) || null,
-        radius:  parseInt(rows[i][8]) || 100
+        nama: rows[i][3],
+        lat: parseFloat(rows[i][6]) || null,
+        lng: parseFloat(rows[i][7]) || null,
+        radius: parseInt(rows[i][8]) || 100
       });
     }
   }
-
-  var resData = { unitList: unitList, lokasiList: lokasiList };
-  try { cache.put('penugasan_public_v1', JSON.stringify(resData), 300); } catch(e) {}
-  return { success: true, data: resData };
+  try { cache.put('penugasan_public_v1', JSON.stringify(lokasiList), 21600); } catch(e){}
+  return { success: true, data: lokasiList };
 }
 
 // ============================================================

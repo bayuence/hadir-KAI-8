@@ -45,25 +45,33 @@ export function useFaceRecognition() {
     }
   }, [])
 
-  const getDescriptorFromUrl = useCallback(async (imageUrl) => {
-    if (!modelsLoaded) return null
-    return new Promise((resolve) => {
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
+    const getDescriptorFromUrl = useCallback(async (imageUrl) => {
+    if (!modelsLoaded) return null;
+    
+    const tryExtract = (url) => new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
       img.onload = async () => {
         try {
           const detection = await faceapi
-            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.4 }))
+            .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.1, inputSize: 416 }))
             .withFaceLandmarks()
-            .withFaceDescriptor()
-          resolve(detection ? detection.descriptor : null)
+            .withFaceDescriptor();
+          resolve(detection ? detection.descriptor : null);
         } catch (e) {
-          resolve(null)
+          resolve(null);
         }
-      }
-      img.onerror = () => resolve(null)
-      img.src = imageUrl
-    })
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+
+    let desc = await tryExtract(imageUrl);
+    if (!desc && imageUrl.includes('http')) {
+      // Try with cors proxy
+      desc = await tryExtract('https://api.allorigins.win/raw?url=' + encodeURIComponent(imageUrl));
+    }
+    return desc;
   }, [])
 
   const compareDescriptors = useCallback((d1, d2) => {

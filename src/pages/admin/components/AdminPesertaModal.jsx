@@ -85,6 +85,18 @@ export default function AdminPesertaModal({
           </div>
 
           <div className="lok-form-row">
+            
+            <div className="lok-form-group">
+              <label>NIM (Nomor Induk Mahasiswa)</label>
+              <input
+                type="text"
+                className="lok-form-input"
+                placeholder="Misal: 12345678"
+                value={formData.nim || ''}
+                onChange={e => setFormData({ ...formData, nim: e.target.value })}
+              />
+            </div>
+
             {/* Tanggal Lahir — Date Picker Modern */}
             <div className="lok-form-group">
               <label>
