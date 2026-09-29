@@ -230,6 +230,7 @@ export async function generateRekapPDF({ user, token, riwayat, totalHari, totalJ
 
   const bioRows = [
     ['Nama',             profile.nama    || '\u2014'],
+    ['NIM',              profile.nim     || '\u2014'],
     ['Alamat',           profile.alamat  || '\u2014'],
     ['No. HP',           profile.noHp    || '\u2014'],
     ['Email',            profile.email   || '\u2014'],

@@ -19,17 +19,18 @@ function handleGetPesertaList(data) {
   var rows = sheet.getDataRange().getDisplayValues();
   var list = [];
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][1] && rows[i][11] === 'active') {
+    if (rows[i][1] && rows[i][12] === 'active') {
       // Konversi URL foto ke format lh3 CDN Google untuk daftar peserta
-      var fotoUrl = rows[i][10] || '';
+      var fotoUrl = rows[i][11] || '';
       if (fotoUrl) {
         var idFoto = extractDriveId(fotoUrl);
         if (idFoto) fotoUrl = 'https://lh3.googleusercontent.com/d/' + idFoto + '=s200';
       }
       list.push({
-        id:       rows[i][14],
+        id:       rows[i][15],
+        nim:      rows[i][5] || '',
         nama:     rows[i][1],
-        idLokasi: rows[i][13] || '',
+        idLokasi: rows[i][14] || '',
         foto:     fotoUrl
       });
     }
@@ -79,18 +80,18 @@ function handleLogin(data) {
       
       var rowTglNorm = normalizeTanggalLahir(rowTgl);
       if (rowTglNorm === inputTglNorm) {
-        if (rows[i][11] === 'pending')  return { success: false, message: 'Akun Anda menunggu persetujuan admin.' };
-        if (rows[i][11] === 'rejected') return { success: false, message: 'Akun Anda ditolak.' };
-        if (rows[i][11] !== 'active')   return { success: false, message: 'Status akun tidak valid.' };
+        if (rows[i][12] === 'pending')  return { success: false, message: 'Akun Anda menunggu persetujuan admin.' };
+        if (rows[i][12] === 'rejected') return { success: false, message: 'Akun Anda ditolak.' };
+        if (rows[i][12] !== 'active')   return { success: false, message: 'Status akun tidak valid.' };
   
-        var lat = null, lng = null, radius = 100, lokasiNama = rows[i][13], unitKerjaNama = '—';
-        if (rows[i][13]) {
+        var lat = null, lng = null, radius = 100, lokasiNama = rows[i][14], unitKerjaNama = '—';
+        if (rows[i][14]) {
           var penSheet2 = getSheet('WEB Penugasan');
           if (penSheet2) {
             var penRows2 = penSheet2.getDataRange().getValues();
             var idInduk2 = '';
             for (var j = 1; j < penRows2.length; j++) {
-              if (penRows2[j][0] === rows[i][13] && penRows2[j][1] === 'lokasi') {
+              if (penRows2[j][0] === rows[i][14] && penRows2[j][1] === 'lokasi') {
                 lokasiNama = penRows2[j][3];
                 idInduk2 = penRows2[j][2];
                 lat = parseFloat(penRows2[j][5]) || null;
@@ -112,27 +113,28 @@ function handleLogin(data) {
   
         // Konversi URL foto ke format lh3 CDN Google
         // lh3.googleusercontent.com tidak butuh cookie/session, aman di semua browser & Safari
-        var fotoLogin = rows[i][10] || '';
+        var fotoLogin = rows[i][11] || '';
         if (fotoLogin) {
           var idFotoLogin = extractDriveId(fotoLogin);
           if (idFotoLogin) fotoLogin = 'https://lh3.googleusercontent.com/d/' + idFotoLogin + '=s400';
         }
 
-        var token = createSession(rows[i][14]);
+        var token = createSession(rows[i][15]);
         return {
           success: true, token: token,
           user: { 
-            id: rows[i][14], 
+            id: rows[i][15], 
+            nim: rows[i][5] || '',
             nama: rows[i][1], 
             tanggalLahir: rows[i][2],
             alamat: rows[i][3],
             noHp: rows[i][4],
-            email: rows[i][5],
-            kampus: rows[i][6],
-            jurusan: rows[i][7],
-            mulaiMagang: rows[i][8],
-            selesaiMagang: rows[i][9],
-            role: rows[i][12] || 'intern', 
+            email: rows[i][6],
+            kampus: rows[i][7],
+            jurusan: rows[i][8],
+            mulaiMagang: rows[i][9],
+            selesaiMagang: rows[i][10],
+            role: rows[i][13] || 'intern', 
             lokasi: lokasiNama || 'Belum ditetapkan', 
             unitKerja: unitKerjaNama,
             lat: lat, 
@@ -156,7 +158,7 @@ function handleDaftar(data) {
   if (sheet.getLastRow() === 0) setupDropdownRole();
 
   var fotoUrl = data.foto64 ? uploadFoto(data.foto64, 'profil_' + data.nama.replace(/\s/g,'_') + '_' + Date.now() + '.jpg') : '';
-  sheet.appendRow([new Date().toISOString(), data.nama.trim(), data.tanggalLahir.trim(), data.alamat, data.noHp, data.email, data.kampus, data.jurusan, data.mulaiMagang || '', data.selesaiMagang || '', fotoUrl, 'active', 'intern', '', generatePesertaId()]);
+  sheet.appendRow([new Date().toISOString(), data.nama.trim(), data.tanggalLahir.trim(), data.alamat, data.noHp, data.nim || '', data.email, data.kampus, data.jurusan, data.mulaiMagang || '', data.selesaiMagang || '', fotoUrl, 'active', 'intern', '', generatePesertaId()]);
   return { success: true, message: 'Pendaftaran berhasil! Silakan login.' };
 }
 
@@ -169,23 +171,23 @@ function handleGetProfile(data) {
   
   var rows = sheet.getDataRange().getDisplayValues();
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][14] === idPeserta) {
+    if (rows[i][15] === idPeserta) {
       // Konversi URL foto ke format lh3 CDN Google
       // lh3.googleusercontent.com tidak butuh cookie/session, aman di semua browser & Safari
-      var fotoUrl = rows[i][10] || '';
+      var fotoUrl = rows[i][11] || '';
       if (fotoUrl) {
         var idFoto = extractDriveId(fotoUrl);
         if (idFoto) fotoUrl = 'https://lh3.googleusercontent.com/d/' + idFoto + '=s400';
       }
       
-      var lat = null, lng = null, radius = 100, lokasiNama = rows[i][13], unitKerjaNama = '—';
-      if (rows[i][13]) {
+      var lat = null, lng = null, radius = 100, lokasiNama = rows[i][14], unitKerjaNama = '—';
+      if (rows[i][14]) {
         var penSheet = getSheet('WEB Penugasan');
         if (penSheet) {
           var penRows = penSheet.getDataRange().getValues(); // Gunakan getValues() agar desimal koordinat tidak terpotong (rounded)
           var idInduk = '';
           for (var j = 1; j < penRows.length; j++) {
-            if (penRows[j][0] === rows[i][13] && penRows[j][1] === 'lokasi') {
+            if (penRows[j][0] === rows[i][14] && penRows[j][1] === 'lokasi') {
               lokasiNama = penRows[j][3];
               idInduk = penRows[j][2];
               lat = parseFloat(penRows[j][5]) || null;
@@ -208,21 +210,22 @@ function handleGetProfile(data) {
       return {
         success: true,
         data: {
-          id: rows[i][14],
+          id: rows[i][15],
+          nim: rows[i][5] || '',
           nama: rows[i][1],
           tanggalLahir: rows[i][2],
           alamat: rows[i][3],
           noHp: rows[i][4],
-          email: rows[i][5],
-          kampus: rows[i][6],
-          jurusan: rows[i][7],
-          mulaiMagang: rows[i][8],
-          selesaiMagang: rows[i][9],
+          email: rows[i][6],
+          kampus: rows[i][7],
+          jurusan: rows[i][8],
+          mulaiMagang: rows[i][9],
+          selesaiMagang: rows[i][10],
           foto: fotoUrl,
-          role: rows[i][12] || 'intern',
+          role: rows[i][13] || 'intern',
           lokasi: lokasiNama || 'Belum ditetapkan',
           unitKerja: unitKerjaNama,
-          idLokasi: rows[i][13] || '',
+          idLokasi: rows[i][14] || '',
           lat: lat,
           long: lng,
           radius: radius
@@ -243,7 +246,7 @@ function handleGetStatusHariIni(data) {
   for (var i = rows.length - 1; i >= 1; i--) {
     // Normalize kedua sisi agar format apapun bisa cocok
     if (normalizeTanggal(rows[i][0]) === normalizeTanggal(today) && rows[i][1] === data.idPeserta) {
-      return { success: true, data: { sudahMasuk: !!rows[i][4], sudahPulang: !!rows[i][6], jamMasuk: rows[i][4] || null, jamPulang: rows[i][6] || null }};
+      return { success: true, data: { sudahMasuk: !!rows[i][4], sudahPulang: !!rows[i][7], jamMasuk: rows[i][4] || null, jamPulang: rows[i][7] || null }};
     }
   }
   return { success: true, data: { sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null } };
@@ -254,9 +257,9 @@ function handleCheckIn(data) {
   
   var regRows  = getSheet('WEB Register').getDataRange().getDisplayValues();
   var peserta  = null;
-  for (var i = 1; i < regRows.length; i++) if (regRows[i][14] === data.idPeserta) { peserta = regRows[i]; break; }
+  for (var i = 1; i < regRows.length; i++) if (regRows[i][15] === data.idPeserta) { peserta = regRows[i]; break; }
   
-  var idLokasi = peserta[13];
+  var idLokasi = peserta[14];
   var namaLokasi = 'KANTOR DAOP';
   
   if (idLokasi) {
@@ -312,7 +315,7 @@ function handleCheckOut(data) {
   var todayNormCO = normalizeTanggal(today);
   for (var i = rows.length - 1; i >= 1; i--) {
     // Normalize tanggal di kedua sisi agar berbagai format bisa cocok (DD/MM/YYYY vs M/D/YYYY)
-    if (normalizeTanggal(rows[i][0]) === todayNormCO && rows[i][1] === data.idPeserta && rows[i][4] && !rows[i][6]) { targetRow = i + 1; break; }
+    if (normalizeTanggal(rows[i][0]) === todayNormCO && rows[i][1] === data.idPeserta && rows[i][4] && !rows[i][7]) { targetRow = i + 1; break; }
   }
   if (targetRow === -1) return { success: false, message: 'Belum presensi masuk atau sudah pulang.' };
 
@@ -320,10 +323,10 @@ function handleCheckOut(data) {
   var totalJam  = hitungTotalJam(String(rows[targetRow - 1][4]), jamPulang);
   var fotoUrl   = data.foto64 ? uploadFoto(data.foto64, 'pulang_' + data.idPeserta + '_' + today.replace(/\//g,'-') + '.jpg') : '';
 
-  dataSheet.getRange(targetRow, 7).setValue(jamPulang);
-  dataSheet.getRange(targetRow, 8).setValue(fotoUrl);
-  dataSheet.getRange(targetRow, 9).setValue(totalJam);
-  dataSheet.getRange(targetRow, 11).setValue(data.latitude + ',' + data.longitude);
+  dataSheet.getRange(targetRow, 8).setValue(jamPulang);
+  dataSheet.getRange(targetRow, 9).setValue(fotoUrl);
+  dataSheet.getRange(targetRow, 10).setValue(totalJam);
+  dataSheet.getRange(targetRow, 12).setValue(data.latitude + ',' + data.longitude);
   return { success: true, jamPulang: jamPulang, totalJam: totalJam };
 }
 
@@ -338,7 +341,7 @@ function handleGetRiwayat(data) {
     if (rows[i][1] === data.idPeserta) {
       // Normalisasi format tanggal agar konsisten (handle M/D/YYYY dari form lama)
       var tglNormal = normalizeTanggal(rows[i][0]);
-      result.push({ no: no++, tanggal: tglNormal, lokasi: rows[i][3], jamMasuk: rows[i][4], fotoMasuk: rows[i][5], jamPulang: rows[i][6], fotoPulang: rows[i][7], totalJam: rows[i][8], gpsMasuk: rows[i][9], gpsPulang: rows[i][10], status: rows[i][11] });
+      result.push({ no: no++, tanggal: tglNormal, lokasi: rows[i][3], jamMasuk: rows[i][4], fotoMasuk: rows[i][6], jamPulang: rows[i][7], fotoPulang: rows[i][8], totalJam: rows[i][9], gpsMasuk: rows[i][10], gpsPulang: rows[i][11], status: rows[i][12] });
     }
   }
   return { success: true, data: result.reverse() };
@@ -367,9 +370,9 @@ function handleAjukanIzin(data) {
   var regRows = regSheet.getDataRange().getDisplayValues();
   var pesertaNama = '', pesertaLokasi = 'Izin (Online)';
   for (var i = 1; i < regRows.length; i++) {
-    if (regRows[i][14] === data.idPeserta) {
+    if (regRows[i][15] === data.idPeserta) {
       pesertaNama = regRows[i][1];
-      if (regRows[i][13]) pesertaLokasi = regRows[i][13];
+      if (regRows[i][14]) pesertaLokasi = regRows[i][14];
       break;
     }
   }
@@ -455,9 +458,9 @@ function handleGetIzinSaya(data) {
             id: rows[i][0],
             tanggal: tglNormIzin,
             jenis: rows[i][4],
-            keterangan: rows[i][5],
-            fotoUrl: rows[i][6],
-            status: rows[i][7] || 'approved'
+            keterangan: rows[i][6],
+            fotoUrl: rows[i][7],
+            status: rows[i][8] || 'approved'
           });
         }
       }
@@ -559,20 +562,20 @@ function handleGetAllPresensi(data) {
   var result  = [];
 
   for (var r = 1; r < regRows.length; r++) {
-    var statusAkun = String(regRows[r][11]).trim().toLowerCase();
+    var statusAkun = String(regRows[r][12]).trim().toLowerCase();
     if (statusAkun !== 'active') continue; // Skip pending/rejected
 
-    var idPeserta   = String(regRows[r][14]).trim();
+    var idPeserta   = String(regRows[r][15]).trim();
     var namaPeserta = String(regRows[r][1]).trim();
     var noHp        = String(regRows[r][4] || '').trim().replace(/^0/, '62'); // format internasional
-    var fotoProfil  = String(regRows[r][10] || '').trim();
+    var fotoProfil  = String(regRows[r][11] || '').trim();
     // col[13] di WEB Register = ID Lokasi yang ditetapkan admin
-    var idLokasiPeserta = String(regRows[r][13] || '').trim();
+    var idLokasiPeserta = String(regRows[r][14] || '').trim();
     var penempatan      = idLokasiPeserta ? (namaLokasiMap[idLokasiPeserta] || idLokasiPeserta) : '';
 
     var pData = presensiMap[idPeserta];
     // Masa magang peserta (Aktif / Selesai / Belum) → untuk menandai kartu nonaktif
-    var masa = statusMasaMagang(String(regRows[r][8] || ''), String(regRows[r][9] || ''), tglNorm);
+    var masa = statusMasaMagang(String(regRows[r][9] || ''), String(regRows[r][10] || ''), tglNorm);
 
     if (pData) {
       // Peserta punya data presensi hari ini
@@ -643,16 +646,16 @@ function handleGetDashboardAdmin(data) {
   if (regSheet) {
     var rows = regSheet.getDataRange().getDisplayValues();
     for (var i = 1; i < rows.length; i++) {
-      if (rows[i][11] === 'pending') { pending++; continue; }
-      if (rows[i][11] !== 'active') continue;
+      if (rows[i][12] === 'pending') { pending++; continue; }
+      if (rows[i][12] !== 'active') continue;
       // Lewati peserta di luar masa magang (sudah selesai / belum mulai) dari statistik kehadiran
-      if (statusMasaMagang(String(rows[i][8] || ''), String(rows[i][9] || ''), today) !== 'Aktif') continue;
+      if (statusMasaMagang(String(rows[i][9] || ''), String(rows[i][10] || ''), today) !== 'Aktif') continue;
       total++;
       var isHadir = false, isIzin = false;
       if (pSheet) {
         var pRows = pSheet.getDataRange().getDisplayValues();
         for (var j = pRows.length - 1; j >= 1; j--) {
-          if (pRows[j][0] === today && pRows[j][1] === rows[i][14]) {
+          if (pRows[j][0] === today && pRows[j][1] === rows[i][15]) {
             var stPres = String(pRows[j][11] || 'Hadir').trim();
             if (stPres.indexOf('Ijin') === 0 || stPres === 'Izin') isIzin = true; else isHadir = true;
             break;
@@ -703,10 +706,10 @@ function handleGetRekapBulanan(data) {
   var regRows = regSheet.getDataRange().getDisplayValues();
   var result  = [];
   for (var r = 1; r < regRows.length; r++) {
-    if (String(regRows[r][11]).trim() !== 'active') continue;
-    var mm = statusMasaMagang(String(regRows[r][8] || ''), String(regRows[r][9] || ''), today);
+    if (String(regRows[r][12]).trim() !== 'active') continue;
+    var mm = statusMasaMagang(String(regRows[r][9] || ''), String(regRows[r][10] || ''), today);
     if (mm !== 'Aktif') continue;                 // hanya peserta dalam masa magang
-    var id  = String(regRows[r][14]).trim();
+    var id  = String(regRows[r][15]).trim();
     var c   = byId[id] || { hadir: 0, izin: 0, alfa: 0 };
     result.push({
       id: id,
@@ -726,7 +729,7 @@ function handleGetPendingUsers(data) {
   if (!sheet) return { success: true, data: [] };
   var rows = sheet.getDataRange().getDisplayValues(), result = [];
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][11] === 'pending') result.push({ id: rows[i][14], nama: rows[i][1], tanggalLahir: rows[i][2], kampus: rows[i][6], jurusan: rows[i][7] });
+    if (rows[i][12] === 'pending') result.push({ id: rows[i][15], nama: rows[i][1], tanggalLahir: rows[i][2], kampus: rows[i][7], jurusan: rows[i][8] });
   }
   return { success: true, data: result };
 }
@@ -736,9 +739,9 @@ function handleApproveUser(data) {
   var sheet = getSheet('WEB Register');
   var rows = sheet.getDataRange().getDisplayValues();
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][14] === data.idPeserta) {
-      sheet.getRange(i + 1, 12).setValue('active');
-      sheet.getRange(i + 1, 14).setValue(data.idLokasi || '');
+    if (rows[i][15] === data.idPeserta) {
+      sheet.getRange(i + 1, 14).setValue('active');
+      sheet.getRange(i + 1, 15).setValue(data.idLokasi || '');
       return { success: true, message: 'Disetujui.' };
     }
   }
@@ -756,26 +759,27 @@ function handleGetAllUsersAdmin(data) {
   var rows = sheet.getDataRange().getDisplayValues(), result = [];
   for (var i = 1; i < rows.length; i++) {
     if (!rows[i][1]) continue; // skip empty rows
-    var fotoUrl = rows[i][10] || '';
+    var fotoUrl = rows[i][11] || '';
     if (fotoUrl) {
       var idFoto = extractDriveId(fotoUrl);
       if (idFoto) fotoUrl = 'https://drive.google.com/thumbnail?id=' + idFoto + '&sz=w200';
     }
     result.push({
-      id: rows[i][14],
+      id: rows[i][15],
+      nim: rows[i][5] || '',
       nama: rows[i][1],
       tanggalLahir: rows[i][2],
       alamat: rows[i][3],
       noHp: rows[i][4],
-      email: rows[i][5],
-      kampus: rows[i][6],
-      jurusan: rows[i][7],
-      mulaiMagang: rows[i][8],
-      selesaiMagang: rows[i][9],
+      email: rows[i][6],
+      kampus: rows[i][7],
+      jurusan: rows[i][8],
+      mulaiMagang: rows[i][9],
+      selesaiMagang: rows[i][10],
       foto: fotoUrl,
-      status: rows[i][11] || 'active',
-      role: rows[i][12] || 'intern',
-      idLokasi: rows[i][13] || ''
+      status: rows[i][12] || 'active',
+      role: rows[i][13] || 'intern',
+      idLokasi: rows[i][14] || ''
     });
   }
   return { success: true, data: result };
@@ -789,19 +793,19 @@ function handleSaveUserAdmin(data) {
   
   if (data.id) {
     for (var i = 1; i < rows.length; i++) {
-      if (rows[i][14] === data.id) {
+      if (rows[i][15] === data.id) {
         if (data.nama !== undefined) sheet.getRange(i + 1, 2).setValue(data.nama.trim());
         if (data.tanggalLahir !== undefined) sheet.getRange(i + 1, 3).setValue(data.tanggalLahir.trim());
         if (data.alamat !== undefined) sheet.getRange(i + 1, 4).setValue(data.alamat);
-        if (data.noHp !== undefined) sheet.getRange(i + 1, 5).setValue(data.noHp);
-        if (data.email !== undefined) sheet.getRange(i + 1, 6).setValue(data.email);
-        if (data.kampus !== undefined) sheet.getRange(i + 1, 7).setValue(data.kampus);
-        if (data.jurusan !== undefined) sheet.getRange(i + 1, 8).setValue(data.jurusan);
-        if (data.mulaiMagang !== undefined) sheet.getRange(i + 1, 9).setValue(data.mulaiMagang);
-        if (data.selesaiMagang !== undefined) sheet.getRange(i + 1, 10).setValue(data.selesaiMagang);
-        if (data.status !== undefined) sheet.getRange(i + 1, 12).setValue(data.status);
-        if (data.role !== undefined) sheet.getRange(i + 1, 13).setValue(data.role);
-        if (data.idLokasi !== undefined) sheet.getRange(i + 1, 14).setValue(data.idLokasi);
+        if (data.noHp !== undefined) sheet.getRange(i + 1, 10).setValue(data.noHp);
+        if (data.email !== undefined) sheet.getRange(i + 1, 10).setValue(data.email);
+        if (data.kampus !== undefined) sheet.getRange(i + 1, 10).setValue(data.kampus);
+        if (data.jurusan !== undefined) sheet.getRange(i + 1, 10).setValue(data.jurusan);
+        if (data.mulaiMagang !== undefined) sheet.getRange(i + 1, 10).setValue(data.mulaiMagang);
+        if (data.selesaiMagang !== undefined) sheet.getRange(i + 1, 11).setValue(data.selesaiMagang);
+        if (data.status !== undefined) sheet.getRange(i + 1, 14).setValue(data.status);
+        if (data.role !== undefined) sheet.getRange(i + 1, 15).setValue(data.role);
+        if (data.idLokasi !== undefined) sheet.getRange(i + 1, 15).setValue(data.idLokasi);
         return { success: true, message: 'Data peserta berhasil diperbarui.' };
       }
     }
@@ -835,7 +839,7 @@ function handleDeleteUserAdmin(data) {
   if (!sheet) return { success: false, message: 'Sheet tidak ditemukan.' };
   var rows = sheet.getDataRange().getDisplayValues();
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][14] === data.idPeserta) {
+    if (rows[i][15] === data.idPeserta) {
       sheet.deleteRow(i + 1);
       return { success: true, message: 'Peserta berhasil dihapus.' };
     }
@@ -849,9 +853,9 @@ function handleToggleAdminRole(data) {
   if (!sheet) return { success: false, message: 'Sheet tidak ditemukan.' };
   var rows = sheet.getDataRange().getDisplayValues();
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][14] === data.idPeserta) {
+    if (rows[i][15] === data.idPeserta) {
       var newRole = data.role === 'admin' ? 'admin' : 'intern';
-      sheet.getRange(i + 1, 13).setValue(newRole);
+      sheet.getRange(i + 1, 15).setValue(newRole);
       return { success: true, message: 'Role berhasil diubah menjadi ' + newRole + '.' };
     }
   }
@@ -1013,9 +1017,9 @@ function handleGetPenugasan(data) {
       lokasiList.push({
         id: rows[i][0], tipe: 'lokasi', idInduk: rows[i][2], nama: rows[i][3],
         alamat: rows[i][4],
-        lat: parseFloat(rows[i][5]) || null,
-        lng: parseFloat(rows[i][6]) || null,
-        radius: parseInt(rows[i][7]) || 100
+        lat: parseFloat(rows[i][6]) || null,
+        lng: parseFloat(rows[i][7]) || null,
+        radius: parseInt(rows[i][8]) || 100
       });
     }
   }
@@ -1035,12 +1039,12 @@ function handleSavePenugasan(data) {
     for (var i = 1; i < rows.length; i++) {
       if (rows[i][0] === data.id) {
         sheet.getRange(i + 1, 4).setValue(data.nama);
-        sheet.getRange(i + 1, 5).setValue(data.alamat || '');
+        sheet.getRange(i + 1, 10).setValue(data.alamat || '');
         // Tambahkan petik (') agar Sheets menyimpannya sebagai teks murni (Plain Text)
         // Ini mencegah bug locale Indonesia yang mengubah titik menjadi pemisah ribuan
-        sheet.getRange(i + 1, 6).setValue(data.lat ? "'" + data.lat : '');
-        sheet.getRange(i + 1, 7).setValue(data.lng ? "'" + data.lng : '');
-        sheet.getRange(i + 1, 8).setValue(data.radius || '');
+        sheet.getRange(i + 1, 10).setValue(data.lat ? "'" + data.lat : '');
+        sheet.getRange(i + 1, 10).setValue(data.lng ? "'" + data.lng : '');
+        sheet.getRange(i + 1, 10).setValue(data.radius || '');
         return { success: true, message: 'Data berhasil diperbarui.' };
       }
     }
@@ -1093,8 +1097,8 @@ function handleAssignLokasi(data) {
 
   var rows = sheet.getDataRange().getDisplayValues();
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][14] === data.idPeserta) {
-      sheet.getRange(i + 1, 14).setValue(data.idLokasi);
+    if (rows[i][15] === data.idPeserta) {
+      sheet.getRange(i + 1, 15).setValue(data.idLokasi);
       return { success: true, message: 'Penempatan lokasi peserta berhasil diperbarui.' };
     }
   }
@@ -1110,26 +1114,26 @@ function handleGetAllUsersAdmin(data) {
   var list = [];
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][1]) {
-      var fotoUrl = rows[i][10] || '';
+      var fotoUrl = rows[i][11] || '';
       if (fotoUrl) {
         var idFoto = extractDriveId(fotoUrl);
         if (idFoto) fotoUrl = 'https://lh3.googleusercontent.com/d/' + idFoto + '=s200';
       }
       list.push({
-        id:            rows[i][14],
+        id:            rows[i][15],
         nama:          rows[i][1],
         tanggalLahir:  rows[i][2],
         alamat:        rows[i][3],
         noHp:          rows[i][4],
-        email:         rows[i][5],
-        kampus:        rows[i][6],
-        jurusan:       rows[i][7],
-        mulaiMagang:   rows[i][8],
-        selesaiMagang: rows[i][9],
+        email:         rows[i][6],
+        kampus:        rows[i][7],
+        jurusan:       rows[i][8],
+        mulaiMagang:   rows[i][9],
+        selesaiMagang: rows[i][10],
         foto:          fotoUrl,
-        status:        rows[i][11] || 'active',
-        role:          rows[i][12] || 'intern',
-        idLokasi:      rows[i][13] || ''
+        status:        rows[i][12] || 'active',
+        role:          rows[i][13] || 'intern',
+        idLokasi:      rows[i][14] || ''
       });
     }
   }
@@ -1238,16 +1242,16 @@ function kirimPengingatPresensiMasuk(isManual) {
   var totalKirim = 0, totalLewati = 0;
 
   for (var i = 1; i < regRows.length; i++) {
-    var statusAcc = String(regRows[i][11]).toLowerCase().trim();
+    var statusAcc = String(regRows[i][12]).toLowerCase().trim();
     if (statusAcc !== 'active') continue;
 
     // Lewati peserta yang masa magangnya sudah selesai / belum mulai
-    if (statusMasaMagang(String(regRows[i][8] || ''), String(regRows[i][9] || ''), todayNorm) !== 'Aktif') {
+    if (statusMasaMagang(String(regRows[i][9] || ''), String(regRows[i][10] || ''), todayNorm) !== 'Aktif') {
       Logger.log('Lewati ' + regRows[i][1] + ': Masa magang sudah selesai / belum mulai.');
       continue;
     }
 
-    var idPeserta = regRows[i][14];
+    var idPeserta = regRows[i][15];
     var nama      = regRows[i][1];
     var noHp      = regRows[i][4];
 
@@ -1325,16 +1329,16 @@ function kirimPengingatPresensiPulang(isManual) {
   var totalKirim = 0, totalLewati = 0;
 
   for (var i = 1; i < regRows.length; i++) {
-    var statusAcc = String(regRows[i][11]).toLowerCase().trim();
+    var statusAcc = String(regRows[i][12]).toLowerCase().trim();
     if (statusAcc !== 'active') continue;
 
     // Lewati peserta yang masa magangnya sudah selesai / belum mulai
-    if (statusMasaMagang(String(regRows[i][8] || ''), String(regRows[i][9] || ''), todayNorm) !== 'Aktif') {
+    if (statusMasaMagang(String(regRows[i][9] || ''), String(regRows[i][10] || ''), todayNorm) !== 'Aktif') {
       Logger.log('Lewati ' + regRows[i][1] + ': Masa magang sudah selesai / belum mulai.');
       continue;
     }
 
-    var idPeserta = regRows[i][14];
+    var idPeserta = regRows[i][15];
     var nama      = regRows[i][1];
     var noHp      = regRows[i][4];
 
@@ -1554,9 +1558,9 @@ function handleGetPenugasanPublic(data) {
         idInduk: rows[i][2],
         nama:    rows[i][3],
         alamat:  rows[i][4] || '',
-        lat:     parseFloat(rows[i][5]) || null,
-        lng:     parseFloat(rows[i][6]) || null,
-        radius:  parseInt(rows[i][7]) || 100
+        lat:     parseFloat(rows[i][6]) || null,
+        lng:     parseFloat(rows[i][7]) || null,
+        radius:  parseInt(rows[i][8]) || 100
       });
     }
   }
@@ -1612,8 +1616,8 @@ function handleSelfAssignLokasi(data) {
   if (!regSheet) return { success: false, message: 'Sheet registrasi tidak ditemukan.' };
   var regRows = regSheet.getDataRange().getDisplayValues();
   for (var i = 1; i < regRows.length; i++) {
-    if (regRows[i][14] === idPeserta) {
-      regSheet.getRange(i + 1, 14).setValue(data.idLokasi);
+    if (regRows[i][15] === idPeserta) {
+      regSheet.getRange(i + 1, 15).setValue(data.idLokasi);
       return {
         success: true,
         message: 'Lokasi penugasan berhasil diperbarui.',

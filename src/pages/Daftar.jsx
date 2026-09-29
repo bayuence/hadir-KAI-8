@@ -16,6 +16,7 @@ export default function Daftar() {
     tahun: '',
     alamat: '',
     noHp: '',
+    nim: '',
     email: '',
     kampus: '',
     jurusan: '',
@@ -70,7 +71,7 @@ export default function Daftar() {
     setError('')
     setSuccess('')
 
-    const requiredFields = ['nama', 'alamat', 'noHp', 'email', 'kampus', 'jurusan', 'mulaiMagang', 'selesaiMagang']
+    const requiredFields = ['nama', 'alamat', 'noHp', 'nim', 'email', 'kampus', 'jurusan', 'mulaiMagang', 'selesaiMagang']
     for (let field of requiredFields) {
       if (!formData[field]) return setError(`Harap isi semua data dengan lengkap`)
     }
@@ -164,6 +165,13 @@ export default function Daftar() {
             <label className="input-label">No HP / WhatsApp</label>
             <div className="input-icon-wrap">
               <input className="input" type="tel" name="noHp" placeholder="Misal: 08123456789" value={formData.noHp} onChange={handleChange} autoComplete="off" />
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label className="input-label">NIM / Nomor Induk Mahasiswa</label>
+            <div className="input-icon-wrap">
+              <input className="input" type="text" name="nim" placeholder="NIM Anda" value={formData.nim} onChange={handleChange} autoComplete="off" />
             </div>
           </div>
 

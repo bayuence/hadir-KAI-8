@@ -30,14 +30,14 @@ function setupPeralihanAwal() {
 function setupDropdownRole() {
   var sheet = getOrCreateSheet('WEB Register');
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['Timestamp Submit','Nama Lengkap','Tanggal Lahir','Alamat','No HP','Email',
+    sheet.appendRow(['Timestamp Submit','Nama Lengkap','Tanggal Lahir','Alamat','No HP', 'NIM', 'Email',
       'Kampus','Jurusan','Tanggal Mulai','Tanggal Selesai','Foto Profil URL',
       'Status Akun','Role','ID Lokasi','ID Unik']);
   }
   
   // Dropdown untuk kolom M (Role)
   var roleRule = SpreadsheetApp.newDataValidation().requireValueInList(['admin', 'intern'], true).build();
-  sheet.getRange('M2:M').setDataValidation(roleRule);
+  sheet.getRange('N2:N').setDataValidation(roleRule);
   
   // Format kolom C (Tanggal Lahir) sebagai teks @
   // dan beri note cara mengisi
@@ -80,7 +80,7 @@ function jadikanAdmin() {
   var rows = sheet.getDataRange().getDisplayValues();
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][1].toLowerCase().trim() === nama.toLowerCase().trim()) {
-      sheet.getRange(i + 1, 13).setValue('admin');
+      sheet.getRange(i + 1, 14).setValue('admin');
       Logger.log(nama + ' berhasil dijadikan admin!');
       return;
     }
@@ -181,17 +181,17 @@ function migrasiDataRegistrasiLengkap() {
         // Update data di WEB Register 
         if (idxAlamat > -1)  webReg.getRange(i + 1, 4).setValue(oldData[j][idxAlamat]); // Alamat
         if (idxHp > -1)      webReg.getRange(i + 1, 5).setValue(oldData[j][idxHp]);     // No HP
-        if (idxEmail > -1)   webReg.getRange(i + 1, 6).setValue(oldData[j][idxEmail]);  // Email
-        if (idxKampus > -1)  webReg.getRange(i + 1, 7).setValue(oldData[j][idxKampus]); // Kampus
-        if (idxJurusan > -1) webReg.getRange(i + 1, 8).setValue(oldData[j][idxJurusan]); // Jurusan
-        if (idxMulai > -1)   webReg.getRange(i + 1, 9).setValue(oldData[j][idxMulai]);  // Tgl Mulai
-        if (idxSelesai > -1) webReg.getRange(i + 1, 10).setValue(oldData[j][idxSelesai]);// Tgl Selesai
+        if (idxEmail > -1)   webReg.getRange(i + 1, 12).setValue(oldData[j][idxEmail]);  // Email
+        if (idxKampus > -1)  webReg.getRange(i + 1, 12).setValue(oldData[j][idxKampus]); // Kampus
+        if (idxJurusan > -1) webReg.getRange(i + 1, 12).setValue(oldData[j][idxJurusan]); // Jurusan
+        if (idxMulai > -1)   webReg.getRange(i + 1, 12).setValue(oldData[j][idxMulai]);  // Tgl Mulai
+        if (idxSelesai > -1) webReg.getRange(i + 1, 12).setValue(oldData[j][idxSelesai]);// Tgl Selesai
         
         // Ekstrak URL foto Drive jika ada
         if (idxFoto > -1 && oldData[j][idxFoto]) {
           var idFoto = extractDriveId(oldData[j][idxFoto]);
           if (idFoto) {
-            webReg.getRange(i + 1, 11).setValue("https://drive.google.com/uc?id=" + idFoto); // Foto URL khusus render
+            webReg.getRange(i + 1, 12).setValue("https://drive.google.com/uc?id=" + idFoto); // Foto URL khusus render
           }
         }
         
@@ -222,7 +222,7 @@ function migrasiDataAwal() {
       var nama = rows[i][1];
       if (!nama) continue;
       var newId = 'MGGNG-' + String(i).padStart(3, '0');
-      webReg.appendRow([rows[i][0] || new Date().toISOString(), nama, '', rows[i][2] || '', '', '', '', '', '', '', '', 'active', 'intern', '', newId]);
+      webReg.appendRow([rows[i][0] || new Date().toISOString(), nama, '', rows[i][2] || '', '', '', '', '', '', '', '', '', 'active', 'intern', '', newId]);
     }
     Logger.log("Migrasi peserta selesai.");
   }
