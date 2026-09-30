@@ -1,9 +1,9 @@
-// ============================================================
+﻿// ============================================================
 // MODUL LAPORAN PIC (WHATSAPP) â€” KAI Daop 8
 // ============================================================
 
-// â”€â”€ GANTI DENGAN NOMOR WA PIC ANDA (Gunakan format 08... atau 628...) â”€â”€
-var NOMOR_WA_PIC = '081234567890'; // <-- UBAH NOMOR INI
+// ── GANTI DENGAN ID GRUP WA LAPORAN PIC (Format: 120363xxxxxxxx@g.us) ──
+var ID_GRUP_LAPORAN_PIC = '120363421534156400@g.us'; // <-- UBAH ID INI
 
 function kirimLaporanKePIC() {
   var dayOfWeek = new Date().getDay();
@@ -133,8 +133,8 @@ function kirimLaporanKePIC() {
     "Hormat kami,\n" +
     "Tim Admin Magang Daop 8";
 
-  kirimWhatsAppFonnte(NOMOR_WA_PIC, pesan);
-  Logger.log('Laporan PIC berhasil dikirim ke ' + NOMOR_WA_PIC);
+  kirimWhatsAppFonnte(ID_GRUP_LAPORAN_PIC, pesan);
+  Logger.log('Laporan PIC berhasil dikirim ke Grup (ID: ' + ID_GRUP_LAPORAN_PIC + ')');
 }
 
 // -

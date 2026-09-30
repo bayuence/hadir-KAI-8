@@ -30,8 +30,9 @@ function debugIdMismatch() {
   if (regSheet) {
     var rRows = regSheet.getDataRange().getDisplayValues();
     for (var r = 1; r < rRows.length; r++) {
-      if (String(rRows[r][7]).toLowerCase() === 'active') {
-        Logger.log('Row ' + (r+1) + ': id="' + rRows[r][10] + '" | nama="' + rRows[r][1] + '" | statusAkun="' + rRows[r][7] + '"');
+      // [8]=Status Akun, [11]=ID Unik
+      if (String(rRows[r][8]).toLowerCase() === 'active') {
+        Logger.log('Row ' + (r+1) + ': id="' + rRows[r][11] + '" | nama="' + rRows[r][1] + '" | statusAkun="' + rRows[r][8] + '"');
       }
     }
   }

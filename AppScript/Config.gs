@@ -22,6 +22,7 @@ var CONFIG = {
   // Konfigurasi Fonnte WhatsApp Gateway API
   FONNTE_TOKEN:       'o3hz8NS85cFJxCSCzjPd',
 
+
   // Konfigurasi Meta WhatsApp Cloud API (Optional Legacy)
   WA_PHONE_NUMBER_ID: 'ISI_PHONE_NUMBER_ID_META_DISINI',
   WA_ACCESS_TOKEN:    'ISI_ACCESS_TOKEN_META_DISINI',

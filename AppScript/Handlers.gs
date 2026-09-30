@@ -1,4 +1,4 @@
-// IMPLEMENTASI ENDPOINT (WEB API)
+﻿// IMPLEMENTASI ENDPOINT (WEB API)
 // ============================================================
 
 function handleGetPesertaList(data) {
@@ -115,16 +115,16 @@ function handleLogin(data) {
         }
 
         var token = createSession(rows[i][11]);
+        // Header WEB Register:
+        // [0]=Timestamp, [1]=Nama, [2]=NIM, [3]=Kampus, [4]=Jurusan,
+        // [5]=Tgl Mulai, [6]=Tgl Selesai, [7]=Foto, [8]=Status Akun,
+        // [9]=Role, [10]=ID Lokasi, [11]=ID Unik
         return {
           success: true, token: token,
           user: { 
             id: rows[i][11],
             nim: rows[i][2] || '',
             nama: rows[i][1], 
-            tanggalLahir: normalizeTanggal(rows[i][2]),
-            alamat: rows[i][3],
-            noHp: rows[i][4],
-            email: rows[i][6],
             kampus: rows[i][3],
             jurusan: rows[i][4],
             mulaiMagang: normalizeTanggal(rows[i][5]),
@@ -202,16 +202,16 @@ function handleGetProfile(data) {
         }
       }
       
+      // Header WEB Register:
+      // [0]=Timestamp, [1]=Nama, [2]=NIM, [3]=Kampus, [4]=Jurusan,
+      // [5]=Tgl Mulai, [6]=Tgl Selesai, [7]=Foto, [8]=Status Akun,
+      // [9]=Role, [10]=ID Lokasi, [11]=ID Unik
       return {
         success: true,
         data: {
           id: rows[i][11],
           nim: rows[i][2] || '',
           nama: rows[i][1],
-          tanggalLahir: normalizeTanggal(rows[i][2]),
-          alamat: rows[i][3],
-          noHp: rows[i][4],
-          email: rows[i][6],
           kampus: rows[i][3],
           jurusan: rows[i][4],
           mulaiMagang: normalizeTanggal(rows[i][5]),
@@ -457,12 +457,13 @@ function handleGetIzinSaya(data) {
         var key = tglNorm + '_' + data.idPeserta;
         seenKeys[key] = true;
 
+        // WEB Presensi: [3]=LOKASI, [4]=JAM MASUK, [5]=FOTO MASUK
         result.push({
           id: 'P-' + j,
           tanggal: tglNorm,
           jenis: displayJenis,
-          keterangan: pRows[j][3] || '',
-          fotoUrl: pRows[j][5] || '',
+          keterangan: pRows[j][3] || '',  // LOKASI sebagai keterangan
+          fotoUrl: pRows[j][5] || '',     // FOTO MASUK (foto bukti izin)
           status: 'approved'
         });
       }
@@ -479,13 +480,16 @@ function handleGetIzinSaya(data) {
         var keyIzin = tglNormIzin + '_' + data.idPeserta;
         if (!seenKeys[keyIzin]) {
           seenKeys[keyIzin] = true;
+          // Header WEB Izin:
+          // [0]=ID IZIN, [1]=ID PESERTA, [2]=NAMA, [3]=TANGGAL,
+          // [4]=JENIS, [5]=KETERANGAN, [6]=FOTO BUKTI, [7]=STATUS, [8]=TIMESTAMP
           result.push({
             id: rows[i][0],
             tanggal: tglNormIzin,
             jenis: rows[i][4],
-            keterangan: rows[i][6],
-            fotoUrl: rows[i][3],
-            status: rows[i][4] || 'approved'
+            keterangan: rows[i][5],
+            fotoUrl: rows[i][6],
+            status: rows[i][7] || 'approved'
           });
         }
       }
@@ -757,7 +761,8 @@ function handleGetPendingUsers(data) {
   if (!sheet) return { success: true, data: [] };
   var rows = sheet.getDataRange().getDisplayValues(), result = [];
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][8] === 'pending') result.push({ id: rows[i][11], nama: rows[i][1], tanggalLahir: rows[i][2], kampus: rows[i][3], jurusan: rows[i][4] });
+    // [8]=Status Akun, [11]=ID Unik, [1]=Nama, [2]=NIM, [3]=Kampus, [4]=Jurusan
+    if (rows[i][8] === 'pending') result.push({ id: rows[i][11], nama: rows[i][1], nim: rows[i][2], kampus: rows[i][3], jurusan: rows[i][4] });
   }
   return { success: true, data: result };
 }
@@ -768,8 +773,9 @@ function handleApproveUser(data) {
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][11]) === String(data.idPeserta)) {
-      sheet.getRange(i + 1, 14).setValue('active');
-      sheet.getRange(i + 1, 15).setValue(data.idLokasi || '');
+      // Header WEB Register: [8]=Status Akun (kolom 9), [10]=ID Lokasi (kolom 11)
+      sheet.getRange(i + 1, 9).setValue('active');         // Status Akun
+      if (data.idLokasi) sheet.getRange(i + 1, 11).setValue(data.idLokasi); // ID Lokasi
       return { success: true, message: 'Disetujui.' };
     }
   }
@@ -798,18 +804,18 @@ function handleGetAllUsersAdmin(data) {
         var idFoto = extractDriveId(fotoUrl);
         if (idFoto) fotoUrl = 'https://lh3.googleusercontent.com/d/' + idFoto + '=s200';
       }
+      // Header WEB Register:
+      // [0]=Timestamp, [1]=Nama, [2]=NIM, [3]=Kampus, [4]=Jurusan,
+      // [5]=Tgl Mulai, [6]=Tgl Selesai, [7]=Foto, [8]=Status Akun,
+      // [9]=Role, [10]=ID Lokasi, [11]=ID Unik
       list.push({
         id:            rows[i][11],
         nim:           rows[i][2] || '',
         nama:          rows[i][1],
-        tanggalLahir:  rows[i][2],
-        alamat:        rows[i][3],
-        noHp:          rows[i][4],
-        email:         rows[i][6],
         kampus:        rows[i][3],
         jurusan:       rows[i][4],
-        mulaiMagang:   rows[i][5],
-        selesaiMagang: rows[i][6],
+        mulaiMagang:   normalizeTanggal(rows[i][5]),
+        selesaiMagang: normalizeTanggal(rows[i][6]),
         foto:          fotoUrl,
         status:        rows[i][8] || 'active',
         role:          rows[i][9] || 'intern',
@@ -891,326 +897,6 @@ function kirimWhatsAppFonnte(toPhoneNumber, message) {
 /**
  * Fungsi Pengingat Presensi Masuk Pagi (Bot Ence)
  * @param {boolean} isManual - jika true, abaikan cek weekend agar bisa dites atau dikirim manual kapan saja
- */
-function kirimPengingatPresensiMasuk(isManual) {
-  Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI MASUK ===');
-  
-  var todayDate = new Date();
-  var dayOfWeek = todayDate.getDay(); // 0=Minggu, 1=Sen, ..., 5=Jum, 6=Sabtu
-
-  // Skip jika hari Sabtu (6) atau Minggu (0), kecuali dijalankan manual
-  if (!isManual) {
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      Logger.log('Hari ini adalah akhir pekan (Sabtu/Minggu). Pengingat WA otomatis dilewati.');
-      return { success: false, message: 'Hari libur akhir pekan (Sabtu/Minggu).' };
-    }
-  }
-
-  // Tentukan jam kerja sesuai jadwal resmi
-  var isJumat    = (dayOfWeek === 5);
-  var jamMasuk   = isJumat ? '07.30' : '08.00';
-  var jamPulang  = isJumat ? '15.00' : '16.00';
-  var namaHari   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][dayOfWeek];
-
-  var todayStr  = formatTanggal();
-  var todayNorm = normalizeTanggal(todayStr);
-
-  var regSheet = getSheet('WEB Register');
-  if (!regSheet) return { success: false, message: 'Sheet WEB Register tidak ditemukan.' };
-  var regRows = regSheet.getDataRange().getDisplayValues();
-
-  var presSheet = getSheet('WEB Presensi');
-  var presRows = presSheet ? presSheet.getDataRange().getValues() : [];
-
-  var totalKirim = 0, totalLewati = 0;
-
-  for (var i = 1; i < regRows.length; i++) {
-    var statusAcc = String(regRows[i][8]).toLowerCase().trim();
-    if (statusAcc !== 'active') continue;
-
-    // Lewati peserta yang masa magangnya sudah selesai / belum mulai
-    if (statusMasaMagang(String(regRows[i][5] || ''), String(regRows[i][6] || ''), todayNorm) !== 'Aktif') {
-      Logger.log('Lewati ' + regRows[i][1] + ': Masa magang sudah selesai / belum mulai.');
-      continue;
-    }
-
-    var idPeserta = regRows[i][11];
-    var nama      = regRows[i][1];
-    var noHp      = regRows[i][4];
-
-    if (!noHp) {
-      Logger.log('Lewati ' + nama + ': Nomor HP belum diisi.');
-      continue;
-    }
-
-    var sudahAbsen = false;
-    for (var j = presRows.length - 1; j >= 1; j--) {
-      if (normalizeTanggal(presRows[j][0]) === todayNorm && presRows[j][1] === idPeserta) {
-        sudahAbsen = true;
-        break;
-      }
-    }
-
-    if (sudahAbsen) {
-      Logger.log('Lewati ' + nama + ': Sudah presensi masuk / izin hari ini.');
-      totalLewati++;
-    } else {
-      Logger.log('Mengirim pengingat MASUK ke ' + nama + ' (' + noHp + ')...');
-      var pesan = "ðŸ”” *PENGINGAT PRESENSI MASUK â€” KAI DAOP 8*\n\n" +
-                  "Halo *" + nama + "*! ðŸ‘‹\n\n" +
-                  "Saya ence dari *Tim Magang Daop 8* ingin mengingatkan bahwa hari *" + namaHari + "* ini jam masuk magang adalah pukul *" + jamMasuk + " WIB* s.d *" + jamPulang + " WIB*.\n\n" +
-                  "Mohon segera lakukan *Presensi Masuk* melalui aplikasi berikut:\n" +
-                  "ðŸ‘‰ https://hadirkai8.vercel.app/\n\n" +
-                  "Selamat beraktivitas dan tetap semangat ya! ðŸš‚âœ¨\n" +
-                  "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\n" +
-                  "_Pesan resmi dikirim otomatis oleh Sistem Presensi Daop 8 Surabaya_";
-
-      var res = kirimWhatsAppFonnte(noHp, pesan);
-      if (res.success) totalKirim++;
-    }
-  }
-  
-  var msg = 'Selesai pengingat MASUK. Terkirim: ' + totalKirim + ', Dilewati: ' + totalLewati;
-  Logger.log('=== ' + msg + ' ===');
-  return { success: true, message: msg, totalKirim: totalKirim, totalLewati: totalLewati };
-}
-
-/**
- * Fungsi Pengingat Presensi Pulang Sore (Bot Ence)
- * @param {boolean} isManual - jika true, abaikan cek weekend agar bisa dites atau dikirim manual kapan saja
- */
-function kirimPengingatPresensiPulang(isManual) {
-  Logger.log('=== MEMULAI PENGECEKAN PENGINGAT WA PRESENSI PULANG ===');
-
-  var todayDate = new Date();
-  var dayOfWeek = todayDate.getDay();
-
-  // Skip jika hari Sabtu (6) atau Minggu (0), kecuali dijalankan manual
-  if (!isManual) {
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      Logger.log('Hari ini adalah akhir pekan (Sabtu/Minggu). Pengingat WA otomatis dilewati.');
-      return { success: false, message: 'Hari libur akhir pekan (Sabtu/Minggu).' };
-    }
-  }
-
-  // Tentukan jam kerja sesuai jadwal resmi
-  var isJumat   = (dayOfWeek === 5);
-  var jamMasuk  = isJumat ? '07.30' : '08.00';
-  var jamPulang = isJumat ? '15.00' : '16.00';
-  var namaHari  = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][dayOfWeek];
-
-  var todayStr  = formatTanggal();
-  var todayNorm = normalizeTanggal(todayStr);
-
-  var regSheet = getSheet('WEB Register');
-  if (!regSheet) return { success: false, message: 'Sheet WEB Register tidak ditemukan.' };
-  var regRows = regSheet.getDataRange().getDisplayValues();
-
-  var presSheet = getSheet('WEB Presensi');
-  var presRows = presSheet ? presSheet.getDataRange().getValues() : [];
-
-  var totalKirim = 0, totalLewati = 0;
-
-  for (var i = 1; i < regRows.length; i++) {
-    var statusAcc = String(regRows[i][8]).toLowerCase().trim();
-    if (statusAcc !== 'active') continue;
-
-    // Lewati peserta yang masa magangnya sudah selesai / belum mulai
-    if (statusMasaMagang(String(regRows[i][5] || ''), String(regRows[i][6] || ''), todayNorm) !== 'Aktif') {
-      Logger.log('Lewati ' + regRows[i][1] + ': Masa magang sudah selesai / belum mulai.');
-      continue;
-    }
-
-    var idPeserta = regRows[i][11];
-    var nama      = regRows[i][1];
-    var noHp      = regRows[i][4];
-
-    if (!noHp) continue;
-
-    var absenHariIni = null;
-    for (var j = presRows.length - 1; j >= 1; j--) {
-      if (normalizeTanggal(presRows[j][0]) === todayNorm && presRows[j][1] === idPeserta) {
-        absenHariIni = presRows[j];
-        break;
-      }
-    }
-
-    if (absenHariIni) {
-      var jamMasukData    = String(absenHariIni[4] || '').trim();
-      var jamPulangData   = String(absenHariIni[6] || '').trim();
-      var statusKehadiran = String(absenHariIni[11] || '').trim();
-
-      if ((statusKehadiran === 'Hadir' || jamMasukData !== '') && jamPulangData === '') {
-        Logger.log('Mengirim pengingat PULANG ke ' + nama + ' (' + noHp + ')...');
-        var pesan = "ðŸ”” *PENGINGAT PRESENSI PULANG â€” KAI DAOP 8*\n\n" +
-                    "Halo *" + nama + "*! ðŸ‘‹\n\n" +
-                    "Jam operasional magang hari *" + namaHari + "* ini berakhir pukul *" + jamPulang + " WIB*.\n\n" +
-                    "Jangan lupa segera lakukan *Presensi Pulang* agar jam kerja Anda tercatat lengkap:\n" +
-                    "ðŸ‘‰ https://hadirkai8.vercel.app/\n\n" +
-                    "Terima kasih atas kerja keras Anda hari ini! Hati-hati di perjalanan pulang. ðŸš‚âœ¨\n" +
-                    "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\n" +
-                    "_Pesan resmi dikirim otomatis oleh Sistem Presensi Daop 8 Surabaya_";
-
-        var res = kirimWhatsAppFonnte(noHp, pesan);
-        if (res.success) totalKirim++;
-      } else {
-        totalLewati++;
-      }
-    } else {
-      totalLewati++;
-    }
-  }
-  
-  var msg = 'Selesai pengingat PULANG. Terkirim: ' + totalKirim + ', Dilewati: ' + totalLewati;
-  Logger.log('=== ' + msg + ' ===');
-  return { success: true, message: msg, totalKirim: totalKirim, totalLewati: totalLewati };
-}
-
-/**
- * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
- * FUNGSI TRIGGER MANUAL (BISA ANDA PILIH & KLIK JALANKAN KAPAN SAJA)
- * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
- */
-
-/**
- * ðŸ‘‰ PILIH FUNGSI INI DARI DROPDOWN & KLIK RUN UNTUK CHAT SEMUA ANAK MAGANG (PRESENSI MASUK)
- */
-function triggerPengingatMasukManual() {
-  Logger.log('>>> Memulai Eksekusi Manual: PENGINGAT MASUK <<<');
-  var hasil = kirimPengingatPresensiMasuk(true); // true = abaikan weekend / kirim sekarang juga
-  Logger.log('>>> HASIL AKHIR: ' + JSON.stringify(hasil));
-}
-
-/**
- * ðŸ‘‰ PILIH FUNGSI INI DARI DROPDOWN & KLIK RUN UNTUK CHAT SEMUA ANAK MAGANG (PRESENSI PULANG)
- */
-function triggerPengingatPulangManual() {
-  Logger.log('>>> Memulai Eksekusi Manual: PENGINGAT PULANG <<<');
-  var hasil = kirimPengingatPresensiPulang(true); // true = abaikan weekend / kirim sekarang juga
-  Logger.log('>>> HASIL AKHIR: ' + JSON.stringify(hasil));
-}
-
-/**
- * Wrapper OTOMATIS untuk trigger â€” memanggil pengingat masuk dengan isManual=false
- * sehingga cek Sabtu/Minggu SELALU aktif.
- * PENTING: Trigger harus diarahkan ke fungsi INI, bukan langsung ke kirimPengingatPresensiMasuk.
- */
-function kirimPengingatMasukAuto() {
-  kirimPengingatPresensiMasuk(false); // Senin-Kamis: trigger jam 07:45
-}
-
-/**
- * Wrapper khusus Jumat â€” dipanggil trigger jam 07:15
- * Masuk Jumat: 07.30 WIB
- */
-function kirimPengingatMasukJumatAuto() {
-  kirimPengingatPresensiMasuk(false); // fungsi sudah deteksi isJumat sendiri
-}
-
-/**
- * Wrapper OTOMATIS untuk trigger â€” memanggil pengingat pulang dengan isManual=false
- * sehingga cek Sabtu/Minggu SELALU aktif.
- * PENTING: Trigger harus diarahkan ke fungsi INI, bukan langsung ke kirimPengingatPresensiPulang.
- */
-function kirimPengingatPulangAuto() {
-  kirimPengingatPresensiPulang(false); // Senin-Kamis: trigger jam 15:50
-}
-
-/**
- * Wrapper khusus Jumat â€” dipanggil trigger jam 14:45
- * Pulang Jumat: 15.00 WIB
- */
-function kirimPengingatPulangJumatAuto() {
-  kirimPengingatPresensiPulang(false); // fungsi sudah deteksi isJumat sendiri
-}
-
-/**
- * PENTING: Pasang Trigger Otomatis Harian di Google Apps Script
- * Buka Apps Script -> Pilih fungsi ini (setupTriggerPengingatWA) di dropdown atas -> Klik "Run/Jalankan"
- * Fungsi ini akan menjadwalkan Pengingat Masuk (07:45) & Pengingat Pulang (16:00) otomatis setiap hari.
- */
-/**
- * Hapus SEMUA trigger WA yang terlanjur duplikat.
- * Jalankan fungsi ini SATU KALI dari GAS Editor jika WA sudah terlanjur spam.
- */
-function hapusTriggerWADuplikat() {
-  var targetHandlers = [
-    'kirimPengingatPresensiMasuk',
-    'kirimPengingatPresensiPulang',
-    'kirimPengingatPresensiPagi',
-    'kirimPengingatMasukAuto',
-    'kirimPengingatMasukJumatAuto',
-    'kirimPengingatPulangAuto',
-    'kirimPengingatPulangJumatAuto',
-    'triggerPengingatMasukManual',
-    'triggerPengingatPulangManual'
-  ];
-  var triggers = ScriptApp.getProjectTriggers();
-  var hapus = 0;
-  for (var i = 0; i < triggers.length; i++) {
-    if (targetHandlers.indexOf(triggers[i].getHandlerFunction()) !== -1) {
-      ScriptApp.deleteTrigger(triggers[i]);
-      hapus++;
-      Logger.log('Trigger dihapus: ' + triggers[i].getHandlerFunction());
-    }
-  }
-  Logger.log('=== Total trigger WA dihapus: ' + hapus + ' ===');
-  if (hapus === 0) Logger.log('(Tidak ada trigger WA aktif yang ditemukan)');
-}
-
-function setupTriggerPengingatWA() {
-  // â”€â”€ LANGKAH 1: Hapus SEMUA trigger WA lama â”€â”€
-  hapusTriggerWADuplikat();
-
-  // â”€â”€ LANGKAH 2: Pasang 4 trigger sesuai jadwal resmi magang â”€â”€
-  // Jadwal: Senin-Kamis 08.00-16.00 | Jumat 07.30-15.00 | Sabtu-Minggu Libur
-  // Trigger diarahkan ke wrapper agar isManual=false dan cek weekend selalu aktif.
-
-  // [1] Pengingat Masuk Senin-Kamis (jam 07:45 WIB -> ~15 menit sebelum 08.00)
-  ScriptApp.newTrigger('kirimPengingatMasukAuto')
-    .timeBased()
-    .everyDays(1)
-    .atHour(7)
-    .nearMinute(45)
-    .create();
-
-  // [2] Pengingat Masuk Jumat (jam 07:15 WIB -> ~15 menit sebelum 07.30)
-  //     Fungsi ini juga akan berjalan Senin-Kamis, tapi hari itu sudah dicover [1].
-  //     Karena GAS tidak bisa set trigger per-hari-tertentu, fungsi sendiri cek isJumat
-  //     dan hanya mengirim WA berbeda (jam 07.30) jika hari Jumat.
-  ScriptApp.newTrigger('kirimPengingatMasukJumatAuto')
-    .timeBased()
-    .everyDays(1)
-    .atHour(7)
-    .nearMinute(15)
-    .create();
-
-  // [3] Pengingat Pulang Senin-Kamis (jam 15:50 WIB -> ~10 menit sebelum 16.00)
-  ScriptApp.newTrigger('kirimPengingatPulangAuto')
-    .timeBased()
-    .everyDays(1)
-    .atHour(15)
-    .nearMinute(50)
-    .create();
-
-  // [4] Pengingat Pulang Jumat (jam 14:45 WIB -> ~15 menit sebelum 15.00)
-  ScriptApp.newTrigger('kirimPengingatPulangJumatAuto')
-    .timeBased()
-    .everyDays(1)
-    .atHour(14)
-    .nearMinute(45)
-    .create();
-
-  Logger.log('âœ… Trigger Pengingat WA Berhasil Dipasang (4 trigger sesuai jadwal resmi):');
-  Logger.log('   07:15 => kirimPengingatMasukJumatAuto  (Jumat masuk 07.30)');
-  Logger.log('   07:45 => kirimPengingatMasukAuto       (Sen-Kam masuk 08.00)');
-  Logger.log('   14:45 => kirimPengingatPulangJumatAuto (Jumat pulang 15.00)');
-  Logger.log('   15:50 => kirimPengingatPulangAuto      (Sen-Kam pulang 16.00)');
-}
-
-/**
- * Fungsi Uji Coba Pengiriman WA Langsung dari Editor Apps Script
- * Ganti variabel noHpTest dengan nomor WA Anda, lalu klik tombol 'Run/Jalankan' pada fungsi ini.
  */
 function testKirimWhatsAppFonnte() {
   var noHpTest = '081535481447'; // Nomor pengujian Anda
@@ -1295,13 +981,13 @@ function handleSelfAssignLokasi(data) {
     }
   }
 
-  // Update idLokasi di WEB Register (kolom N / index 13)
+  // Update idLokasi di WEB Register — Header: [10]=ID Lokasi (kolom 11)
   var regSheet = getSheet('WEB Register');
   if (!regSheet) return { success: false, message: 'Sheet registrasi tidak ditemukan.' };
   var regRows = regSheet.getDataRange().getDisplayValues();
   for (var i = 1; i < regRows.length; i++) {
     if (regRows[i][11] === idPeserta) {
-      regSheet.getRange(i + 1, 15).setValue(data.idLokasi);
+      regSheet.getRange(i + 1, 11).setValue(data.idLokasi); // kolom 11 = index [10] = ID Lokasi
       return {
         success: true,
         message: 'Lokasi penugasan berhasil diperbarui.',
@@ -1451,3 +1137,15 @@ function hitungJarak(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+
+// DUMMY FUNCTIONS UNTUK MENCEGAH ERROR DARI TRIGGER LAMA MILIK PENGGUNA LAIN
+function kirimPengingatPresensiMasuk() {
+  Logger.log('Trigger lama (Masuk) dijalankan, tapi sudah dinonaktifkan.');
+}
+function kirimPengingatPresensiPulang() {
+  Logger.log('Trigger lama (Pulang) dijalankan, tapi sudah dinonaktifkan.');
+}
+function kirimPengingatMasukAuto() {}
+function kirimPengingatMasukJumatAuto() {}
+function kirimPengingatPulangAuto() {}
+function kirimPengingatPulangJumatAuto() {}
