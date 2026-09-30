@@ -8,6 +8,40 @@ import AdminHeader from '../components/AdminHeader'
 import NotificationPrompt from '../components/NotificationPrompt'
 import './Profil.css'
 
+// ─── Helper: Normalisasi semua format tanggal → DD/MM/YYYY ────
+function formatTanggalDisplay(val) {
+  if (!val) return '—'
+  // Jika sudah berbentuk Date object
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return '—'
+    return String(val.getDate()).padStart(2, '0') + '/' +
+      String(val.getMonth() + 1).padStart(2, '0') + '/' + val.getFullYear()
+  }
+  var s = String(val).trim()
+  if (!s) return '—'
+  // Format ISO: YYYY-MM-DDTHH:mm:ss atau YYYY-MM-DD
+  var isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (isoMatch) {
+    return isoMatch[3] + '/' + isoMatch[2] + '/' + isoMatch[1]
+  }
+  // Sudah format DD/MM/YYYY — kembalikan langsung
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+    var parts = s.split('/')
+    var n0 = parseInt(parts[0]), n1 = parseInt(parts[1]), yr = parts[2]
+    // Deteksi format M/D/YYYY (Google Sheets locale AS) vs DD/MM/YYYY
+    if (n0 > 12) {
+      // DD/MM/YYYY — sudah benar
+      return String(n0).padStart(2,'0') + '/' + String(n1).padStart(2,'0') + '/' + yr
+    } else if (n1 > 12) {
+      // M/D/YYYY → balik jadi DD/MM/YYYY
+      return String(n1).padStart(2,'0') + '/' + String(n0).padStart(2,'0') + '/' + yr
+    }
+    // Ambiguous — kembalikan apa adanya (sudah zero-padded dari web app)
+    return String(n0).padStart(2,'0') + '/' + String(n1).padStart(2,'0') + '/' + yr
+  }
+  return s
+}
+
 export default function Profil() {
   const { user, token, logoutContext, updateUserContext } = useAuth()
   const navigate = useNavigate()
@@ -176,7 +210,7 @@ export default function Profil() {
               <div>
                 <p className="profil-info-label">Periode Magang</p>
                 <p className="profil-info-val">
-                  {profile?.mulaiMagang || '—'} {profile?.selesaiMagang ? `s.d. ${profile.selesaiMagang}` : ''}
+                  {formatTanggalDisplay(profile?.mulaiMagang)} {profile?.selesaiMagang ? `s.d. ${formatTanggalDisplay(profile.selesaiMagang)}` : ''}
                 </p>
               </div>
             </div>
@@ -195,7 +229,7 @@ export default function Profil() {
               </span>
               <div>
                 <p className="profil-info-label">Tanggal Lahir (PIN Login)</p>
-                <p className="profil-info-val">{profile?.tanggalLahir || profile?.tglLahir || profile?.tanggal_lahir || '—'}</p>
+                <p className="profil-info-val">{formatTanggalDisplay(profile?.tanggalLahir || profile?.tglLahir || profile?.tanggal_lahir)}</p>
               </div>
             </div>
             <div className="profil-info-item">

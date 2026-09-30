@@ -1,4 +1,4 @@
-// IMPLEMENTASI ENDPOINT (WEB API)
+﻿// IMPLEMENTASI ENDPOINT (WEB API)
 // ============================================================
 
 function handleGetPesertaList(data) {
@@ -79,7 +79,7 @@ function handleLogin(data) {
         if (rows[i][12] === 'rejected') return { success: false, message: 'Akun Anda ditolak.' };
         if (rows[i][12] !== 'active')   return { success: false, message: 'Status akun tidak valid.' };
   
-        var lat = null, lng = null, radius = 100, lokasiNama = rows[i][14], unitKerjaNama = '—';
+        var lat = null, lng = null, radius = 100, lokasiNama = rows[i][14], unitKerjaNama = 'â€”';
         if (rows[i][14]) {
           var penSheet2 = getSheet('WEB Penugasan');
           if (penSheet2) {
@@ -119,17 +119,16 @@ function handleLogin(data) {
           success: true, token: token,
           user: { 
             id: rows[i][15],
-        nim: rows[i][5] || '', 
             nim: rows[i][5] || '',
             nama: rows[i][1], 
-            tanggalLahir: rows[i][2],
+            tanggalLahir: normalizeTanggal(rows[i][2]),
             alamat: rows[i][3],
             noHp: rows[i][4],
             email: rows[i][6],
             kampus: rows[i][7],
             jurusan: rows[i][8],
-            mulaiMagang: rows[i][9],
-            selesaiMagang: rows[i][10],
+            mulaiMagang: normalizeTanggal(rows[i][9]),
+            selesaiMagang: normalizeTanggal(rows[i][10]),
             role: rows[i][13] || 'intern', 
             lokasi: lokasiNama || 'Belum ditetapkan', 
             unitKerja: unitKerjaNama,
@@ -176,7 +175,7 @@ function handleGetProfile(data) {
         if (idFoto) fotoUrl = 'https://lh3.googleusercontent.com/d/' + idFoto + '=s400';
       }
       
-      var lat = null, lng = null, radius = 100, lokasiNama = rows[i][14], unitKerjaNama = '—';
+      var lat = null, lng = null, radius = 100, lokasiNama = rows[i][14], unitKerjaNama = 'â€”';
       if (rows[i][14]) {
         var penSheet = getSheet('WEB Penugasan');
         if (penSheet) {
@@ -209,14 +208,14 @@ function handleGetProfile(data) {
           id: rows[i][15],
           nim: rows[i][5] || '',
           nama: rows[i][1],
-          tanggalLahir: rows[i][2],
+          tanggalLahir: normalizeTanggal(rows[i][2]),
           alamat: rows[i][3],
           noHp: rows[i][4],
           email: rows[i][6],
           kampus: rows[i][7],
           jurusan: rows[i][8],
-          mulaiMagang: rows[i][9],
-          selesaiMagang: rows[i][10],
+          mulaiMagang: normalizeTanggal(rows[i][9]),
+          selesaiMagang: normalizeTanggal(rows[i][10]),
           foto: fotoUrl,
           role: rows[i][13] || 'intern',
           lokasi: lokasiNama || 'Belum ditetapkan',
@@ -238,14 +237,14 @@ function handleGetStatusHariIni(data) {
   var cacheKey = 'status_' + data.idPeserta + '_' + normalizeTanggal(today);
   var cache = CacheService.getScriptCache();
   var cached = cache.get(cacheKey);
-  if (cached) { try { return { success: true, data: JSON.parse(cached) }; } catch(e){} }
+  // if (cached) { try { return { success: true, data: JSON.parse(cached) }; } catch(e){} } // CACHE DIMATIKAN SEMENTARA AGAR DATA BARU MUNCUL
   
   var sheet = getSheet('WEB Presensi');
   if (!sheet) return { success: true, data: { sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null } };
-  var rows = sheet.getDataRange().getValues();
+  var rows = sheet.getDataRange().getDisplayValues();
   var statusData = { sudahMasuk: false, sudahPulang: false, jamMasuk: null, jamPulang: null };
   for (var i = rows.length - 1; i >= 1; i--) {
-    if (normalizeTanggal(rows[i][0]) === normalizeTanggal(today) && rows[i][1] === data.idPeserta) {
+    if (normalizeTanggal(rows[i][0]) === normalizeTanggal(today) && String(rows[i][1]) === String(data.idPeserta)) {
       statusData = { sudahMasuk: !!rows[i][4], sudahPulang: !!rows[i][6], jamMasuk: rows[i][4] || null, jamPulang: rows[i][6] || null };
       break;
     }
@@ -259,7 +258,7 @@ function handleCheckIn(data) {
   
   var regRows  = getSheet('WEB Register').getDataRange().getDisplayValues();
   var peserta  = null;
-  for (var i = 1; i < regRows.length; i++) if (regRows[i][15] === data.idPeserta) { peserta = regRows[i]; break; }
+  for (var i = 1; i < regRows.length; i++) if (String(regRows[i][15]) === String(data.idPeserta)) { peserta = regRows[i]; break; }
   
   var idLokasi = peserta[14];
   var namaLokasi = 'KANTOR DAOP';
@@ -292,11 +291,11 @@ function handleCheckIn(data) {
     dataSheet.appendRow(['TANGGAL', 'ID PESERTA', 'NAMA', 'LOKASI', 'JAM MASUK', 'FOTO MASUK', 'JAM PULANG', 'FOTO PULANG', 'TOTAL JAM', 'GPS MASUK', 'GPS PULANG', 'STATUS']);
   }
   
-  var dsRows = dataSheet.getDataRange().getValues();
+  var dsRows = dataSheet.getDataRange().getDisplayValues();
   var todayNorm = normalizeTanggal(today);
   for (var k = dsRows.length - 1; k >= 1; k--) {
     // Normalize tanggal di sheet agar cocok dengan format apapun
-    if (normalizeTanggal(dsRows[k][0]) === todayNorm && dsRows[k][1] === data.idPeserta && dsRows[k][4]) return { success: false, message: 'Sudah presensi masuk.' };
+    if (normalizeTanggal(dsRows[k][0]) === todayNorm && String(dsRows[k][1]) === String(data.idPeserta) && dsRows[k][4]) return { success: false, message: 'Sudah presensi masuk.' };
   }
 
   var jamMasuk = formatJam(data.timestamp ? new Date(data.timestamp) : new Date());
@@ -312,12 +311,12 @@ function handleCheckOut(data) {
   var dataSheet = getSheet('WEB Presensi');
   if (!dataSheet) return { success: false, message: 'Belum presensi masuk.' };
 
-  var rows = dataSheet.getDataRange().getValues();
+  var rows = dataSheet.getDataRange().getDisplayValues();
   var targetRow = -1;
   var todayNormCO = normalizeTanggal(today);
   for (var i = rows.length - 1; i >= 1; i--) {
     // Normalize tanggal di kedua sisi agar berbagai format bisa cocok (DD/MM/YYYY vs M/D/YYYY)
-    if (normalizeTanggal(rows[i][0]) === todayNormCO && rows[i][1] === data.idPeserta && rows[i][4] && !rows[i][6]) { targetRow = i + 1; break; }
+    if (normalizeTanggal(rows[i][0]) === todayNormCO && String(rows[i][1]) === String(data.idPeserta) && rows[i][4] && !rows[i][6]) { targetRow = i + 1; break; }
   }
   if (targetRow === -1) return { success: false, message: 'Belum presensi masuk atau sudah pulang.' };
 
@@ -337,22 +336,29 @@ function handleGetRiwayat(data) {
   var cacheKey = 'riwayat_' + data.idPeserta;
   var cache = CacheService.getScriptCache();
   var cached = cache.get(cacheKey);
-  if (cached) { try { return { success: true, data: JSON.parse(cached) }; } catch(e){} }
+  // if (cached) { try { return { success: true, data: JSON.parse(cached) }; } catch(e){} } // CACHE DIMATIKAN SEMENTARA AGAR DATA BARU MUNCUL
   
   var sheet = getSheet('WEB Presensi');
   if (!sheet) return { success: true, data: [] };
-  var rows = sheet.getDataRange().getValues();
+  var rows = sheet.getDataRange().getDisplayValues();
   var result = [];
   for (var i = rows.length - 1; i >= 1; i--) {
-    if (rows[i][1] === data.idPeserta) {
+    if (String(rows[i][1]) === String(data.idPeserta)) {
       var dStr = String(rows[i][0] || '');
+      var statusSheet = String(rows[i][11] || '').trim();
+      // Gunakan status dari kolom sheet (kolom L / index 11),
+      // fallback ke 'Hadir' / 'Belum Pulang' berdasarkan jam pulang
+      var statusFinal = statusSheet ||
+                        (rows[i][6] ? 'Hadir' : (rows[i][4] ? 'Belum Pulang' : 'Alfa'));
       result.push({
-        tanggal: normalizeTanggal(dStr),
-        jamMasuk: rows[i][4] || null,
-        jamPulang: rows[i][6] || null,
-        lokasiMasuk: rows[i][5] || null,
-        lokasiPulang: rows[i][7] || null,
-        status: (rows[i][6]) ? 'Hadir' : 'Belum Pulang'
+        tanggal:    normalizeTanggal(dStr),
+        jamMasuk:   rows[i][4] || null,
+        jamPulang:  rows[i][6] || null,
+        fotoMasuk:  rows[i][5] || null,
+        fotoPulang: rows[i][7] || null,
+        lokasi:     rows[i][3] || null,
+        totalJam:   rows[i][8] || null,
+        status:     statusFinal
       });
       if (result.length >= 31) break;
     }
@@ -361,7 +367,7 @@ function handleGetRiwayat(data) {
   return { success: true, data: result };
 }
 
-// ─── HANDLER IZIN ────────────────────────────────────────────
+// â”€â”€â”€ HANDLER IZIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function mapJenisIzinKeStatus(jenis) {
   if (!jenis) return 'Ijin Lain';
   var j = String(jenis).toLowerCase().trim();
@@ -384,7 +390,7 @@ function handleAjukanIzin(data) {
   var regRows = regSheet.getDataRange().getDisplayValues();
   var pesertaNama = '', pesertaLokasi = 'Izin (Online)';
   for (var i = 1; i < regRows.length; i++) {
-    if (regRows[i][15] === data.idPeserta) {
+    if (String(regRows[i][15]) === String(data.idPeserta)) {
       pesertaNama = regRows[i][1];
       if (regRows[i][14]) pesertaLokasi = regRows[i][14];
       break;
@@ -396,9 +402,9 @@ function handleAjukanIzin(data) {
     dataSheet.appendRow(['TANGGAL', 'ID PESERTA', 'NAMA', 'LOKASI', 'JAM MASUK', 'FOTO MASUK', 'JAM PULANG', 'FOTO PULANG', 'TOTAL JAM', 'GPS MASUK', 'GPS PULANG', 'STATUS']);
   }
 
-  var dsRows = dataSheet.getDataRange().getValues();
+  var dsRows = dataSheet.getDataRange().getDisplayValues();
   for (var k = dsRows.length - 1; k >= 1; k--) {
-    if (normalizeTanggal(dsRows[k][0]) === tglInputNorm && dsRows[k][1] === data.idPeserta) {
+    if (normalizeTanggal(dsRows[k][0]) === tglInputNorm && String(dsRows[k][1]) === String(data.idPeserta)) {
       var st = (dsRows[k][11] || '').toLowerCase();
       if (st === 'hadir') return { success: false, message: 'Anda sudah presensi hadir pada tanggal tersebut.' };
       if (st.startsWith('ijin')) return { success: false, message: 'Anda sudah mengajukan izin pada tanggal tersebut.' };
@@ -436,7 +442,7 @@ function handleGetIzinSaya(data) {
   if (pSheet) {
     var pRows = pSheet.getDataRange().getDisplayValues();
     for (var j = 1; j < pRows.length; j++) {
-      if (pRows[j][1] === data.idPeserta && pRows[j][11] && pRows[j][11].toLowerCase().startsWith('ijin')) {
+      if (String(pRows[j][1]) === String(data.idPeserta) && pRows[j][11] && pRows[j][11].toLowerCase().startsWith('ijin')) {
         var tglNorm = normalizeTanggal(pRows[j][0]);
         var displayJenis = 'Lainnya';
         var stLower = pRows[j][11].toLowerCase();
@@ -463,7 +469,7 @@ function handleGetIzinSaya(data) {
   if (izinSheet) {
     var rows = izinSheet.getDataRange().getDisplayValues();
     for (var i = 1; i < rows.length; i++) {
-      if (rows[i][1] === data.idPeserta) {
+      if (String(rows[i][1]) === String(data.idPeserta)) {
         var tglNormIzin = normalizeTanggal(rows[i][3]);
         var keyIzin = tglNormIzin + '_' + data.idPeserta;
         if (!seenKeys[keyIzin]) {
@@ -484,8 +490,8 @@ function handleGetIzinSaya(data) {
   return { success: true, data: result.reverse() };
 }
 
-// ─── ADMIN ENDPOINTS (Dipendekkan) ───────────────────────────
-// ── Util: konversi tanggal (DD/MM/YYYY) ke angka yg bisa dibandingkan ──
+// â”€â”€â”€ ADMIN ENDPOINTS (Dipendekkan) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Util: konversi tanggal (DD/MM/YYYY) ke angka yg bisa dibandingkan â”€â”€
 function tglToKey(str) {
   if (!str) return null;
   var norm = normalizeTanggal(str); // -> 'DD/MM/YYYY'
@@ -518,7 +524,7 @@ function handleGetAllPresensi(data) {
 
   if (!regSheet) return { success: true, data: [] };
 
-  // ── 1. Bangun map lokasi: idLokasi → namaLengkap (dari WEB Penugasan) ───
+  // â”€â”€ 1. Bangun map lokasi: idLokasi â†’ namaLengkap (dari WEB Penugasan) â”€â”€â”€
   // WEB Penugasan: [0]=ID, [1]=Tipe(unit_kerja/lokasi), [2]=ID_Induk, [3]=Nama, ...
   var namaLokasiMap = {};  // idLokasi -> 'Unit Kerja - Nama Lokasi'
   if (penSheet) {
@@ -542,7 +548,7 @@ function handleGetAllPresensi(data) {
     }
   }
 
-  // ── 2. Bangun map presensi hari ini: idPeserta → row data ─────────────
+  // â”€â”€ 2. Bangun map presensi hari ini: idPeserta â†’ row data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   var presensiMap = {};
   if (pSheet) {
     var pRows = pSheet.getDataRange().getDisplayValues();
@@ -571,7 +577,7 @@ function handleGetAllPresensi(data) {
     }
   }
 
-  // ── 3. Iterasi SEMUA peserta aktif dari WEB Register ──────────────────
+  // â”€â”€ 3. Iterasi SEMUA peserta aktif dari WEB Register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   var regRows = regSheet.getDataRange().getDisplayValues();
   var result  = [];
 
@@ -588,7 +594,7 @@ function handleGetAllPresensi(data) {
     var penempatan      = idLokasiPeserta ? (namaLokasiMap[idLokasiPeserta] || idLokasiPeserta) : '';
 
     var pData = presensiMap[idPeserta];
-    // Masa magang peserta (Aktif / Selesai / Belum) → untuk menandai kartu nonaktif
+    // Masa magang peserta (Aktif / Selesai / Belum) â†’ untuk menandai kartu nonaktif
     var masa = statusMasaMagang(String(regRows[r][9] || ''), String(regRows[r][10] || ''), tglNorm);
 
     if (pData) {
@@ -612,7 +618,7 @@ function handleGetAllPresensi(data) {
         masaMagang: masa
       });
     } else {
-      // Tidak ada data presensi → status memakai hasil cek masa magang
+      // Tidak ada data presensi â†’ status memakai hasil cek masa magang
       var stNonPresensi = (masa === 'Selesai') ? 'Selesai'
                         : (masa === 'Belum')    ? 'Belum'
                         : 'Alfa';
@@ -636,7 +642,7 @@ function handleGetAllPresensi(data) {
     }
   }
 
-  // ── 4. Sort: BlmPulang → Hadir → Ijin → Alfa ────────────────────────
+  // â”€â”€ 4. Sort: BlmPulang â†’ Hadir â†’ Ijin â†’ Alfa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   var order = function(p) {
     if (p.masaMagang && p.masaMagang !== 'Aktif') return 4; // nonaktif magang paling bawah
     if (p.status === 'Hadir' && p.jamMasuk && !p.jamPulang) return 0; // Blm Pulang duluan
@@ -682,7 +688,7 @@ function handleGetDashboardAdmin(data) {
   return { success: true, data: { hadir: hadir, izin: izin, tidakHadir: tidakHadir, pending: pending, total: total } };
 }
 
-// ── Rekap per peserta selama bulan berjalan (untuk tabel Dashboard Admin) ──
+// â”€â”€ Rekap per peserta selama bulan berjalan (untuk tabel Dashboard Admin) â”€â”€
 function handleGetRekapBulanan(data) {
   if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
 
@@ -753,7 +759,7 @@ function handleApproveUser(data) {
   var sheet = getSheet('WEB Register');
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][15] === data.idPeserta) {
+    if (String(rows[i][15]) === String(data.idPeserta)) {
       sheet.getRange(i + 1, 14).setValue('active');
       sheet.getRange(i + 1, 15).setValue(data.idLokasi || '');
       return { success: true, message: 'Disetujui.' };
@@ -938,13 +944,13 @@ function kirimPengingatPresensiMasuk(isManual) {
       totalLewati++;
     } else {
       Logger.log('Mengirim pengingat MASUK ke ' + nama + ' (' + noHp + ')...');
-      var pesan = "🔔 *PENGINGAT PRESENSI MASUK — KAI DAOP 8*\n\n" +
-                  "Halo *" + nama + "*! 👋\n\n" +
+      var pesan = "ðŸ”” *PENGINGAT PRESENSI MASUK â€” KAI DAOP 8*\n\n" +
+                  "Halo *" + nama + "*! ðŸ‘‹\n\n" +
                   "Saya ence dari *Tim Magang Daop 8* ingin mengingatkan bahwa hari *" + namaHari + "* ini jam masuk magang adalah pukul *" + jamMasuk + " WIB* s.d *" + jamPulang + " WIB*.\n\n" +
                   "Mohon segera lakukan *Presensi Masuk* melalui aplikasi berikut:\n" +
-                  "👉 https://hadirkai8.vercel.app/\n\n" +
-                  "Selamat beraktivitas dan tetap semangat ya! 🚂✨\n" +
-                  "━━━━━━━━━━━━━━━━━━━━\n" +
+                  "ðŸ‘‰ https://hadirkai8.vercel.app/\n\n" +
+                  "Selamat beraktivitas dan tetap semangat ya! ðŸš‚âœ¨\n" +
+                  "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\n" +
                   "_Pesan resmi dikirim otomatis oleh Sistem Presensi Daop 8 Surabaya_";
 
       var res = kirimWhatsAppFonnte(noHp, pesan);
@@ -1024,13 +1030,13 @@ function kirimPengingatPresensiPulang(isManual) {
 
       if ((statusKehadiran === 'Hadir' || jamMasukData !== '') && jamPulangData === '') {
         Logger.log('Mengirim pengingat PULANG ke ' + nama + ' (' + noHp + ')...');
-        var pesan = "🔔 *PENGINGAT PRESENSI PULANG — KAI DAOP 8*\n\n" +
-                    "Halo *" + nama + "*! 👋\n\n" +
+        var pesan = "ðŸ”” *PENGINGAT PRESENSI PULANG â€” KAI DAOP 8*\n\n" +
+                    "Halo *" + nama + "*! ðŸ‘‹\n\n" +
                     "Jam operasional magang hari *" + namaHari + "* ini berakhir pukul *" + jamPulang + " WIB*.\n\n" +
                     "Jangan lupa segera lakukan *Presensi Pulang* agar jam kerja Anda tercatat lengkap:\n" +
-                    "👉 https://hadirkai8.vercel.app/\n\n" +
-                    "Terima kasih atas kerja keras Anda hari ini! Hati-hati di perjalanan pulang. 🚂✨\n" +
-                    "━━━━━━━━━━━━━━━━━━━━\n" +
+                    "ðŸ‘‰ https://hadirkai8.vercel.app/\n\n" +
+                    "Terima kasih atas kerja keras Anda hari ini! Hati-hati di perjalanan pulang. ðŸš‚âœ¨\n" +
+                    "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\n" +
                     "_Pesan resmi dikirim otomatis oleh Sistem Presensi Daop 8 Surabaya_";
 
         var res = kirimWhatsAppFonnte(noHp, pesan);
@@ -1049,13 +1055,13 @@ function kirimPengingatPresensiPulang(isManual) {
 }
 
 /**
- * ─────────────────────────────────────────────────────────────
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  * FUNGSI TRIGGER MANUAL (BISA ANDA PILIH & KLIK JALANKAN KAPAN SAJA)
- * ─────────────────────────────────────────────────────────────
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  */
 
 /**
- * 👉 PILIH FUNGSI INI DARI DROPDOWN & KLIK RUN UNTUK CHAT SEMUA ANAK MAGANG (PRESENSI MASUK)
+ * ðŸ‘‰ PILIH FUNGSI INI DARI DROPDOWN & KLIK RUN UNTUK CHAT SEMUA ANAK MAGANG (PRESENSI MASUK)
  */
 function triggerPengingatMasukManual() {
   Logger.log('>>> Memulai Eksekusi Manual: PENGINGAT MASUK <<<');
@@ -1064,7 +1070,7 @@ function triggerPengingatMasukManual() {
 }
 
 /**
- * 👉 PILIH FUNGSI INI DARI DROPDOWN & KLIK RUN UNTUK CHAT SEMUA ANAK MAGANG (PRESENSI PULANG)
+ * ðŸ‘‰ PILIH FUNGSI INI DARI DROPDOWN & KLIK RUN UNTUK CHAT SEMUA ANAK MAGANG (PRESENSI PULANG)
  */
 function triggerPengingatPulangManual() {
   Logger.log('>>> Memulai Eksekusi Manual: PENGINGAT PULANG <<<');
@@ -1073,7 +1079,7 @@ function triggerPengingatPulangManual() {
 }
 
 /**
- * Wrapper OTOMATIS untuk trigger — memanggil pengingat masuk dengan isManual=false
+ * Wrapper OTOMATIS untuk trigger â€” memanggil pengingat masuk dengan isManual=false
  * sehingga cek Sabtu/Minggu SELALU aktif.
  * PENTING: Trigger harus diarahkan ke fungsi INI, bukan langsung ke kirimPengingatPresensiMasuk.
  */
@@ -1082,7 +1088,7 @@ function kirimPengingatMasukAuto() {
 }
 
 /**
- * Wrapper khusus Jumat — dipanggil trigger jam 07:15
+ * Wrapper khusus Jumat â€” dipanggil trigger jam 07:15
  * Masuk Jumat: 07.30 WIB
  */
 function kirimPengingatMasukJumatAuto() {
@@ -1090,7 +1096,7 @@ function kirimPengingatMasukJumatAuto() {
 }
 
 /**
- * Wrapper OTOMATIS untuk trigger — memanggil pengingat pulang dengan isManual=false
+ * Wrapper OTOMATIS untuk trigger â€” memanggil pengingat pulang dengan isManual=false
  * sehingga cek Sabtu/Minggu SELALU aktif.
  * PENTING: Trigger harus diarahkan ke fungsi INI, bukan langsung ke kirimPengingatPresensiPulang.
  */
@@ -1099,7 +1105,7 @@ function kirimPengingatPulangAuto() {
 }
 
 /**
- * Wrapper khusus Jumat — dipanggil trigger jam 14:45
+ * Wrapper khusus Jumat â€” dipanggil trigger jam 14:45
  * Pulang Jumat: 15.00 WIB
  */
 function kirimPengingatPulangJumatAuto() {
@@ -1141,10 +1147,10 @@ function hapusTriggerWADuplikat() {
 }
 
 function setupTriggerPengingatWA() {
-  // ── LANGKAH 1: Hapus SEMUA trigger WA lama ──
+  // â”€â”€ LANGKAH 1: Hapus SEMUA trigger WA lama â”€â”€
   hapusTriggerWADuplikat();
 
-  // ── LANGKAH 2: Pasang 4 trigger sesuai jadwal resmi magang ──
+  // â”€â”€ LANGKAH 2: Pasang 4 trigger sesuai jadwal resmi magang â”€â”€
   // Jadwal: Senin-Kamis 08.00-16.00 | Jumat 07.30-15.00 | Sabtu-Minggu Libur
   // Trigger diarahkan ke wrapper agar isManual=false dan cek weekend selalu aktif.
 
@@ -1183,7 +1189,7 @@ function setupTriggerPengingatWA() {
     .nearMinute(45)
     .create();
 
-  Logger.log('✅ Trigger Pengingat WA Berhasil Dipasang (4 trigger sesuai jadwal resmi):');
+  Logger.log('âœ… Trigger Pengingat WA Berhasil Dipasang (4 trigger sesuai jadwal resmi):');
   Logger.log('   07:15 => kirimPengingatMasukJumatAuto  (Jumat masuk 07.30)');
   Logger.log('   07:45 => kirimPengingatMasukAuto       (Sen-Kam masuk 08.00)');
   Logger.log('   14:45 => kirimPengingatPulangJumatAuto (Jumat pulang 15.00)');
@@ -1196,7 +1202,7 @@ function setupTriggerPengingatWA() {
  */
 function testKirimWhatsAppFonnte() {
   var noHpTest = '081535481447'; // Nomor pengujian Anda
-  var pesan = "Halo! Saya *ence dari Daop 8* 🚂\nIni adalah pesan uji coba Bot Pengingat Presensi KAI Daop 8 via Fonnte. Sistem siap digunakan!";
+  var pesan = "Halo! Saya *ence dari Daop 8* ðŸš‚\nIni adalah pesan uji coba Bot Pengingat Presensi KAI Daop 8 via Fonnte. Sistem siap digunakan!";
   
   Logger.log('Memulai uji coba pengiriman WA Fonnte ke ' + noHpTest);
   var res = kirimWhatsAppFonnte(noHpTest, pesan);
@@ -1205,7 +1211,7 @@ function testKirimWhatsAppFonnte() {
 
 // ============================================================
 // HANDLER: getPenugasanPublic
-// Endpoint publik — siapa pun bisa ambil daftar unit kerja & lokasi
+// Endpoint publik â€” siapa pun bisa ambil daftar unit kerja & lokasi
 // Tidak butuh token karena data ini hanya read-only & tidak sensitif.
 // ============================================================
 function handleGetPenugasanPublic(data) {
@@ -1267,7 +1273,7 @@ function handleSelfAssignLokasi(data) {
   if (!lokasiValid) return { success: false, message: 'Lokasi tidak ditemukan di sistem.' };
 
   // Ambil nama unit kerja induk
-  var unitKerjaNama = '—';
+  var unitKerjaNama = 'â€”';
   if (idInduk) {
     for (var k = 1; k < penRows.length; k++) {
       if (penRows[k][0] === idInduk && penRows[k][1] === 'unit_kerja') {
@@ -1306,3 +1312,110 @@ function mintaIzinWA() {
   UrlFetchApp.fetch("https://api.fonnte.com/");
 }
 
+
+// â”€â”€â”€ DATE & TIME HELPER FUNCTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Fungsi-fungsi ini WAJIB ada agar tanggal tidak dikirim sebagai
+// raw Date object (ISO string) ke frontend.
+
+/**
+ * Format tanggal menjadi DD/MM/YYYY.
+ * Jika tanpa argumen gunakan tanggal hari ini.
+ */
+function formatTanggal(dateStr) {
+  var d = dateStr ? new Date(dateStr) : new Date();
+  if (isNaN(d.getTime())) {
+    if (typeof dateStr === 'string' && dateStr.indexOf('/') !== -1) return dateStr;
+    d = new Date();
+  }
+  return [String(d.getDate()).padStart(2, '0'),
+          String(d.getMonth() + 1).padStart(2, '0'),
+          d.getFullYear()].join('/');
+}
+
+/**
+ * Normalisasi berbagai format tanggal ke DD/MM/YYYY.
+ * Menangani: Date Object, "DD/MM/YYYY", "M/D/YYYY" (Google Sheets US locale),
+ *            "YYYY-MM-DD" (ISO dari HTML date input / frontend)
+ */
+function normalizeTanggal(tglStr) {
+  if (!tglStr) return '';
+  if (tglStr instanceof Date) {
+    return String(tglStr.getDate()).padStart(2, '0') + '/' +
+           String(tglStr.getMonth() + 1).padStart(2, '0') + '/' +
+           tglStr.getFullYear();
+  }
+  var s = String(tglStr).trim();
+  var isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return isoMatch[3] + '/' + isoMatch[2] + '/' + isoMatch[1];
+  var parts = s.split('/');
+  if (parts.length !== 3) return s;
+  var n0 = parseInt(parts[0], 10), n1 = parseInt(parts[1], 10), yr = parts[2];
+  var day, month;
+  if (n0 > 12)                                { day = n0; month = n1; }
+  else if (n1 > 12)                           { month = n0; day = n1; }
+  else if (parts[0].length === 2 && parts[0].charAt(0) === '0') { day = n0; month = n1; }
+  else                                        { month = n0; day = n1; }
+  if (!day || !month || day < 1 || day > 31 || month < 1 || month > 12) return s;
+  return String(day).padStart(2, '0') + '/' + String(month).padStart(2, '0') + '/' + yr;
+}
+
+/**
+ * Format jam dari Date object atau string menjadi HH:MM:SS
+ */
+function formatJam(dateObj) {
+  if (!dateObj) return '';
+  if (typeof dateObj === 'string' && dateObj.indexOf(':') !== -1) {
+    var parts = dateObj.split(' ');
+    return parts[parts.length - 1];
+  }
+  var d = new Date(dateObj);
+  if (isNaN(d.getTime())) return '';
+  return [String(d.getHours()).padStart(2, '0'),
+          String(d.getMinutes()).padStart(2, '0'),
+          String(d.getSeconds()).padStart(2, '0')].join(':');
+}
+
+/**
+ * Hitung selisih jam masuk dan pulang. Format: HH:MM atau HH:MM:SS
+ * Return: "Xj Ym Zd"
+ */
+function hitungTotalJam(jamMasuk, jamPulang) {
+  if (!jamMasuk || !jamPulang) return '';
+  try {
+    var pm = String(jamMasuk).trim().split(':').map(Number);
+    var pp = String(jamPulang).trim().split(':').map(Number);
+    if (pm.length < 2 || pp.length < 2) return '';
+    if (isNaN(pm[0]) || isNaN(pm[1]) || isNaN(pp[0]) || isNaN(pp[1])) return '';
+    var detikMasuk  = pm[0] * 3600 + pm[1] * 60 + (pm[2] || 0);
+    var detikPulang = pp[0] * 3600 + pp[1] * 60 + (pp[2] || 0);
+    var selisih = detikPulang - detikMasuk;
+    if (selisih <= 0) return '0j 0m 0d';
+    return Math.floor(selisih / 3600) + 'j ' +
+           Math.floor((selisih % 3600) / 60) + 'm ' +
+           (selisih % 60) + 'd';
+  } catch(e) { return ''; }
+}
+
+/**
+ * Upload foto (base64) ke Google Drive dan return URL publik
+ */
+function uploadFoto(base64Data, filename) {
+  try {
+    var clean = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    var folder;
+    try { folder = DriveApp.getFolderById(CONFIG.FOLDER_FOTO_ID); }
+    catch(e) { folder = DriveApp.getRootFolder(); }
+    var file = folder.createFile(
+      Utilities.newBlob(Utilities.base64Decode(clean), 'image/jpeg', filename)
+    );
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return 'https://drive.google.com/uc?id=' + file.getId();
+  } catch(err) { return ''; }
+}
+
+/**
+ * Validasi admin token
+ */
+function isAdminValid(adminToken) {
+  return adminToken === CONFIG.ADMIN_TOKEN;
+}

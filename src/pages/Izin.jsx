@@ -35,28 +35,15 @@ export default function Izin() {
     return () => clearInterval(t)
   }, [])
 
-  // Mengambil riwayat izin dengan memanggil api.getRiwayat dan filter izin
+  // Mengambil riwayat izin menggunakan endpoint khusus getIzinSaya
   const fetchRiwayat = () => {
     if (!user?.id || !token) return
     setRiwayatLoading(true)
-    api.getRiwayat(user.id, token)
+    api.getIzinSaya(user.id, token)
       .then(res => {
         if (res.success && res.data) {
-          const izinList = res.data.filter(item => item.status && item.status.toLowerCase().startsWith('ijin'))
-          // Map agar sesuai format yang diharapkan komponen list riwayat izin
-          const mapped = izinList.map(i => {
-            let j = 'Lainnya'
-            if (i.status === 'Ijin Sakit') j = 'Sakit'
-            if (i.status === 'Ijin Kampus') j = 'Kuliah'
-            return {
-              tanggal: i.tanggal,
-              jenis: j,
-              keterangan: i.lokasi ? i.lokasi.replace(/^Izin \(Online\)\s*(?:\((.*?)\))?$/, '$1').trim() : '',
-              fotoUrl: i.fotoMasuk,
-              status: 'Tercatat'
-            }
-          })
-          setRiwayat(mapped)
+          // Data sudah terformat dari backend: { tanggal, jenis, keterangan, fotoUrl, status }
+          setRiwayat(res.data)
         }
       })
       .catch(() => {})
@@ -390,14 +377,19 @@ export default function Izin() {
                         onError={(e) => { e.target.style.display = 'none' }}
                       />
                     ) : (
-                      <div className="ih-thumb-placeholder">
-                        {item.jenis === 'Sakit' ? (
-                          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6v12m-6-6h12"/><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/></svg>
-                        ) : item.jenis === 'Kuliah' ? (
-                          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                        )}
+                     <div className="ih-thumb-placeholder">
+                        {(() => {
+                          const jenisLow = (item.jenis || '').toLowerCase()
+                          if (jenisLow === 'sakit') return (
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6v12m-6-6h12"/><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/></svg>
+                          )
+                          if (jenisLow === 'kuliah') return (
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                          )
+                          return (
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                          )
+                        })()}
                       </div>
                     )}
                     <div>
@@ -414,7 +406,12 @@ export default function Izin() {
                       )}
                     </div>
                   </div>
-                  <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>Tercatat</span>
+                  <span
+                    className={`badge ${item.status === 'approved' || item.status === 'Tercatat' ? 'badge-green' : 'badge-amber'}`}
+                    style={{ fontSize: '0.7rem' }}
+                  >
+                    {item.status === 'approved' ? 'Tercatat' : (item.status || 'Tercatat')}
+                  </span>
                 </div>
               ))}
             </div>

@@ -10,7 +10,7 @@
 import { jsPDF }        from 'jspdf'
 import { api }           from '../services/api'
 import { extractDriveFileId } from '../utils/driveImage'
-import { formatTglIndo, parseTanggal } from '../utils/dateFormat'
+import { formatTglIndo, parseTanggal, formatTglDDMMYYYY } from '../utils/dateFormat'
 
 // ─── Layout (Landscape A4) ─────────────────────────────────────────────────
 const PW  = 297
@@ -236,8 +236,8 @@ export async function generateRekapPDF({ user, token, riwayat, totalHari, totalJ
     ['Email',            profile.email   || '\u2014'],
     ['Kampus / Sekolah', profile.kampus  || '\u2014'],
     ['Jurusan / Prodi',  profile.jurusan || '\u2014'],
-    ['Mulai Magang',     profile.mulaiMagang   || '\u2014'],
-    ['Selesai Magang',   profile.selesaiMagang || '\u2014'],
+    ['Mulai Magang',     formatTglDDMMYYYY(profile.mulaiMagang)   || '\u2014'],
+    ['Selesai Magang',   formatTglDDMMYYYY(profile.selesaiMagang) || '\u2014'],
   ]
 
   const bioStartY = y

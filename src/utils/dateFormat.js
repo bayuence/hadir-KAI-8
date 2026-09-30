@@ -15,7 +15,26 @@
  */
 export function normalizeTglParts(tglStr) {
   if (!tglStr) return null
-  const parts = tglStr.split('/')
+
+  // Handle Date object langsung
+  if (tglStr instanceof Date) {
+    if (isNaN(tglStr.getTime())) return null
+    return { day: tglStr.getDate(), month: tglStr.getMonth() + 1, year: tglStr.getFullYear() }
+  }
+
+  const s = String(tglStr).trim()
+
+  // Handle format ISO: YYYY-MM-DDTHH:mm:ss... atau YYYY-MM-DD
+  const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1])
+    const month = parseInt(isoMatch[2])
+    const day = parseInt(isoMatch[3])
+    if (day < 1 || day > 31 || month < 1 || month > 12) return null
+    return { day, month, year }
+  }
+
+  const parts = s.split('/')
   if (parts.length !== 3) return null
 
   const [p0, p1, p2] = parts
@@ -86,4 +105,16 @@ export function parseTanggal(tglStr) {
   if (!p) return null
   const d = new Date(p.year, p.month - 1, p.day)
   return isNaN(d.getTime()) ? null : d
+}
+
+/**
+ * Format tanggal ke DD/MM/YYYY (format standar untuk laporan/PDF).
+ * Menangani: ISO string, Date object, DD/MM/YYYY, M/D/YYYY.
+ * @param {string|Date} tglStr
+ * @returns {string}
+ */
+export function formatTglDDMMYYYY(tglStr) {
+  const p = normalizeTglParts(tglStr)
+  if (!p) return typeof tglStr === 'string' ? tglStr : '—'
+  return `${String(p.day).padStart(2,'0')}/${String(p.month).padStart(2,'0')}/${p.year}`
 }
