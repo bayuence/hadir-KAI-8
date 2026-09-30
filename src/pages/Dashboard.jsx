@@ -7,7 +7,7 @@ import { useGeo } from '../hooks/useGeo'
 import BottomNav from '../components/BottomNav'
 import LocationBanner from '../components/LocationBanner'
 import Avatar from '../components/Avatar'
-import NotificationPrompt from '../components/NotificationPrompt'
+
 import IosInstallPrompt from '../components/IosInstallPrompt'
 import {
   checkAutomatedReminders,
@@ -304,7 +304,7 @@ export default function Dashboard() {
         </div>
 
         {/* Pengingat Notifikasi Presensi PWA (Sementara hanya admin) */}
-        {user?.role === 'admin' && <NotificationPrompt />}
+
 
         <div className="dash-actions animate-fade-up">
           <button 

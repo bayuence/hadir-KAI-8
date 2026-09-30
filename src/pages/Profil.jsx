@@ -5,7 +5,7 @@ import { api } from '../services/api'
 import BottomNav from '../components/BottomNav'
 import Avatar from '../components/Avatar'
 import AdminHeader from '../components/AdminHeader'
-import NotificationPrompt from '../components/NotificationPrompt'
+
 import './Profil.css'
 
 // ─── Helper: Normalisasi semua format tanggal → DD/MM/YYYY ────
@@ -263,7 +263,7 @@ export default function Profil() {
         </div>
 
         {/* Pengaturan Notifikasi (Sementara hanya admin) */}
-        {isAdmin && <NotificationPrompt />}
+
 
         <button
           className="btn btn-outline"
