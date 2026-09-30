@@ -1,4 +1,4 @@
-﻿// IMPLEMENTASI ENDPOINT (WEB API)
+// IMPLEMENTASI ENDPOINT (WEB API)
 // ============================================================
 
 function handleGetPesertaList(data) {
@@ -587,6 +587,7 @@ function handleGetAllPresensi(data) {
     if (statusAkun !== 'active') continue; // Skip pending/rejected
 
     var idPeserta   = String(regRows[r][15]).trim();
+    if (!idPeserta) continue; // Abaikan baris kosong tanpa ID
     var namaPeserta = String(regRows[r][1]).trim();
     var noHp        = String(regRows[r][4] || '').trim().replace(/^0/, '62'); // format internasional
     var fotoProfil  = String(regRows[r][11] || '').trim();
@@ -667,6 +668,7 @@ function handleGetDashboardAdmin(data) {
   if (regSheet) {
     var rows = regSheet.getDataRange().getDisplayValues();
     for (var i = 1; i < rows.length; i++) {
+      if (!String(rows[i][15] || '').trim()) continue; // Abaikan jika tidak punya ID
       if (rows[i][12] === 'pending') { pending++; continue; }
       if (rows[i][12] !== 'active') continue;
       // Lewati peserta di luar masa magang (sudah selesai / belum mulai) dari statistik kehadiran
@@ -731,6 +733,7 @@ function handleGetRekapBulanan(data) {
     var mm = statusMasaMagang(String(regRows[r][9] || ''), String(regRows[r][10] || ''), today);
     if (mm !== 'Aktif') continue;                 // hanya peserta dalam masa magang
     var id  = String(regRows[r][15]).trim();
+    if (!id) continue;                            // Abaikan baris kosong tanpa ID
     var c   = byId[id] || { hadir: 0, izin: 0, alfa: 0 };
     result.push({
       id: id,
@@ -822,6 +825,10 @@ function handleGetAllUsersAdmin(data) {
  */
 function formatNoHpWhatsApp(noHp) {
   if (!noHp) return '';
+  // Cek jika ini adalah ID Grup Fonnte (ada tanda minus, @g.us, atau panjang > 15 angka dan berawalan 120)
+  if (String(noHp).indexOf('-') !== -1 || String(noHp).indexOf('@g.us') !== -1 || (String(noHp).length > 15 && String(noHp).startsWith('120'))) {
+    return String(noHp).trim();
+  }
   var clean = String(noHp).replace(/\D/g, '');
   if (clean.startsWith('0')) {
     clean = '62' + clean.slice(1);
@@ -854,7 +861,7 @@ function kirimWhatsAppFonnte(toPhoneNumber, message) {
     payload: {
       target: phone,
       message: message,
-      countryCode: '62'
+      
     },
     muteHttpExceptions: true
   };

@@ -217,68 +217,6 @@ export default function Profil() {
           </div>
         </div>
 
-        {/* Section 2: Data Pribadi & Kontak */}
-        <div className="profil-section-card">
-          <h3 className="profil-section-title">Informasi Pribadi & Kontak</h3>
-          <div className="profil-info-list">
-            <div className="profil-info-item">
-              <span className="profil-info-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-              </span>
-              <div>
-                <p className="profil-info-label">Tanggal Lahir (PIN Login)</p>
-                <p className="profil-info-val">{formatTanggalDisplay(profile?.tanggalLahir || profile?.tglLahir || profile?.tanggal_lahir)}</p>
-              </div>
-            </div>
-            <div className="profil-info-item">
-              <span className="profil-info-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
-                </svg>
-              </span>
-              <div>
-                <p className="profil-info-label">No. HP / WhatsApp</p>
-                <p className="profil-info-val">{profile?.noHp || '—'}</p>
-              </div>
-            </div>
-            <div className="profil-info-item">
-              <span className="profil-info-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
-              </span>
-              <div>
-                <p className="profil-info-label">NIM (Nomor Induk Mahasiswa)</p>
-                <p className="profil-info-val">{profile?.nim || '—'}</p>
-              </div>
-            </div>
-            <div className="profil-info-item">
-              <span className="profil-info-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
-                </svg>
-              </span>
-              <div>
-                <p className="profil-info-label">Email</p>
-                <p className="profil-info-val">{profile?.email || '—'}</p>
-              </div>
-            </div>
-            <div className="profil-info-item">
-              <span className="profil-info-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-              </span>
-              <div>
-                <p className="profil-info-label">Alamat Domisili</p>
-                <p className="profil-info-val">{profile?.alamat || '—'}</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Section 3: Pendidikan */}
         <div className="profil-section-card">
@@ -304,6 +242,21 @@ export default function Profil() {
               <div>
                 <p className="profil-info-label">Jurusan</p>
                 <p className="profil-info-val">{profile?.jurusan || '—'}</p>
+              </div>
+            </div>
+            <div className="profil-info-item">
+              <span className="profil-info-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="9" cy="10" r="2" />
+                  <line x1="15" y1="8" x2="17" y2="8" />
+                  <line x1="15" y1="12" x2="17" y2="12" />
+                  <line x1="7" y1="16" x2="17" y2="16" />
+                </svg>
+              </span>
+              <div>
+                <p className="profil-info-label">NIM (Nomor Induk Mahasiswa)</p>
+                <p className="profil-info-val">{profile?.nim || '—'}</p>
               </div>
             </div>
           </div>

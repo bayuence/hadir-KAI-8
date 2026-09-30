@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // MODUL LAPORAN PIC (WHATSAPP) â€” KAI Daop 8
 // ============================================================
 
@@ -8,6 +8,11 @@ var NOMOR_WA_PIC = '081234567890'; // <-- UBAH NOMOR INI
 function kirimLaporanKePIC() {
   var dayOfWeek = new Date().getDay();
   if (dayOfWeek === 0 || dayOfWeek === 6) return; // Skip jika Sabtu/Minggu
+
+  // AMBIL DATA TERBARU DARI FORM LAMA DULU SEBELUM BIKIN LAPORAN!
+  if (typeof sinkronFormResponses === 'function') {
+    sinkronFormResponses();
+  }
 
   var todayStr = formatTanggal(); // Helper dari Helpers.gs (DD/MM/YYYY)
   var todayNorm = normalizeTanggal(todayStr);
@@ -23,31 +28,44 @@ function kirimLaporanKePIC() {
   var regRows = regSheet.getDataRange().getDisplayValues();
   var presRows = presSheet.getDataRange().getDisplayValues();
 
+  var daftarHadirLengkap = [];
+  var daftarLupaPulang = [];
   var daftarAlfa = [];
   var daftarSakit = [];
   var daftarIzin = [];
+  var daftarNonaktif = [];
+  
+  var totalKeseluruhan = 0;
   var totalAktif = 0;
-  var totalHadir = 0;
 
   for (var i = 1; i < regRows.length; i++) {
+    var idPeserta = String(regRows[i][15] || '').trim();
+    if (!idPeserta) continue; // Abaikan baris kosong
+
+    totalKeseluruhan++;
+    var nama = regRows[i][1];
+
+    // Cek apakah Nonaktif (entah tulisannya nonaktif atau masa magangnya habis)
     var statusAcc = String(regRows[i][12]).toLowerCase().trim();
-    if (statusAcc !== 'active') continue;
+    var isNonaktif = (statusAcc !== 'active'); // Hanya percayakan pada kolom M (Status Akun) yang sudah pakai rumus Google Sheets
 
-    // Cek apakah masih dalam masa magang
-    if (statusMasaMagang(String(regRows[i][9] || ''), String(regRows[i][10] || ''), todayNorm) !== 'Aktif') continue;
+    if (isNonaktif) {
+      daftarNonaktif.push("- " + nama);
+      continue;
+    }
 
-    var idPeserta = regRows[i][15];
-    var nama      = regRows[i][1];
     totalAktif++;
 
     // Cari di presensi hari ini
     var statusHariIni = 'Alfa (Belum Absen)';
     var jamMasuk = '';
+    var jamPulang = '';
     
     for (var j = presRows.length - 1; j >= 1; j--) {
       if (normalizeTanggal(presRows[j][0]) === todayNorm && String(presRows[j][1]) === String(idPeserta)) {
-        jamMasuk = presRows[j][4]; // Kolom Jam Masuk
-        statusHariIni = String(presRows[j][11]).trim(); // Kolom Status (Hadir, Ijin Sakit, dll)
+        jamMasuk = presRows[j][4] || ''; // Kolom Jam Masuk
+        jamPulang = presRows[j][6] || ''; // Kolom Jam Pulang
+        statusHariIni = String(presRows[j][11]).trim(); // Kolom Status
         break;
       }
     }
@@ -56,25 +74,38 @@ function kirimLaporanKePIC() {
 
     // Kategorisasi
     if (statusLower.indexOf('hadir') !== -1 && jamMasuk !== '') {
-      totalHadir++;
+      if (jamPulang !== '') {
+        daftarHadirLengkap.push("- " + nama + " (Masuk: " + jamMasuk + " | Pulang: " + jamPulang + ")");
+      } else {
+        daftarLupaPulang.push("- " + nama + " (Masuk: " + jamMasuk + ")");
+      }
     } 
     else if (statusLower.indexOf('sakit') !== -1) {
       daftarSakit.push("- " + nama + " (Sakit)");
     } 
     else if (statusLower.indexOf('ijin') !== -1 || statusLower.indexOf('izin') !== -1) {
-      var alasan = statusHariIni; 
-      daftarIzin.push("- " + nama + " (" + alasan + ")");
+      daftarIzin.push("- " + nama + " (" + statusHariIni + ")");
     } 
     else {
       daftarAlfa.push("- " + nama);
     }
   }
 
-  var rincianSakit = daftarSakit.length > 0 ? daftarSakit.join("\n") : "- Tidak ada";
-  var rincianIzin  = daftarIzin.length > 0  ? daftarIzin.join("\n") : "- Tidak ada";
-  var rincianAlfa  = daftarAlfa.length > 0  ? daftarAlfa.join("\n") : "- Tidak ada";
+  var totalHadirLengkap = daftarHadirLengkap.length;
+  var totalLupaPulang = daftarLupaPulang.length;
+  var totalSakit = daftarSakit.length;
+  var totalIzin = daftarIzin.length;
+  var totalAlfa = daftarAlfa.length;
+  
+  var totalHadir = totalHadirLengkap + totalLupaPulang;
+  var totalTidakHadir = totalSakit + totalIzin + totalAlfa;
+  var totalNonaktif = daftarNonaktif.length;
 
-  var totalTidakHadir = daftarSakit.length + daftarIzin.length + daftarAlfa.length;
+  var strLupaPulang = totalLupaPulang > 0 ? daftarLupaPulang.join("\n") : "- Tidak ada";
+  var strSakit = totalSakit > 0 ? daftarSakit.join("\n") : "- Tidak ada";
+  var strIzin  = totalIzin > 0  ? daftarIzin.join("\n") : "- Tidak ada";
+  var strAlfa  = totalAlfa > 0  ? daftarAlfa.join("\n") : "- Tidak ada";
+  var strNonaktif = totalNonaktif > 0 ? daftarNonaktif.join("\n") : "- Tidak ada";
 
   var pesan = 
     "*LAPORAN KEHADIRAN MAGANG*\n" +
@@ -82,14 +113,23 @@ function kirimLaporanKePIC() {
     "Tanggal: *" + todayStr + "*\n\n" +
     "Yth. Bapak/Ibu PIC,\n\n" +
     "Bersama pesan ini, kami sampaikan rekapitulasi kehadiran peserta magang pada hari ini dengan rincian sebagai berikut:\n\n" +
-    "Total Peserta Aktif : " + totalAktif + " Peserta\n" +
-    "Peserta Hadir       : " + totalHadir + " Peserta\n" +
-    "Peserta Tidak Hadir : " + totalTidakHadir + " Peserta\n\n" +
-    "*Rincian Peserta Tidak Hadir:*\n\n" +
-    "*1. Sakit:*\n" + rincianSakit + "\n\n" +
-    "*2. Izin:*\n" + rincianIzin + "\n\n" +
-    "*3. Belum Presensi (Alfa):*\n" + rincianAlfa + "\n\n" +
-    "Demikian laporan ini kami sampaikan. Atas perhatian Bapak/Ibu, kami ucapkan terima kasih.\n\n" +
+    "---------------------------------------------------\n" +
+    "Total Peserta Keseluruhan      : " + totalKeseluruhan + " Peserta\n" +
+    "Total Selesai Magang / Nonaktif: " + totalNonaktif + " Peserta\n" +
+    "Total Peserta Magang Aktif     : " + totalAktif + " Peserta\n" +
+    "---------------------------------------------------\n\n" +
+    "*Dari " + totalAktif + " Peserta Aktif, rinciannya adalah:*\n" +
+    "- Hadir Total  : " + totalHadir + " Peserta\n" +
+    "- Tidak Hadir  : " + totalTidakHadir + " Peserta\n\n" +
+    "*1. Rincian Hadir:*\n" +
+    "- Hadir Lengkap (Masuk & Pulang): " + totalHadirLengkap + " Peserta\n" +
+    "- Belum/Lupa Presensi Pulang    : " + totalLupaPulang + " Peserta\n\n" +
+    "*2. Rincian Tidak Hadir:*\n" +
+    "- Sakit                         : " + totalSakit + " Peserta\n" +
+    "- Izin                          : " + totalIzin + " Peserta\n" +
+    "- Belum Presensi / Alfa         : " + totalAlfa + " Peserta\n\n" +
+    "---------------------------------------------------\n" +
+    "Demikian laporan ringkas ini kami sampaikan. Atas perhatian Bapak/Ibu, kami ucapkan terima kasih.\n\n" +
     "Hormat kami,\n" +
     "Tim Admin Magang Daop 8";
 
@@ -97,9 +137,9 @@ function kirimLaporanKePIC() {
   Logger.log('Laporan PIC berhasil dikirim ke ' + NOMOR_WA_PIC);
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -
 // TRIGGER UNTUK LAPORAN PIC (Jalankan sekali untuk memasang)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -
 function setupTriggerLaporanPIC() {
   var triggers = ScriptApp.getProjectTriggers();
   for (var i = 0; i < triggers.length; i++) {
@@ -108,13 +148,13 @@ function setupTriggerLaporanPIC() {
     }
   }
   
-  // Mengirim laporan setiap hari jam 17:30 (5:30 sore)
+  // Mengirim laporan setiap hari jam 16:00 (4:00 sore)
   ScriptApp.newTrigger('kirimLaporanKePIC')
     .timeBased()
     .everyDays(1)
-    .atHour(17)
-    .nearMinute(30)
+    .atHour(16)
+    .nearMinute(0)
     .create();
 
-  Logger.log('Trigger Laporan PIC berhasil dipasang untuk jam 17:30 (5:30 sore) setiap hari.');
+  Logger.log('Trigger Laporan PIC berhasil dipasang untuk jam 16:00 (4:00 sore) setiap hari.');
 }
