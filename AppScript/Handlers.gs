@@ -346,8 +346,12 @@ function handleGetRiwayat(data) {
   for (var i = rows.length - 1; i >= 1; i--) {
     if (String(rows[i][1]) === String(data.idPeserta)) {
       var dStr = String(rows[i][0] || '');
-      var statusSheet = String(rows[i][7] || '').trim();
-      // Gunakan status dari kolom sheet (kolom L / index 11),
+      // Header WEB Presensi:
+      // [0]=TANGGAL, [1]=ID PESERTA, [2]=NAMA, [3]=LOKASI,
+      // [4]=JAM MASUK, [5]=FOTO MASUK, [6]=JAM PULANG, [7]=FOTO PULANG,
+      // [8]=TOTAL JAM, [9]=GPS MASUK, [10]=GPS PULANG, [11]=STATUS
+      var statusSheet = String(rows[i][11] || '').trim();
+      // Gunakan status dari kolom STATUS (index 11),
       // fallback ke 'Hadir' / 'Belum Pulang' berdasarkan jam pulang
       var statusFinal = statusSheet ||
                         (rows[i][6] ? 'Hadir' : (rows[i][4] ? 'Belum Pulang' : 'Alfa'));
@@ -355,10 +359,10 @@ function handleGetRiwayat(data) {
         tanggal:    normalizeTanggal(dStr),
         jamMasuk:   rows[i][4] || null,
         jamPulang:  rows[i][6] || null,
-        fotoMasuk:  rows[i][2] || null,
-        fotoPulang: rows[i][3] || null,
+        fotoMasuk:  rows[i][5] || null,
+        fotoPulang: rows[i][7] || null,
         lokasi:     rows[i][3] || null,
-        totalJam:   rows[i][4] || null,
+        totalJam:   rows[i][8] || null,
         status:     statusFinal
       });
       if (result.length >= 31) break;
