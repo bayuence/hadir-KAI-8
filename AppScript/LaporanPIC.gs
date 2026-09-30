@@ -1,8 +1,8 @@
-// ============================================================
-// MODUL LAPORAN PIC (WHATSAPP) — KAI Daop 8
+﻿// ============================================================
+// MODUL LAPORAN PIC (WHATSAPP) â€” KAI Daop 8
 // ============================================================
 
-// ── GANTI DENGAN NOMOR WA PIC ANDA (Gunakan format 08... atau 628...) ──
+// â”€â”€ GANTI DENGAN NOMOR WA PIC ANDA (Gunakan format 08... atau 628...) â”€â”€
 var NOMOR_WA_PIC = '081234567890'; // <-- UBAH NOMOR INI
 
 function kirimLaporanKePIC() {
@@ -45,7 +45,7 @@ function kirimLaporanKePIC() {
     var jamMasuk = '';
     
     for (var j = presRows.length - 1; j >= 1; j--) {
-      if (normalizeTanggal(presRows[j][0]) === todayNorm && presRows[j][1] === idPeserta) {
+      if (normalizeTanggal(presRows[j][0]) === todayNorm && String(presRows[j][1]) === String(idPeserta)) {
         jamMasuk = presRows[j][4]; // Kolom Jam Masuk
         statusHariIni = String(presRows[j][11]).trim(); // Kolom Status (Hadir, Ijin Sakit, dll)
         break;
@@ -97,9 +97,9 @@ function kirimLaporanKePIC() {
   Logger.log('Laporan PIC berhasil dikirim ke ' + NOMOR_WA_PIC);
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // TRIGGER UNTUK LAPORAN PIC (Jalankan sekali untuk memasang)
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function setupTriggerLaporanPIC() {
   var triggers = ScriptApp.getProjectTriggers();
   for (var i = 0; i < triggers.length; i++) {
@@ -108,13 +108,13 @@ function setupTriggerLaporanPIC() {
     }
   }
   
-  // Mengirim laporan setiap hari jam 15:00 (3 sore)
+  // Mengirim laporan setiap hari jam 17:30 (5:30 sore)
   ScriptApp.newTrigger('kirimLaporanKePIC')
     .timeBased()
     .everyDays(1)
-    .atHour(15)
-    .nearMinute(0)
+    .atHour(17)
+    .nearMinute(30)
     .create();
 
-  Logger.log('Trigger Laporan PIC berhasil dipasang untuk jam 15:00 (3 sore) setiap hari.');
+  Logger.log('Trigger Laporan PIC berhasil dipasang untuk jam 17:30 (5:30 sore) setiap hari.');
 }

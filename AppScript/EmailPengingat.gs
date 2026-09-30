@@ -1,5 +1,5 @@
-// ============================================================
-// MODUL PENGINGAT TERPADU (EMAIL + WHATSAPP) — KAI Daop 8
+﻿// ============================================================
+// MODUL PENGINGAT TERPADU (EMAIL + WHATSAPP) â€” KAI Daop 8
 // Versi: 3.0  |  By: ence  |  2026
 //
 // FORMAT: Plain-text santai agar tidak masuk SPAM Google.
@@ -16,12 +16,12 @@ function getPesertaAktif() {
   var today = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'dd/MM/yyyy');
   var hasil = [];
   for (var i = 1; i < rows.length; i++) {
-    var statusAkun = String(rows[i][11] || '').toLowerCase();
+    var statusAkun = String(rows[i][12] || '').toLowerCase();
     if (statusAkun !== 'active') continue;
-    if (statusMasaMagang(String(rows[i][8] || ''), String(rows[i][9] || ''), today) !== 'Aktif') continue;
-    var email = String(rows[i][5] || '').trim();
+    if (statusMasaMagang(String(rows[i][9] || ''), String(rows[i][10] || ''), today) !== 'Aktif') continue;
+    var email = String(rows[i][6] || '').trim();
     var nama  = String(rows[i][1] || '').trim();
-    var id    = String(rows[i][14] || '').trim();
+    var id    = String(rows[i][15] || '').trim();
     var noHp  = String(rows[i][4] || '').trim(); // Tambahan noHp untuk WhatsApp
     if (!email || !nama || !id) continue;
     hasil.push({ id: id, nama: nama, email: email, noHp: noHp });
@@ -88,9 +88,9 @@ function kirimNotifikasiTerpadu(p, subjekEmail, pesan) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// 1. PENGINGAT PRA-MASUK — 07:45
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 1. PENGINGAT PRA-MASUK â€” 07:45
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function emailPengingatPreMasuk() {
   var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
   if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
@@ -111,9 +111,9 @@ function emailPengingatPreMasuk() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// 2. CEK TOLERANSI MASUK — 08:30
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 2. CEK TOLERANSI MASUK â€” 08:30
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function emailCekToleransiMasuk() {
   var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
   if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
@@ -134,9 +134,9 @@ function emailCekToleransiMasuk() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// 3. PENGINGAT MENJELANG ISTIRAHAT — 11:50
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 3. PENGINGAT MENJELANG ISTIRAHAT â€” 11:50
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function emailPengingatIstirahat() {
   var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
   if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
@@ -154,9 +154,9 @@ function emailPengingatIstirahat() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// 4. PENGINGAT KEMBALI KERJA — 13:00
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 4. PENGINGAT KEMBALI KERJA â€” 13:00
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function emailPengingatKembaliKerja() {
   var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
   if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
@@ -174,18 +174,18 @@ function emailPengingatKembaliKerja() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// 5. CEK TOLERANSI KEMBALI ISTIRAHAT — 13:15
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 5. CEK TOLERANSI KEMBALI ISTIRAHAT â€” 13:15
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function emailCekToleransiKembaliIstirahat() {
   var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
   if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
   // Note: Hanya berlaku pengingat tanpa logic spesifik check kembali
 }
 
-// ─────────────────────────────────────────────────────────────
-// 6. PENGINGAT MENJELANG PULANG — 16:30
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 6. PENGINGAT MENJELANG PULANG â€” 16:30
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function emailPengingatPrePulang() {
   var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
   if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
@@ -205,9 +205,9 @@ function emailPengingatPrePulang() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// 7. CEK PRESENSI PULANG — 17:15
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// 7. CEK PRESENSI PULANG â€” 17:15
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function emailCekPresensiPulang() {
   var dayName = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'EEEE');
   if (dayName === 'Saturday' || dayName === 'Sunday') return; // Skip weekend (Timezone Safe)
@@ -226,9 +226,9 @@ function emailCekPresensiPulang() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // SETUP & CLEANUP
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function hapusTriggerEmailDuplikat() {
   var daftarFungsi = [
     'emailPengingatPreMasuk', 'emailCekToleransiMasuk', 'emailPengingatIstirahat',
