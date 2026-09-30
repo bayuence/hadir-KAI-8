@@ -39,14 +39,14 @@ function kirimLaporanKePIC() {
   var totalAktif = 0;
 
   for (var i = 1; i < regRows.length; i++) {
-    var idPeserta = String(regRows[i][15] || '').trim();
+    var idPeserta = String(regRows[i][11] || '').trim();
     if (!idPeserta) continue; // Abaikan baris kosong
 
     totalKeseluruhan++;
     var nama = regRows[i][1];
 
     // Cek apakah Nonaktif (entah tulisannya nonaktif atau masa magangnya habis)
-    var statusAcc = String(regRows[i][12]).toLowerCase().trim();
+    var statusAcc = String(regRows[i][8]).toLowerCase().trim();
     var isNonaktif = (statusAcc !== 'active'); // Hanya percayakan pada kolom M (Status Akun) yang sudah pakai rumus Google Sheets
 
     if (isNonaktif) {
@@ -158,3 +158,4 @@ function setupTriggerLaporanPIC() {
 
   Logger.log('Trigger Laporan PIC berhasil dipasang untuk jam 16:00 (4:00 sore) setiap hari.');
 }
+

@@ -30,8 +30,8 @@ function setupPeralihanAwal() {
 function setupDropdownRole() {
   var sheet = getOrCreateSheet('WEB Register');
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['Timestamp Submit','Nama Lengkap','Tanggal Lahir','Alamat','No HP', 'NIM', 'Email',
-      'Kampus','Jurusan','Tanggal Mulai','Tanggal Selesai','Foto Profil URL',
+    sheet.appendRow(['Timestamp Submit','Nama Lengkap','NIM','Kampus','Jurusan',
+      'Tanggal Mulai','Tanggal Selesai','Foto Profil URL',
       'Status Akun','Role','ID Lokasi','ID Unik']);
   }
   
@@ -222,7 +222,7 @@ function migrasiDataAwal() {
       var nama = rows[i][1];
       if (!nama) continue;
       var newId = 'MGGNG-' + String(i).padStart(3, '0');
-      webReg.appendRow([rows[i][0] || new Date().toISOString(), nama, '', rows[i][2] || '', '', '', '', '', '', '', '', '', 'active', 'intern', '', newId]);
+      webReg.appendRow([rows[i][0] || new Date().toISOString(), nama, '', '', '', '', '', '', 'active', 'intern', '', newId]);
     }
     Logger.log("Migrasi peserta selesai.");
   }

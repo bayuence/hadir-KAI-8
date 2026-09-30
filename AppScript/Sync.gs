@@ -30,7 +30,7 @@ function _prosesFormResponsesToPresensi(oldRes, webReg, pSheet, forceOverwrite) 
   var mapPeserta = {};
   for (var k = 1; k < allRegRows.length; k++) {
     var kNama = String(allRegRows[k][1]).toLowerCase().trim();
-    if (kNama) mapPeserta[kNama] = { id: allRegRows[k][15], nama: allRegRows[k][1] };
+    if (kNama) mapPeserta[kNama] = { id: allRegRows[k][11], nama: allRegRows[k][1] };
   }
   
   // Baca data WEB Presensi yang sudah ada: map "ID_TANGGALNORM" -> baris (1-indexed)
@@ -208,7 +208,7 @@ function onOldFormSubmit(e) {
     
     // Insert ke WEB Register
     webReg.appendRow([
-      jamSubmit || new Date().toISOString(), nama, '', alamat, hp, nim, email, kampus, jurusan, tglMulai, tglSelesai, fotoRender, 'active', 'intern', '', newId
+      jamSubmit || new Date().toISOString(), nama, nim, kampus, jurusan, tglMulai, tglSelesai, fotoRender, 'active', 'intern', '', newId
     ]);
     return;
   }
@@ -230,7 +230,7 @@ function onOldFormSubmit(e) {
   var pId = null, pNamaAsli = nama;
   for (var i = 1; i < regRows.length; i++) {
     if (String(regRows[i][1]).toLowerCase().trim() === nama) {
-      pId = regRows[i][15];
+      pId = regRows[i][11];
       pNamaAsli = regRows[i][1];
       break;
     }
@@ -296,3 +296,4 @@ function onOldFormSubmit(e) {
 }
 
 // ============================================================
+

@@ -19,17 +19,17 @@ function handleGetPesertaList(data) {
   var rows = sheet.getDataRange().getValues();
   var list = [];
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][1] && rows[i][12] === 'active') {
+    if (rows[i][1] && rows[i][8] === 'active') {
       // Konversi URL foto ke format lh3 CDN Google untuk daftar peserta
-      var fotoUrl = rows[i][11] || '';
+      var fotoUrl = rows[i][7] || '';
       if (fotoUrl) {
         var idFoto = extractDriveId(fotoUrl);
         if (idFoto) fotoUrl = 'https://lh3.googleusercontent.com/d/' + idFoto + '=s200';
       }
       list.push({
-        id:       rows[i][15],
+        id:       rows[i][11],
                 nama:     rows[i][1],
-        idLokasi: rows[i][14] || '',
+        idLokasi: rows[i][10] || '',
         foto:     fotoUrl
       });
     }
@@ -72,21 +72,21 @@ function handleLogin(data) {
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
     if (String(rows[i][1]).toLowerCase().trim() === String(nama).toLowerCase().trim()) {
-      var rowNim = String(rows[i][5] || '').trim();
+      var rowNim = String(rows[i][2] || '').trim();
         if (rowNim === '') return { success: false, message: 'NIM belum diatur oleh admin. Minta admin untuk mengaturnya di WEB Register.'};
         if (rowNim.toLowerCase() === String(nim).toLowerCase().trim()) {
-        if (rows[i][12] === 'pending')  return { success: false, message: 'Akun Anda menunggu persetujuan admin.' };
-        if (rows[i][12] === 'rejected') return { success: false, message: 'Akun Anda ditolak.' };
-        if (rows[i][12] !== 'active')   return { success: false, message: 'Status akun tidak valid.' };
+        if (rows[i][8] === 'pending')  return { success: false, message: 'Akun Anda menunggu persetujuan admin.' };
+        if (rows[i][8] === 'rejected') return { success: false, message: 'Akun Anda ditolak.' };
+        if (rows[i][8] !== 'active')   return { success: false, message: 'Status akun tidak valid.' };
   
-        var lat = null, lng = null, radius = 100, lokasiNama = rows[i][14], unitKerjaNama = 'â€”';
-        if (rows[i][14]) {
+        var lat = null, lng = null, radius = 100, lokasiNama = rows[i][10], unitKerjaNama = 'â€”';
+        if (rows[i][10]) {
           var penSheet2 = getSheet('WEB Penugasan');
           if (penSheet2) {
             var penRows2 = penSheet2.getDataRange().getValues();
             var idInduk2 = '';
             for (var j = 1; j < penRows2.length; j++) {
-              if (penRows2[j][0] === rows[i][14] && penRows2[j][1] === 'lokasi') {
+              if (penRows2[j][0] === rows[i][10] && penRows2[j][1] === 'lokasi') {
                 lokasiNama = penRows2[j][3];
                 idInduk2 = penRows2[j][2];
                 lat = parseFloat(penRows2[j][5]) || null;
@@ -108,28 +108,28 @@ function handleLogin(data) {
   
         // Konversi URL foto ke format lh3 CDN Google
         // lh3.googleusercontent.com tidak butuh cookie/session, aman di semua browser & Safari
-        var fotoLogin = rows[i][11] || '';
+        var fotoLogin = rows[i][7] || '';
         if (fotoLogin) {
           var idFotoLogin = extractDriveId(fotoLogin);
           if (idFotoLogin) fotoLogin = 'https://lh3.googleusercontent.com/d/' + idFotoLogin + '=s400';
         }
 
-        var token = createSession(rows[i][15]);
+        var token = createSession(rows[i][11]);
         return {
           success: true, token: token,
           user: { 
-            id: rows[i][15],
-            nim: rows[i][5] || '',
+            id: rows[i][11],
+            nim: rows[i][2] || '',
             nama: rows[i][1], 
             tanggalLahir: normalizeTanggal(rows[i][2]),
             alamat: rows[i][3],
             noHp: rows[i][4],
             email: rows[i][6],
-            kampus: rows[i][7],
-            jurusan: rows[i][8],
-            mulaiMagang: normalizeTanggal(rows[i][9]),
-            selesaiMagang: normalizeTanggal(rows[i][10]),
-            role: rows[i][13] || 'intern', 
+            kampus: rows[i][3],
+            jurusan: rows[i][4],
+            mulaiMagang: normalizeTanggal(rows[i][5]),
+            selesaiMagang: normalizeTanggal(rows[i][6]),
+            role: rows[i][9] || 'intern', 
             lokasi: lokasiNama || 'Belum ditetapkan', 
             unitKerja: unitKerjaNama,
             lat: lat, 
@@ -166,23 +166,23 @@ function handleGetProfile(data) {
   
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][15] === idPeserta) {
+    if (rows[i][11] === idPeserta) {
       // Konversi URL foto ke format lh3 CDN Google
       // lh3.googleusercontent.com tidak butuh cookie/session, aman di semua browser & Safari
-      var fotoUrl = rows[i][11] || '';
+      var fotoUrl = rows[i][7] || '';
       if (fotoUrl) {
         var idFoto = extractDriveId(fotoUrl);
         if (idFoto) fotoUrl = 'https://lh3.googleusercontent.com/d/' + idFoto + '=s400';
       }
       
-      var lat = null, lng = null, radius = 100, lokasiNama = rows[i][14], unitKerjaNama = 'â€”';
-      if (rows[i][14]) {
+      var lat = null, lng = null, radius = 100, lokasiNama = rows[i][10], unitKerjaNama = 'â€”';
+      if (rows[i][10]) {
         var penSheet = getSheet('WEB Penugasan');
         if (penSheet) {
           var penRows = penSheet.getDataRange().getValues(); // Gunakan getValues() agar desimal koordinat tidak terpotong (rounded)
           var idInduk = '';
           for (var j = 1; j < penRows.length; j++) {
-            if (penRows[j][0] === rows[i][14] && penRows[j][1] === 'lokasi') {
+            if (penRows[j][0] === rows[i][10] && penRows[j][1] === 'lokasi') {
               lokasiNama = penRows[j][3];
               idInduk = penRows[j][2];
               lat = parseFloat(penRows[j][5]) || null;
@@ -205,22 +205,22 @@ function handleGetProfile(data) {
       return {
         success: true,
         data: {
-          id: rows[i][15],
-          nim: rows[i][5] || '',
+          id: rows[i][11],
+          nim: rows[i][2] || '',
           nama: rows[i][1],
           tanggalLahir: normalizeTanggal(rows[i][2]),
           alamat: rows[i][3],
           noHp: rows[i][4],
           email: rows[i][6],
-          kampus: rows[i][7],
-          jurusan: rows[i][8],
-          mulaiMagang: normalizeTanggal(rows[i][9]),
-          selesaiMagang: normalizeTanggal(rows[i][10]),
+          kampus: rows[i][3],
+          jurusan: rows[i][4],
+          mulaiMagang: normalizeTanggal(rows[i][5]),
+          selesaiMagang: normalizeTanggal(rows[i][6]),
           foto: fotoUrl,
-          role: rows[i][13] || 'intern',
+          role: rows[i][9] || 'intern',
           lokasi: lokasiNama || 'Belum ditetapkan',
           unitKerja: unitKerjaNama,
-          idLokasi: rows[i][14] || '',
+          idLokasi: rows[i][10] || '',
           lat: lat,
           long: lng,
           radius: radius
@@ -258,10 +258,10 @@ function handleCheckIn(data) {
   
   var regRows  = getSheet('WEB Register').getDataRange().getDisplayValues();
   var peserta  = null;
-  for (var i = 1; i < regRows.length; i++) if (String(regRows[i][15]) === String(data.idPeserta)) { peserta = regRows[i]; break; }
+  for (var i = 1; i < regRows.length; i++) if (String(regRows[i][11]) === String(data.idPeserta)) { peserta = regRows[i]; break; }
   
   if (!peserta) return { success: false, message: 'Data peserta tidak ditemukan di database WEB Register.' };
-  var idLokasi = peserta[14];
+  var idLokasi = peserta[10];
   var namaLokasi = 'KANTOR DAOP';
   
   if (idLokasi) {
@@ -346,7 +346,7 @@ function handleGetRiwayat(data) {
   for (var i = rows.length - 1; i >= 1; i--) {
     if (String(rows[i][1]) === String(data.idPeserta)) {
       var dStr = String(rows[i][0] || '');
-      var statusSheet = String(rows[i][11] || '').trim();
+      var statusSheet = String(rows[i][7] || '').trim();
       // Gunakan status dari kolom sheet (kolom L / index 11),
       // fallback ke 'Hadir' / 'Belum Pulang' berdasarkan jam pulang
       var statusFinal = statusSheet ||
@@ -355,10 +355,10 @@ function handleGetRiwayat(data) {
         tanggal:    normalizeTanggal(dStr),
         jamMasuk:   rows[i][4] || null,
         jamPulang:  rows[i][6] || null,
-        fotoMasuk:  rows[i][5] || null,
-        fotoPulang: rows[i][7] || null,
+        fotoMasuk:  rows[i][2] || null,
+        fotoPulang: rows[i][3] || null,
         lokasi:     rows[i][3] || null,
-        totalJam:   rows[i][8] || null,
+        totalJam:   rows[i][4] || null,
         status:     statusFinal
       });
       if (result.length >= 31) break;
@@ -391,9 +391,9 @@ function handleAjukanIzin(data) {
   var regRows = regSheet.getDataRange().getDisplayValues();
   var pesertaNama = '', pesertaLokasi = 'Izin (Online)';
   for (var i = 1; i < regRows.length; i++) {
-    if (String(regRows[i][15]) === String(data.idPeserta)) {
+    if (String(regRows[i][11]) === String(data.idPeserta)) {
       pesertaNama = regRows[i][1];
-      if (regRows[i][14]) pesertaLokasi = regRows[i][14];
+      if (regRows[i][10]) pesertaLokasi = regRows[i][10];
       break;
     }
   }
@@ -480,8 +480,8 @@ function handleGetIzinSaya(data) {
             tanggal: tglNormIzin,
             jenis: rows[i][4],
             keterangan: rows[i][6],
-            fotoUrl: rows[i][7],
-            status: rows[i][8] || 'approved'
+            fotoUrl: rows[i][3],
+            status: rows[i][4] || 'approved'
           });
         }
       }
@@ -583,21 +583,21 @@ function handleGetAllPresensi(data) {
   var result  = [];
 
   for (var r = 1; r < regRows.length; r++) {
-    var statusAkun = String(regRows[r][12]).trim().toLowerCase();
+    var statusAkun = String(regRows[r][8]).trim().toLowerCase();
     if (statusAkun !== 'active') continue; // Skip pending/rejected
 
-    var idPeserta   = String(regRows[r][15]).trim();
+    var idPeserta   = String(regRows[r][11]).trim();
     if (!idPeserta) continue; // Abaikan baris kosong tanpa ID
     var namaPeserta = String(regRows[r][1]).trim();
     var noHp        = String(regRows[r][4] || '').trim().replace(/^0/, '62'); // format internasional
-    var fotoProfil  = String(regRows[r][11] || '').trim();
+    var fotoProfil  = String(regRows[r][7] || '').trim();
     // col[13] di WEB Register = ID Lokasi yang ditetapkan admin
-    var idLokasiPeserta = String(regRows[r][14] || '').trim();
+    var idLokasiPeserta = String(regRows[r][10] || '').trim();
     var penempatan      = idLokasiPeserta ? (namaLokasiMap[idLokasiPeserta] || idLokasiPeserta) : '';
 
     var pData = presensiMap[idPeserta];
     // Masa magang peserta (Aktif / Selesai / Belum) â†’ untuk menandai kartu nonaktif
-    var masa = statusMasaMagang(String(regRows[r][9] || ''), String(regRows[r][10] || ''), tglNorm);
+    var masa = statusMasaMagang(String(regRows[r][5] || ''), String(regRows[r][6] || ''), tglNorm);
 
     if (pData) {
       // Peserta punya data presensi hari ini
@@ -668,17 +668,17 @@ function handleGetDashboardAdmin(data) {
   if (regSheet) {
     var rows = regSheet.getDataRange().getDisplayValues();
     for (var i = 1; i < rows.length; i++) {
-      if (!String(rows[i][15] || '').trim()) continue; // Abaikan jika tidak punya ID
-      if (rows[i][12] === 'pending') { pending++; continue; }
-      if (rows[i][12] !== 'active') continue;
+      if (!String(rows[i][11] || '').trim()) continue; // Abaikan jika tidak punya ID
+      if (rows[i][8] === 'pending') { pending++; continue; }
+      if (rows[i][8] !== 'active') continue;
       // Lewati peserta di luar masa magang (sudah selesai / belum mulai) dari statistik kehadiran
-      if (statusMasaMagang(String(rows[i][9] || ''), String(rows[i][10] || ''), today) !== 'Aktif') continue;
+      if (statusMasaMagang(String(rows[i][5] || ''), String(rows[i][6] || ''), today) !== 'Aktif') continue;
       total++;
       var isHadir = false, isIzin = false;
       if (pSheet) {
         var pRows = pSheet.getDataRange().getDisplayValues();
         for (var j = pRows.length - 1; j >= 1; j--) {
-          if (pRows[j][0] === today && pRows[j][1] === rows[i][15]) {
+          if (pRows[j][0] === today && pRows[j][1] === rows[i][11]) {
             var stPres = String(pRows[j][11] || 'Hadir').trim();
             if (stPres.indexOf('Ijin') === 0 || stPres === 'Izin') isIzin = true; else isHadir = true;
             break;
@@ -729,10 +729,10 @@ function handleGetRekapBulanan(data) {
   var regRows = regSheet.getDataRange().getDisplayValues();
   var result  = [];
   for (var r = 1; r < regRows.length; r++) {
-    if (String(regRows[r][12]).trim() !== 'active') continue;
-    var mm = statusMasaMagang(String(regRows[r][9] || ''), String(regRows[r][10] || ''), today);
+    if (String(regRows[r][8]).trim() !== 'active') continue;
+    var mm = statusMasaMagang(String(regRows[r][5] || ''), String(regRows[r][6] || ''), today);
     if (mm !== 'Aktif') continue;                 // hanya peserta dalam masa magang
-    var id  = String(regRows[r][15]).trim();
+    var id  = String(regRows[r][11]).trim();
     if (!id) continue;                            // Abaikan baris kosong tanpa ID
     var c   = byId[id] || { hadir: 0, izin: 0, alfa: 0 };
     result.push({
@@ -753,7 +753,7 @@ function handleGetPendingUsers(data) {
   if (!sheet) return { success: true, data: [] };
   var rows = sheet.getDataRange().getDisplayValues(), result = [];
   for (var i = 1; i < rows.length; i++) {
-    if (rows[i][12] === 'pending') result.push({ id: rows[i][15], nama: rows[i][1], tanggalLahir: rows[i][2], kampus: rows[i][7], jurusan: rows[i][8] });
+    if (rows[i][8] === 'pending') result.push({ id: rows[i][11], nama: rows[i][1], tanggalLahir: rows[i][2], kampus: rows[i][3], jurusan: rows[i][4] });
   }
   return { success: true, data: result };
 }
@@ -763,7 +763,7 @@ function handleApproveUser(data) {
   var sheet = getSheet('WEB Register');
   var rows = sheet.getDataRange().getValues();
   for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][15]) === String(data.idPeserta)) {
+    if (String(rows[i][11]) === String(data.idPeserta)) {
       sheet.getRange(i + 1, 14).setValue('active');
       sheet.getRange(i + 1, 15).setValue(data.idLokasi || '');
       return { success: true, message: 'Disetujui.' };
@@ -789,27 +789,27 @@ function handleGetAllUsersAdmin(data) {
   var list = [];
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][1]) {
-      var fotoUrl = rows[i][11] || '';
+      var fotoUrl = rows[i][7] || '';
       if (fotoUrl) {
         var idFoto = extractDriveId(fotoUrl);
         if (idFoto) fotoUrl = 'https://lh3.googleusercontent.com/d/' + idFoto + '=s200';
       }
       list.push({
-        id:            rows[i][15],
-        nim:           rows[i][5] || '',
+        id:            rows[i][11],
+        nim:           rows[i][2] || '',
         nama:          rows[i][1],
         tanggalLahir:  rows[i][2],
         alamat:        rows[i][3],
         noHp:          rows[i][4],
         email:         rows[i][6],
-        kampus:        rows[i][7],
-        jurusan:       rows[i][8],
-        mulaiMagang:   rows[i][9],
-        selesaiMagang: rows[i][10],
+        kampus:        rows[i][3],
+        jurusan:       rows[i][4],
+        mulaiMagang:   rows[i][5],
+        selesaiMagang: rows[i][6],
         foto:          fotoUrl,
-        status:        rows[i][12] || 'active',
-        role:          rows[i][13] || 'intern',
-        idLokasi:      rows[i][14] || ''
+        status:        rows[i][8] || 'active',
+        role:          rows[i][9] || 'intern',
+        idLokasi:      rows[i][10] || ''
       });
     }
   }
@@ -921,16 +921,16 @@ function kirimPengingatPresensiMasuk(isManual) {
   var totalKirim = 0, totalLewati = 0;
 
   for (var i = 1; i < regRows.length; i++) {
-    var statusAcc = String(regRows[i][12]).toLowerCase().trim();
+    var statusAcc = String(regRows[i][8]).toLowerCase().trim();
     if (statusAcc !== 'active') continue;
 
     // Lewati peserta yang masa magangnya sudah selesai / belum mulai
-    if (statusMasaMagang(String(regRows[i][9] || ''), String(regRows[i][10] || ''), todayNorm) !== 'Aktif') {
+    if (statusMasaMagang(String(regRows[i][5] || ''), String(regRows[i][6] || ''), todayNorm) !== 'Aktif') {
       Logger.log('Lewati ' + regRows[i][1] + ': Masa magang sudah selesai / belum mulai.');
       continue;
     }
 
-    var idPeserta = regRows[i][15];
+    var idPeserta = regRows[i][11];
     var nama      = regRows[i][1];
     var noHp      = regRows[i][4];
 
@@ -1008,16 +1008,16 @@ function kirimPengingatPresensiPulang(isManual) {
   var totalKirim = 0, totalLewati = 0;
 
   for (var i = 1; i < regRows.length; i++) {
-    var statusAcc = String(regRows[i][12]).toLowerCase().trim();
+    var statusAcc = String(regRows[i][8]).toLowerCase().trim();
     if (statusAcc !== 'active') continue;
 
     // Lewati peserta yang masa magangnya sudah selesai / belum mulai
-    if (statusMasaMagang(String(regRows[i][9] || ''), String(regRows[i][10] || ''), todayNorm) !== 'Aktif') {
+    if (statusMasaMagang(String(regRows[i][5] || ''), String(regRows[i][6] || ''), todayNorm) !== 'Aktif') {
       Logger.log('Lewati ' + regRows[i][1] + ': Masa magang sudah selesai / belum mulai.');
       continue;
     }
 
-    var idPeserta = regRows[i][15];
+    var idPeserta = regRows[i][11];
     var nama      = regRows[i][1];
     var noHp      = regRows[i][4];
 
@@ -1239,8 +1239,8 @@ function handleGetPenugasanPublic(data) {
         idInduk: rows[i][2],
         nama: rows[i][3],
         lat: parseFloat(rows[i][6]) || null,
-        lng: parseFloat(rows[i][7]) || null,
-        radius: parseInt(rows[i][8]) || 100
+        lng: parseFloat(rows[i][3]) || null,
+        radius: parseInt(rows[i][4]) || 100
       });
     }
   }
@@ -1296,7 +1296,7 @@ function handleSelfAssignLokasi(data) {
   if (!regSheet) return { success: false, message: 'Sheet registrasi tidak ditemukan.' };
   var regRows = regSheet.getDataRange().getDisplayValues();
   for (var i = 1; i < regRows.length; i++) {
-    if (regRows[i][15] === idPeserta) {
+    if (regRows[i][11] === idPeserta) {
       regSheet.getRange(i + 1, 15).setValue(data.idLokasi);
       return {
         success: true,
@@ -1446,3 +1446,4 @@ function hitungJarak(lat1, lon1, lat2, lon2) {
 
   return R * c;
 }
+
