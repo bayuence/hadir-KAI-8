@@ -260,6 +260,7 @@ function handleCheckIn(data) {
   var peserta  = null;
   for (var i = 1; i < regRows.length; i++) if (String(regRows[i][15]) === String(data.idPeserta)) { peserta = regRows[i]; break; }
   
+  if (!peserta) return { success: false, message: 'Data peserta tidak ditemukan di database WEB Register.' };
   var idLokasi = peserta[14];
   var namaLokasi = 'KANTOR DAOP';
   
@@ -1418,4 +1419,23 @@ function uploadFoto(base64Data, filename) {
  */
 function isAdminValid(adminToken) {
   return adminToken === CONFIG.ADMIN_TOKEN;
+}
+
+/**
+ * Hitung jarak antara dua koordinat (Haversine formula)
+ * Return: jarak dalam meter
+ */
+function hitungJarak(lat1, lon1, lat2, lon2) {
+  var R = 6371e3; // radius bumi dalam meter
+  var phi1 = lat1 * Math.PI / 180;
+  var phi2 = lat2 * Math.PI / 180;
+  var deltaPhi = (lat2 - lat1) * Math.PI / 180;
+  var deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+  var a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+          Math.cos(phi1) * Math.cos(phi2) *
+          Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
 }
