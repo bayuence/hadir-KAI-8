@@ -1,4 +1,4 @@
-﻿// IMPLEMENTASI ENDPOINT (WEB API)
+// IMPLEMENTASI ENDPOINT (WEB API)
 // ============================================================
 
 function handleGetPesertaList(data) {
@@ -1137,6 +1137,115 @@ function hitungJarak(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+
+// --- ADMIN LOKASI PENUGASAN ---
+
+function handleGetPenugasan(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  var sheet = getSheet('WEB Penugasan');
+  if (!sheet) return { success: true, data: { unitList: [], lokasiList: [] } };
+  
+  var rows = sheet.getDataRange().getValues();
+  var unitList = [], lokasiList = [];
+  for (var i = 1; i < rows.length; i++) {
+    if (!rows[i][0]) continue;
+    if (rows[i][1] === 'unit_kerja') {
+      unitList.push({ id: rows[i][0], nama: rows[i][3] });
+    } else if (rows[i][1] === 'lokasi') {
+      lokasiList.push({
+        id: rows[i][0],
+        idInduk: rows[i][2],
+        nama: rows[i][3],
+        alamat: rows[i][4] || '',
+        lat: rows[i][5] || '',
+        lng: rows[i][6] || '',
+        radius: parseInt(rows[i][7]) || 100
+      });
+    }
+  }
+  return { success: true, data: { unitList: unitList, lokasiList: lokasiList } };
+}
+
+function handleSavePenugasan(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  var sheet = getOrCreateSheet('WEB Penugasan');
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['ID', 'TIPE', 'ID_INDUK', 'NAMA', 'ALAMAT', 'LATITUDE', 'LONGITUDE', 'RADIUS']);
+  }
+  
+  var rows = sheet.getDataRange().getValues();
+  if (data.id) {
+    // Edit
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][0] === data.id) {
+        sheet.getRange(i + 1, 4).setValue(data.nama);
+        if (data.tipe === 'lokasi') {
+          sheet.getRange(i + 1, 5).setValue(data.alamat || '');
+          sheet.getRange(i + 1, 6).setValue(data.lat || '');
+          sheet.getRange(i + 1, 7).setValue(data.lng || '');
+          sheet.getRange(i + 1, 8).setValue(data.radius || 100);
+        }
+        return { success: true, message: 'Berhasil diperbarui.' };
+      }
+    }
+    return { success: false, message: 'Data tidak ditemukan.' };
+  } else {
+    // Tambah baru
+    var newId = (data.tipe === 'unit_kerja' ? 'UK-' : 'LOK-') + Date.now();
+    var lat = data.lat || '';
+    var lng = data.lng || '';
+    var radius = data.radius || 100;
+    var alamat = data.alamat || '';
+    sheet.appendRow([newId, data.tipe, data.idInduk || '', data.nama, alamat, lat, lng, radius]);
+    return { success: true, message: 'Berhasil ditambahkan.' };
+  }
+}
+
+function handleDeletePenugasan(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  var sheet = getSheet('WEB Penugasan');
+  if (!sheet) return { success: false, message: 'Sheet tidak ditemukan.' };
+  
+  var rows = sheet.getDataRange().getValues();
+  var idsToDelete = [data.id];
+  
+  // Jika hapus unit kerja, kumpulkan id lokasi anak-anaknya juga
+  for (var k = 1; k < rows.length; k++) {
+    if (rows[k][0] === data.id && rows[k][1] === 'unit_kerja') {
+      for (var j = 1; j < rows.length; j++) {
+        if (rows[j][2] === data.id) idsToDelete.push(rows[j][0]);
+      }
+      break;
+    }
+  }
+  
+  var deleted = false;
+  // Hapus dari bawah ke atas agar index baris tidak berantakan
+  for (var i = rows.length - 1; i >= 1; i--) {
+    if (idsToDelete.indexOf(rows[i][0]) !== -1) {
+      sheet.deleteRow(i + 1);
+      deleted = true;
+    }
+  }
+  
+  if (deleted) return { success: true, message: 'Berhasil dihapus.' };
+  return { success: false, message: 'Data tidak ditemukan.' };
+}
+
+function handleAssignLokasi(data) {
+  if (!isAdminValid(data.adminToken)) return { success: false, message: 'Token admin invalid.' };
+  var sheet = getSheet('WEB Register');
+  if (!sheet) return { success: false, message: 'Sheet tidak ditemukan.' };
+  
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][11]) === String(data.idPeserta)) {
+      sheet.getRange(i + 1, 11).setValue(data.idLokasi || ''); // Kolom 11 = index [10] = ID Lokasi
+      return { success: true, message: 'Penempatan berhasil diperbarui.' };
+    }
+  }
+  return { success: false, message: 'Peserta tidak ditemukan.' };
+}
 
 // DUMMY FUNCTIONS UNTUK MENCEGAH ERROR DARI TRIGGER LAMA MILIK PENGGUNA LAIN
 function kirimPengingatPresensiMasuk() {
